@@ -1,0 +1,268 @@
+/* ============================================================
+   PokéSpread JP→FR — styles.css
+   Dark-theme, mobile-first, Pokemon-branded
+   ============================================================ */
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ---- Header fee toggle ---- */
+.fee-btn {
+  background: #1e293b;
+  color: #94a3b8;
+}
+.fee-btn.active-fee {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* ---- Bottom tab bar ---- */
+.tab-nav {
+  color: #64748b;
+  position: relative;
+}
+.tab-nav.active-tab {
+  color: #dc2626;
+}
+.tab-nav.active-tab i { stroke: #dc2626; }
+
+/* ---- Sort buttons ---- */
+.sort-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+.sort-btn.active-sort {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* ---- Filter chips ---- */
+.filter-chip {
+  background: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+.filter-chip.active-chip {
+  background: #0f172a;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* ---- ROI / profit badges ---- */
+.badge-roi-high {
+  background: #064e3b;
+  color: #34d399;
+  border: 1px solid #065f46;
+}
+.badge-roi-mid {
+  background: #451a03;
+  color: #fbbf24;
+  border: 1px solid #78350f;
+}
+.badge-roi-low {
+  background: #450a0a;
+  color: #f87171;
+  border: 1px solid #7f1d1d;
+}
+
+/* ---- Liquidity badges ---- */
+.badge-liq-high  { background:#064e3b; color:#34d399; border:1px solid #065f46; }
+.badge-liq-mid   { background:#451a03; color:#fbbf24; border:1px solid #78350f; }
+.badge-liq-low   { background:#450a0a; color:#f87171; border:1px solid #7f1d1d; }
+
+/* ---- Rarity badges ---- */
+.badge-rarity {
+  background: #1e3a5f;
+  color: #93c5fd;
+  border: 1px solid #1d4ed8;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.badge-rarity-AR  { background:#3b1f5e; color:#c4b5fd; border-color:#6d28d9; }
+.badge-rarity-Gold{ background:#451a03; color:#fde68a; border-color:#92400e; }
+
+/* ---- Search result item ---- */
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.search-result-item:hover, .search-result-item:active {
+  border-color: #dc2626;
+  background: #1e293b;
+}
+
+/* ---- Opportunity card ---- */
+.opp-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.opp-card:hover { border-color: #dc2626; transform: translateY(-1px); }
+
+/* ---- Stars ---- */
+.stars { color: #fbbf24; letter-spacing: -1px; }
+.stars .empty { color: #334155; }
+
+/* ---- Table ---- */
+.price-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.price-table th { text-align: left; color: #64748b; padding: 6px 4px; font-weight: 600; border-bottom: 1px solid #334155; }
+.price-table td { padding: 7px 4px; border-bottom: 1px solid #1e293b; }
+.price-table tr:last-child td { border-bottom: none; }
+
+/* ---- Arbitrage result box ---- */
+.arb-box {
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.arb-box-high { background: #064e3b22; border: 1.5px solid #065f46; }
+.arb-box-mid  { background: #451a0322; border: 1.5px solid #78350f; }
+.arb-box-low  { background: #450a0a22; border: 1.5px solid #7f1d1d; }
+
+/* ---- Parcel item ---- */
+.parcel-item {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+/* ---- Toast ---- */
+.toast {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  animation: toastIn 0.3s ease forwards;
+}
+.toast.hide { animation: toastOut 0.3s ease forwards; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(20px) scale(0.96); }
+}
+
+/* ---- Spinner ---- */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid #334155;
+  border-top-color: #dc2626;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Add to parcel section ---- */
+.add-parcel-section {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+/* ---- Section separator ---- */
+.detail-section {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.detail-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Profit text colors ---- */
+.profit-high { color: #34d399; }
+.profit-mid  { color: #fbbf24; }
+.profit-low  { color: #f87171; }
+.profit-neg  { color: #f87171; }
+
+/* ---- Smooth tab fade ---- */
+.tab-section { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---- Input focus ring ---- */
+input:focus { box-shadow: 0 0 0 2px rgba(220,38,38,0.3); }
+
+/* ---- Scrollbar (webkit) ---- */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+/* ---- Buy price input row ---- */
+.buy-price-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.buy-price-wrapper input {
+  background: transparent;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---- Ref price pills ---- */
+.ref-pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.ref-pill:hover { border-color: #dc2626; }
+.ref-pill .label { font-size: 0.6rem; color: #64748b; font-weight: 600; }
+.ref-pill .value { font-size: 0.8rem; color: #fff; font-weight: 700; }
