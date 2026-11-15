@@ -16,6 +16,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body {
@@ -23,6 +25,8 @@ body {
   background: #fff;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* ============================================================
@@ -389,6 +393,9 @@ body {
    ============================================================ */
 #rate-badge {
   font-size: 0.75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 #live-rate {
@@ -1307,8 +1314,120 @@ body {
 }
 
 /* ============================================================
-   35. LIBRARY & CONDITION FILTERS
+   35. UNIFIED CASCADING CONDITION & GRADING POPOVER
    ============================================================ */
+#popover-filter-condition,
+#popover-lib-filter-condition {
+  animation: fadeIn 0.15s ease-out;
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.cascading-condition-popover {
+  user-select: none;
+}
+
+.cascading-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cascading-mode-btn:hover {
+  color: #1e293b;
+}
+
+.cascading-mode-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.condition-chip {
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.condition-chip:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.condition-chip.active {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+
+.company-chip {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.company-chip:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.company-chip.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+}
+
+.grade-chip {
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.grade-chip:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.grade-chip.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  font-weight: 700;
+}
+
 .lib-filter-btn {
   padding: 4px 10px;
   border-radius: 8px;
@@ -1330,8 +1449,4 @@ body {
   background: #2563eb;
   color: #fff;
   border-color: #2563eb;
-}
-
-#popover-filter-condition {
-  animation: fadeIn 0.15s ease-out;
 }

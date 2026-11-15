@@ -15,7 +15,13 @@ const state = {
   isLoadingCatalog: false,
   pricingRefFr: 'avg',                                 // 'avg' (3-platform smoothed 30j) | 'ebay' | 'vinted' | 'lbc'
   pricingRefJp: 'min',                                 // 'min' (best JP price) | 'mercari' | 'yahoo' | 'cardrush'
-  conditionFilter: 'raw_nm',                           // 'raw_nm' (default) | 'raw_all' | 'graded' | 'all'
+  conditionFilter: 'raw_nm',                           // Backward compatibility string
+  condition: {
+    mode: 'raw',                                       // 'raw' | 'graded'
+    rawConditions: ['NM'],                             // Multi-select subset of ['NM', 'EX', 'LP', 'PL']
+    companies: ['ALL'],                                // ['ALL'], ['PSA'], ['BGS'], ['CGC'], ['PCA'], ['ARS']
+    grades: []                                         // Multi-select grades from GRADING_SCALES[co]
+  },
   filters: {
     countries: [],                                     // Selected edition codes, e.g. ['JP', 'FR']. Empty = all
     priceMin: null,
@@ -44,56 +50,75 @@ const RAW_CONDITIONS = [
   { key: 'PL', label: 'Played / Poor (PL)', sub: 'Joué / pliures / usure', multiplier: 0.45, badgeCls: 'badge-condition-pl' }
 ];
 
+// 1. COMPANY-DEPENDENT AUTHENTIC GRADE SCALES
+const GRADING_SCALES = {
+  PSA: [
+    { grade: '10 (Gem Mint)', short: '10', frMult: 2.60, jpMult: 2.30 },
+    { grade: '9 (Mint)', short: '9', frMult: 1.30, jpMult: 1.25 },
+    { grade: '8 (NM-MT)', short: '8', frMult: 1.00, jpMult: 0.98 },
+    { grade: '≤ 7', short: '≤ 7', frMult: 0.75, jpMult: 0.72 }
+  ],
+  BGS: [
+    { grade: '10 Black Label', short: '10 BL', frMult: 4.80, jpMult: 4.20 },
+    { grade: '10 Pristine', short: '10 Pr', frMult: 3.40, jpMult: 3.00 },
+    { grade: '9.5 (Gem Mint)', short: '9.5', frMult: 1.90, jpMult: 1.80 },
+    { grade: '9 (Mint)', short: '9', frMult: 1.30, jpMult: 1.25 },
+    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.95, jpMult: 0.92 }
+  ],
+  CGC: [
+    { grade: '10 Pristine', short: '10 Pr', frMult: 3.20, jpMult: 2.80 },
+    { grade: '10 (Gem Mint)', short: '10', frMult: 2.35, jpMult: 2.15 },
+    { grade: '9.5 (Mint+)', short: '9.5', frMult: 1.65, jpMult: 1.55 },
+    { grade: '9 (Mint)', short: '9', frMult: 1.22, jpMult: 1.18 },
+    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.92, jpMult: 0.90 }
+  ],
+  PCA: [
+    { grade: '10+ (Collector)', short: '10+', frMult: 3.00, jpMult: 2.60 },
+    { grade: '10 (Neuf Sup)', short: '10', frMult: 2.20, jpMult: 2.00 },
+    { grade: '9.5 (Neuf)', short: '9.5', frMult: 1.55, jpMult: 1.45 },
+    { grade: '9 (Très Bon)', short: '9', frMult: 1.20, jpMult: 1.15 },
+    { grade: '≤ 8', short: '≤ 8', frMult: 0.90, jpMult: 0.88 }
+  ],
+  ARS: [
+    { grade: '10+', short: '10+', frMult: 3.60, jpMult: 3.20 },
+    { grade: '10', short: '10', frMult: 2.75, jpMult: 2.50 },
+    { grade: '9', short: '9', frMult: 1.35, jpMult: 1.30 },
+    { grade: '≤ 8', short: '≤ 8', frMult: 0.92, jpMult: 0.90 }
+  ],
+  ALL: [
+    { grade: '10+ / Black Label', short: '10+ / BL', frMult: 3.80, jpMult: 3.40 },
+    { grade: '10', short: '10', frMult: 2.60, jpMult: 2.30 },
+    { grade: '9.5', short: '9.5', frMult: 1.75, jpMult: 1.65 },
+    { grade: '9', short: '9', frMult: 1.28, jpMult: 1.23 },
+    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.92, jpMult: 0.90 }
+  ]
+};
+
 const GRADING_COMPANIES = {
   PSA: {
     name: 'PSA',
     fullName: 'Professional Sports Authenticator (USA)',
-    grades: [
-      { grade: '10', label: 'Note 10 (Gem Mint)', frMult: 2.60, jpMult: 2.30 },
-      { grade: '9.5', label: 'Note 9.5 (Mint+)', frMult: 1.70, jpMult: 1.60 },
-      { grade: '9', label: 'Note 9 (Mint)', frMult: 1.30, jpMult: 1.25 },
-      { grade: '8', label: 'Note 8 (NM-MT)', frMult: 1.00, jpMult: 0.98 }
-    ]
+    grades: GRADING_SCALES.PSA
   },
   BGS: {
     name: 'BGS',
     fullName: 'Beckett Grading Services (USA)',
-    grades: [
-      { grade: '10', label: 'Note 10 (Pristine / Gold)', frMult: 3.40, jpMult: 3.00 },
-      { grade: '9.5', label: 'Note 9.5 (Gem Mint)', frMult: 1.90, jpMult: 1.80 },
-      { grade: '9', label: 'Note 9 (Mint)', frMult: 1.30, jpMult: 1.25 },
-      { grade: '8', label: 'Note 8 (NM-MT)', frMult: 0.98, jpMult: 0.95 }
-    ]
+    grades: GRADING_SCALES.BGS
   },
   CGC: {
     name: 'CGC',
     fullName: 'Certified Guaranty Company (USA)',
-    grades: [
-      { grade: '10', label: 'Note 10 (Pristine 10)', frMult: 2.35, jpMult: 2.15 },
-      { grade: '9.5', label: 'Note 9.5 (Gem Mint)', frMult: 1.60, jpMult: 1.50 },
-      { grade: '9', label: 'Note 9 (Mint)', frMult: 1.22, jpMult: 1.18 },
-      { grade: '8', label: 'Note 8 (NM-MT)', frMult: 0.92, jpMult: 0.90 }
-    ]
+    grades: GRADING_SCALES.CGC
   },
   PCA: {
     name: 'PCA',
     fullName: 'PCA Grade (France / Leader Européen)',
-    grades: [
-      { grade: '10', label: 'Note 10 (Parfait / 10+)', frMult: 2.20, jpMult: 2.00 },
-      { grade: '9.5', label: 'Note 9.5 (Neuf+)', frMult: 1.55, jpMult: 1.45 },
-      { grade: '9', label: 'Note 9 (Neuf)', frMult: 1.20, jpMult: 1.15 },
-      { grade: '8', label: 'Note 8 (Proche du Neuf)', frMult: 0.92, jpMult: 0.90 }
-    ]
+    grades: GRADING_SCALES.PCA
   },
   ARS: {
     name: 'ARS',
     fullName: 'ARS Grading (Japon / Boîtiers Haute Sécurité)',
-    grades: [
-      { grade: '10', label: 'Note 10 (Grade 10+ / 10)', frMult: 2.75, jpMult: 2.50 },
-      { grade: '9.5', label: 'Note 9.5 (Grade 9.5)', frMult: 1.80, jpMult: 1.70 },
-      { grade: '9', label: 'Note 9 (Grade 9)', frMult: 1.35, jpMult: 1.30 },
-      { grade: '8', label: 'Note 8 (Grade 8)', frMult: 1.00, jpMult: 0.98 }
-    ]
+    grades: GRADING_SCALES.ARS
   }
 };
 
@@ -320,6 +345,75 @@ const BOOTSTRAP_CARDS = [
   { id: 'es-sv03.5-205', name: 'Mew-ex SAR', subName: '', localId: '205', ref: 'sv03.5 205/165', edition: 'ES', image: 'https://assets.tcgdex.net/es/sv/sv03.5/205/high.webp' }
 ];
 
+// ── CONDITION & GRADING MULTIPLIER RESOLVER ─────────────────
+function resolveConditionMultiplier(customConditionOrGrade = null) {
+  // 1. Explicit condition or grade passed (Detail Modal, Purchases, Platform Breakdown)
+  if (customConditionOrGrade) {
+    if (typeof customConditionOrGrade === 'object') {
+      if (customConditionOrGrade.mode === 'raw' || customConditionOrGrade.condition) {
+        const condKey = customConditionOrGrade.condition || customConditionOrGrade.key || 'NM';
+        const cond = RAW_CONDITIONS.find(c => c.key === condKey) || RAW_CONDITIONS[0];
+        return { frMult: cond.multiplier, jpMult: cond.multiplier };
+      }
+      if (customConditionOrGrade.mode === 'graded' || customConditionOrGrade.company) {
+        const coKey = customConditionOrGrade.company || 'PSA';
+        const grKey = customConditionOrGrade.grade || '10';
+        const scale = GRADING_SCALES[coKey] || GRADING_SCALES.PSA;
+        const gr = scale.find(g => g.grade === grKey || g.grade.startsWith(grKey) || g.short === grKey) || scale[0];
+        return { frMult: gr.frMult, jpMult: gr.jpMult };
+      }
+    }
+    if (typeof customConditionOrGrade === 'string') {
+      const str = customConditionOrGrade.trim();
+      if (str.startsWith('Raw ')) {
+        const key = str.replace('Raw ', '').trim();
+        const cond = RAW_CONDITIONS.find(c => c.key === key || c.label.includes(key)) || RAW_CONDITIONS[0];
+        return { frMult: cond.multiplier, jpMult: cond.multiplier };
+      }
+      const rawMatch = RAW_CONDITIONS.find(c => c.key === str || c.label.includes(str));
+      if (rawMatch) {
+        return { frMult: rawMatch.multiplier, jpMult: rawMatch.multiplier };
+      }
+      const parts = str.split(' ');
+      const coKey = parts[0];
+      const gradeStr = parts.slice(1).join(' ').trim();
+      const scale = GRADING_SCALES[coKey] || GRADING_SCALES.ALL;
+      const gr = scale.find(g => g.grade === gradeStr || g.grade.startsWith(gradeStr) || g.short === gradeStr) || scale[0];
+      return { frMult: gr.frMult, jpMult: gr.jpMult };
+    }
+  }
+
+  // 2. Active global filter (Focus Mode & Library)
+  if (!state.condition || state.condition.mode === 'raw') {
+    const active = state.condition?.rawConditions || ['NM'];
+    const matched = RAW_CONDITIONS.filter(c => active.includes(c.key));
+    const avg = matched.length > 0 
+      ? matched.reduce((sum, c) => sum + c.multiplier, 0) / matched.length 
+      : 1.0;
+    return { frMult: avg, jpMult: avg };
+  } else {
+    // mode === 'graded'
+    const companies = state.condition.companies || ['ALL'];
+    const grades = state.condition.grades || [];
+    let scale = GRADING_SCALES.ALL;
+    if (companies.length === 1 && companies[0] !== 'ALL' && GRADING_SCALES[companies[0]]) {
+      scale = GRADING_SCALES[companies[0]];
+    }
+
+    let matchedGrades = [];
+    if (grades.length > 0) {
+      matchedGrades = scale.filter(g => grades.includes(g.grade) || grades.includes(g.short));
+    }
+    if (matchedGrades.length === 0) {
+      matchedGrades = [scale[0]]; // fallback to top grade of the company
+    }
+
+    const avgFr = matchedGrades.reduce((sum, g) => sum + g.frMult, 0) / matchedGrades.length;
+    const avgJp = matchedGrades.reduce((sum, g) => sum + g.jpMult, 0) / matchedGrades.length;
+    return { frMult: avgFr, jpMult: avgJp };
+  }
+}
+
 // ── REAL MARKETPLACE PRICE ENGINE (`PriceService`) ───────────
 const PriceService = {
   pricesJsonData: null,
@@ -467,21 +561,19 @@ const PriceService = {
 
   // Multi-platform price breakdown tables data with condition/slab multiplier support
   getMultiPlatformPrices(card, mode = 'raw', conditionOrGrade = 'NM') {
-    let frMult = 1.0;
-    let jpMult = 1.0;
-
+    let custom = null;
     if (mode === 'raw') {
-      const cond = RAW_CONDITIONS.find(c => c.key === conditionOrGrade) || RAW_CONDITIONS[0];
-      frMult = cond.multiplier;
-      jpMult = cond.multiplier;
-    } else if (mode === 'graded') {
-      const coKey = (typeof conditionOrGrade === 'object' ? conditionOrGrade.company : null) || 'PSA';
-      const grKey = (typeof conditionOrGrade === 'object' ? conditionOrGrade.grade : null) || '10';
-      const co = GRADING_COMPANIES[coKey] || GRADING_COMPANIES.PSA;
-      const gr = co.grades.find(g => g.grade === grKey) || co.grades[0];
-      frMult = gr.frMult;
-      jpMult = gr.jpMult;
+      custom = { mode: 'raw', condition: typeof conditionOrGrade === 'string' ? conditionOrGrade : (conditionOrGrade?.condition || 'NM') };
+    } else {
+      if (typeof conditionOrGrade === 'object') {
+        custom = { mode: 'graded', company: conditionOrGrade.company || 'PSA', grade: conditionOrGrade.grade || '10' };
+      } else {
+        custom = typeof conditionOrGrade === 'string' && conditionOrGrade.includes(' ')
+          ? conditionOrGrade
+          : { mode: 'graded', company: 'PSA', grade: conditionOrGrade };
+      }
     }
+    const { frMult, jpMult } = resolveConditionMultiplier(custom);
 
     if (this.pricesJsonLoaded && this.pricesJsonData) {
       const entry = this.pricesJsonData.prices[card.ref];
@@ -872,30 +964,8 @@ function getActiveFrPrice(card, customConditionOrGrade = null) {
   }
 
   // Calculate multiplier
-  let mult = 1.0;
-  if (customConditionOrGrade) {
-    if (typeof customConditionOrGrade === 'string') {
-      const cond = RAW_CONDITIONS.find(c => c.key === customConditionOrGrade || c.label.includes(customConditionOrGrade));
-      if (cond) mult = cond.multiplier;
-      else {
-        const parts = customConditionOrGrade.split(' ');
-        const co = GRADING_COMPANIES[parts[0]];
-        const gr = co?.grades.find(g => g.grade === parts[1]);
-        if (gr) mult = gr.frMult;
-      }
-    } else if (customConditionOrGrade.mode === 'graded') {
-      const co = GRADING_COMPANIES[customConditionOrGrade.company || 'PSA'];
-      const gr = co?.grades.find(g => g.grade === (customConditionOrGrade.grade || '10'));
-      if (gr) mult = gr ? gr.frMult : 2.60;
-    } else if (customConditionOrGrade.mode === 'raw') {
-      const cond = RAW_CONDITIONS.find(c => c.key === customConditionOrGrade.condition);
-      if (cond) mult = cond.multiplier;
-    }
-  } else if (state.conditionFilter === 'graded') {
-    mult = GRADING_COMPANIES.PSA.grades[0].frMult;
-  }
-
-  return Math.round(basePrice * mult * 10) / 10;
+  const { frMult } = resolveConditionMultiplier(customConditionOrGrade);
+  return Math.round(basePrice * frMult * 10) / 10;
 }
 
 function getActiveJpPrice(card, customConditionOrGrade = null) {
@@ -923,30 +993,8 @@ function getActiveJpPrice(card, customConditionOrGrade = null) {
   }
 
   // Calculate multiplier
-  let mult = 1.0;
-  if (customConditionOrGrade) {
-    if (typeof customConditionOrGrade === 'string') {
-      const cond = RAW_CONDITIONS.find(c => c.key === customConditionOrGrade || c.label.includes(customConditionOrGrade));
-      if (cond) mult = cond.multiplier;
-      else {
-        const parts = customConditionOrGrade.split(' ');
-        const co = GRADING_COMPANIES[parts[0]];
-        const gr = co?.grades.find(g => g.grade === parts[1]);
-        if (gr) mult = gr.jpMult;
-      }
-    } else if (customConditionOrGrade.mode === 'graded') {
-      const co = GRADING_COMPANIES[customConditionOrGrade.company || 'PSA'];
-      const gr = co?.grades.find(g => g.grade === (customConditionOrGrade.grade || '10'));
-      if (gr) mult = gr ? gr.jpMult : 2.30;
-    } else if (customConditionOrGrade.mode === 'raw') {
-      const cond = RAW_CONDITIONS.find(c => c.key === customConditionOrGrade.condition);
-      if (cond) mult = cond.multiplier;
-    }
-  } else if (state.conditionFilter === 'graded') {
-    mult = GRADING_COMPANIES.PSA.grades[0].jpMult;
-  }
-
-  return Math.round(basePrice * mult);
+  const { jpMult } = resolveConditionMultiplier(customConditionOrGrade);
+  return Math.round(basePrice * jpMult);
 }
 
 function netMargin(card, customConditionOrGrade = null) {
@@ -978,7 +1026,7 @@ function isFilterModeActive() {
 
 function cardMatchesFilters(card) {
   // 1. Condition / Grading Filter
-  if (state.conditionFilter === 'graded') {
+  if (state.condition?.mode === 'graded') {
     // Show cards with high grading potential (SAR, AR, Alt, Holo, VMAX, Secret, etc.)
     const nameLower = (card.name || '').toLowerCase();
     const subLower = (card.subName || '').toLowerCase();
@@ -1036,9 +1084,27 @@ function renderCardTile(card, rank) {
   const jpActive = getActiveJpPrice(card);
   const frActive = getActiveFrPrice(card);
 
-  const condBadge = state.conditionFilter === 'graded'
-    ? `<span class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-1.5 py-0.5">🛡️ PSA 10</span>`
-    : `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5">📦 Raw NM</span>`;
+  let condBadge = '';
+  if (state.condition?.mode === 'graded') {
+    const co = (state.condition.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL')
+      ? state.condition.companies[0]
+      : 'Slabs';
+    let grText = '';
+    if (state.condition.grades && state.condition.grades.length > 0) {
+      const shortGrades = state.condition.grades.map(g => {
+        const scale = GRADING_SCALES[co] || GRADING_SCALES.ALL;
+        const entry = scale.find(s => s.grade === g);
+        return entry ? entry.short : g.split(' ')[0];
+      });
+      grText = ' ' + shortGrades.join('/');
+    }
+    condBadge = `<span class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-1.5 py-0.5">🛡️ ${co}${grText}</span>`;
+  } else {
+    const rawStr = state.condition?.rawConditions && state.condition.rawConditions.length > 0
+      ? state.condition.rawConditions.join('/')
+      : 'NM';
+    condBadge = `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5">📦 Raw ${rawStr}</span>`;
+  }
 
   return `
     <div class="card-tile fade-in" data-id="${card.id}">
@@ -1370,24 +1436,350 @@ function renderPricePresets() {
   });
 }
 
-function updateConditionTriggerLabel() {
-  const label = document.getElementById('label-filter-condition');
-  const btn = document.getElementById('btn-filter-condition');
-  if (!label || !btn) return;
-
-  const f = state.conditionFilter;
-  if (f === 'raw_nm') {
-    label.textContent = '💎 État : Non-gradé (NM)';
-    btn.classList.remove('active');
-  } else if (f === 'raw_all') {
-    label.textContent = '💎 État : Non-gradé (Tous)';
-    btn.classList.add('active');
-  } else if (f === 'graded') {
-    label.textContent = '💎 État : Gradée (Slabs)';
-    btn.classList.add('active');
+// ── CASCADING CONDITION & GRADING POPOVER LOGIC ─────────────
+function getConditionFilterLabel() {
+  if (!state.condition || state.condition.mode === 'raw') {
+    const raw = state.condition?.rawConditions || ['NM'];
+    if (raw.length === 4) return '💎 État : Non-gradé (Tous)';
+    if (raw.length === 1 && raw[0] === 'NM') return '💎 État : Non-gradé (NM)';
+    return `💎 État : Non-gradé (${raw.join(', ')})`;
   } else {
-    label.textContent = '💎 État : Tous';
-    btn.classList.add('active');
+    // Graded mode
+    const companies = state.condition.companies || ['ALL'];
+    const grades = state.condition.grades || [];
+    const coName = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : (companies.includes('ALL') ? 'Slabs' : companies.join('/'));
+
+    if (grades.length === 0) {
+      if (coName === 'Slabs') return '🛡️ État : Gradée (Toutes)';
+      return `🛡️ État : ${coName} (Tous grades)`;
+    }
+
+    // Clean grade names for label (e.g. "9.5 (Gem Mint)" -> "9.5", "10 (Gem Mint)" -> "10", keep "10 Black Label", "10 Pristine", "10+", etc.)
+    const cleanGrades = grades.map(g => {
+      let clean = g;
+      if (clean.includes('(Gem Mint)')) clean = clean.replace('(Gem Mint)', '').trim();
+      else if (clean.includes('(Mint+)')) clean = clean.replace('(Mint+)', '').trim();
+      else if (clean.includes('(Mint)')) clean = clean.replace('(Mint)', '').trim();
+      else if (clean.includes('(NM-MT)')) clean = clean.replace('(NM-MT)', '').trim();
+      else if (clean.includes('(Collector)')) clean = clean.replace('(Collector)', '').trim();
+      else if (clean.includes('(Neuf Sup)')) clean = clean.replace('(Neuf Sup)', '').trim();
+      else if (clean.includes('(Neuf)')) clean = clean.replace('(Neuf)', '').trim();
+      else if (clean.includes('(Très Bon)')) clean = clean.replace('(Très Bon)', '').trim();
+      return clean;
+    });
+
+    return `🛡️ État : ${coName} ${cleanGrades.join(', ')}`;
+  }
+}
+
+function updateConditionTriggerLabels() {
+  const lbl = getConditionFilterLabel();
+  const mainLabel = document.getElementById('label-filter-condition');
+  const mainBtn = document.getElementById('btn-filter-condition');
+  const libLabel = document.getElementById('label-lib-filter-condition');
+  const libBtn = document.getElementById('btn-lib-filter-condition');
+
+  const isActive = state.condition?.mode === 'graded' || (state.condition?.mode === 'raw' && (state.condition?.rawConditions?.length !== 1 || state.condition?.rawConditions?.[0] !== 'NM'));
+
+  if (mainLabel) mainLabel.textContent = lbl;
+  if (mainBtn) mainBtn.classList.toggle('active', isActive);
+  if (libLabel) libLabel.textContent = lbl;
+  if (libBtn) libBtn.classList.toggle('active', isActive);
+}
+
+// Backward-compatibility alias
+function updateConditionTriggerLabel() {
+  updateConditionTriggerLabels();
+}
+
+function getConditionPopoverHtml() {
+  const isRaw = !state.condition || state.condition.mode === 'raw';
+  const companies = state.condition?.companies || ['ALL'];
+  const grades = state.condition?.grades || [];
+  const rawConds = state.condition?.rawConditions || ['NM'];
+
+  // Identify active company for grade scale: if single specific company, use it; else ALL
+  const activeCompany = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : 'ALL';
+  const currentScale = GRADING_SCALES[activeCompany] || GRADING_SCALES.ALL;
+
+  // Company options: Toutes, PSA, BGS, CGC, PCA, ARS
+  const companyOptions = [
+    { key: 'ALL', label: 'Toutes' },
+    { key: 'PSA', label: 'PSA' },
+    { key: 'BGS', label: 'BGS' },
+    { key: 'CGC', label: 'CGC' },
+    { key: 'PCA', label: 'PCA' },
+    { key: 'ARS', label: 'ARS' }
+  ];
+
+  // Calculate current effective multipliers for live preview in popover
+  const { frMult, jpMult } = resolveConditionMultiplier();
+
+  return `
+    <div class="cascading-condition-popover">
+      <!-- Mode Tabs (Tab A: Raw vs Tab B: Graded) -->
+      <div class="flex p-1 bg-slate-100 rounded-xl mb-3 gap-1">
+        <button type="button" class="cascading-mode-btn flex-1 ${isRaw ? 'active' : ''}" data-popover-tab="raw">
+          <i data-lucide="package" style="width:13px;height:13px;"></i>
+          <span>Non-gradé (Raw)</span>
+        </button>
+        <button type="button" class="cascading-mode-btn flex-1 ${!isRaw ? 'active' : ''}" data-popover-tab="graded">
+          <i data-lucide="shield" style="width:13px;height:13px;"></i>
+          <span>Gradée (Slabs)</span>
+        </button>
+      </div>
+
+      ${isRaw ? `
+        <!-- TAB A: RAW CONDITIONS (Multi-select) -->
+        <div class="mb-3">
+          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+            <span>État physique (Raw)</span>
+            <span class="text-[10px] text-blue-600 font-semibold">Multi-sélection</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            ${RAW_CONDITIONS.map(rc => {
+              const active = rawConds.includes(rc.key);
+              return `
+                <button type="button" class="condition-chip ${active ? 'active' : ''}" data-raw-cond="${rc.key}">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs">${rc.key}</span>
+                    <span class="text-[10px] font-mono opacity-80">x${rc.multiplier.toFixed(2)}</span>
+                  </div>
+                  <div class="text-[10px] text-left opacity-75 truncate">${rc.sub}</div>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : `
+        <!-- TAB B: GRADED SLABS -->
+        <div class="space-y-3 mb-3">
+          <!-- Row 1: Entreprise de gradation -->
+          <div>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span>1. Entreprise de gradation</span>
+              <span class="text-[10px] text-indigo-600 font-semibold">${activeCompany === 'ALL' ? 'Toutes entreprises' : activeCompany}</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${companyOptions.map(co => {
+                const active = companies.includes(co.key);
+                return `
+                  <button type="button" class="company-chip ${active ? 'active' : ''}" data-popover-company="${co.key}">
+                    ${co.label}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Row 2: Note (Grade) - Dynamically adapted to active company -->
+          <div>
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span>2. Note (Grade)</span>
+              <span class="text-[10px] text-indigo-600 font-semibold">Échelle ${activeCompany}</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              ${currentScale.map(g => {
+                const active = grades.includes(g.grade);
+                return `
+                  <button type="button" class="grade-chip ${active ? 'active' : ''}" data-popover-grade="${g.grade}">
+                    <span>${g.grade}</span>
+                    <span class="text-[9px] font-mono opacity-75 ml-1">x${g.frMult.toFixed(2)}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `}
+
+      <!-- Bottom Bar: Multiplier Indicator & Reset -->
+      <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+        <div class="text-slate-500 flex items-center gap-1 font-medium">
+          <span>⚡ Impact :</span>
+          <span class="font-bold text-slate-800">x${frMult.toFixed(2)} FR</span>
+          <span>/</span>
+          <span class="font-bold text-slate-800">x${jpMult.toFixed(2)} JP</span>
+        </div>
+        <button type="button" class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer text-xs" data-popover-reset>
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function attachPopoverEvents(popoverEl) {
+  if (!popoverEl) return;
+
+  // Mode tabs
+  popoverEl.querySelectorAll('[data-popover-tab]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tab = btn.dataset.popoverTab;
+      state.condition.mode = tab;
+      if (tab === 'raw' && (!state.condition.rawConditions || state.condition.rawConditions.length === 0)) {
+        state.condition.rawConditions = ['NM'];
+      }
+      if (tab === 'graded' && (!state.condition.companies || state.condition.companies.length === 0)) {
+        state.condition.companies = ['ALL'];
+      }
+      state.conditionFilter = tab === 'raw' ? (state.condition.rawConditions.length === 4 ? 'raw_all' : 'raw_nm') : 'graded';
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
+      applyFilters();
+      if (document.getElementById('modal-library')?.classList.contains('open')) {
+        renderLibrary();
+      }
+    });
+  });
+
+  // Raw conditions
+  popoverEl.querySelectorAll('[data-raw-cond]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cond = btn.dataset.rawCond;
+      let arr = [...(state.condition.rawConditions || ['NM'])];
+      if (arr.includes(cond)) {
+        if (arr.length > 1) {
+          arr = arr.filter(c => c !== cond);
+        }
+      } else {
+        arr.push(cond);
+      }
+      state.condition.rawConditions = arr;
+      state.conditionFilter = arr.length === 4 ? 'raw_all' : (arr.length === 1 && arr[0] === 'NM' ? 'raw_nm' : 'raw_custom');
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
+      applyFilters();
+      if (document.getElementById('modal-library')?.classList.contains('open')) {
+        renderLibrary();
+      }
+    });
+  });
+
+  // Companies (Row 1)
+  popoverEl.querySelectorAll('[data-popover-company]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const coKey = btn.dataset.popoverCompany;
+      if (coKey === 'ALL') {
+        state.condition.companies = ['ALL'];
+      } else {
+        state.condition.companies = [coKey];
+      }
+
+      // Filter previously selected grades to only keep ones existing in new scale
+      const scale = (state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL')
+        ? GRADING_SCALES[state.condition.companies[0]]
+        : GRADING_SCALES.ALL;
+      const validGrades = scale.map(g => g.grade);
+      state.condition.grades = (state.condition.grades || []).filter(g => validGrades.includes(g));
+
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
+      applyFilters();
+      if (document.getElementById('modal-library')?.classList.contains('open')) {
+        renderLibrary();
+      }
+    });
+  });
+
+  // Grades (Row 2)
+  popoverEl.querySelectorAll('[data-popover-grade]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const grade = btn.dataset.popoverGrade;
+      let grades = [...(state.condition.grades || [])];
+      if (grades.includes(grade)) {
+        grades = grades.filter(g => g !== grade);
+      } else {
+        grades.push(grade);
+      }
+      state.condition.grades = grades;
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
+      applyFilters();
+      if (document.getElementById('modal-library')?.classList.contains('open')) {
+        renderLibrary();
+      }
+    });
+  });
+
+  // Reset
+  popoverEl.querySelectorAll('[data-popover-reset]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.condition = {
+        mode: 'raw',
+        rawConditions: ['NM'],
+        companies: ['ALL'],
+        grades: []
+      };
+      state.conditionFilter = 'raw_nm';
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
+      applyFilters();
+      if (document.getElementById('modal-library')?.classList.contains('open')) {
+        renderLibrary();
+      }
+      showToast('Filtre état réinitialisé (Non-gradé NM)');
+    });
+  });
+
+  popoverEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
+
+function renderConditionPopovers() {
+  const mainPopover = document.getElementById('popover-filter-condition');
+  const libPopover = document.getElementById('popover-lib-filter-condition');
+  const html = getConditionPopoverHtml();
+
+  if (mainPopover) {
+    mainPopover.innerHTML = html;
+    attachPopoverEvents(mainPopover);
+  }
+  if (libPopover) {
+    libPopover.innerHTML = html;
+    attachPopoverEvents(libPopover);
+  }
+
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+}
+
+function toggleConditionPopover(source = 'main') {
+  const isMain = source === 'main';
+  const targetPopover = document.getElementById(isMain ? 'popover-filter-condition' : 'popover-lib-filter-condition');
+  const targetBtn = document.getElementById(isMain ? 'btn-filter-condition' : 'btn-lib-filter-condition');
+  const otherPopover = document.getElementById(isMain ? 'popover-lib-filter-condition' : 'popover-filter-condition');
+  const otherBtn = document.getElementById(isMain ? 'btn-lib-filter-condition' : 'btn-filter-condition');
+
+  if (otherPopover) otherPopover.classList.add('hidden');
+  if (otherBtn) otherBtn.classList.remove('open');
+
+  const countryPopover = document.getElementById('popover-filter-country');
+  const countryBtn = document.getElementById('btn-filter-country');
+  const pricePopover = document.getElementById('popover-filter-price');
+  const priceBtn = document.getElementById('btn-filter-price');
+  if (countryPopover) countryPopover.classList.add('hidden');
+  if (countryBtn) countryBtn.classList.remove('open');
+  if (pricePopover) pricePopover.classList.add('hidden');
+  if (priceBtn) priceBtn.classList.remove('open');
+
+  if (targetPopover) {
+    const isHidden = targetPopover.classList.contains('hidden');
+    if (isHidden) {
+      renderConditionPopovers();
+      targetPopover.classList.remove('hidden');
+      if (targetBtn) targetBtn.classList.add('open');
+    } else {
+      targetPopover.classList.add('hidden');
+      if (targetBtn) targetBtn.classList.remove('open');
+    }
   }
 }
 
@@ -1398,12 +1790,16 @@ function togglePopover(name) {
   const priceBtn = document.getElementById('btn-filter-price');
   const condPopover = document.getElementById('popover-filter-condition');
   const condBtn = document.getElementById('btn-filter-condition');
+  const libCondPopover = document.getElementById('popover-lib-filter-condition');
+  const libCondBtn = document.getElementById('btn-lib-filter-condition');
 
   if (name === 'country') {
     if (pricePopover) pricePopover.classList.add('hidden');
     if (priceBtn) priceBtn.classList.remove('open');
     if (condPopover) condPopover.classList.add('hidden');
     if (condBtn) condBtn.classList.remove('open');
+    if (libCondPopover) libCondPopover.classList.add('hidden');
+    if (libCondBtn) libCondBtn.classList.remove('open');
 
     if (countryPopover) {
       const willOpen = countryPopover.classList.contains('hidden');
@@ -1421,6 +1817,8 @@ function togglePopover(name) {
     if (countryBtn) countryBtn.classList.remove('open');
     if (condPopover) condPopover.classList.add('hidden');
     if (condBtn) condBtn.classList.remove('open');
+    if (libCondPopover) libCondPopover.classList.add('hidden');
+    if (libCondBtn) libCondBtn.classList.remove('open');
 
     if (pricePopover) {
       const willOpen = pricePopover.classList.contains('hidden');
@@ -1434,21 +1832,7 @@ function togglePopover(name) {
       }
     }
   } else if (name === 'condition') {
-    if (countryPopover) countryPopover.classList.add('hidden');
-    if (countryBtn) countryBtn.classList.remove('open');
-    if (pricePopover) pricePopover.classList.add('hidden');
-    if (priceBtn) priceBtn.classList.remove('open');
-
-    if (condPopover) {
-      const willOpen = condPopover.classList.contains('hidden');
-      if (willOpen) {
-        condPopover.classList.remove('hidden');
-        if (condBtn) condBtn.classList.add('open');
-      } else {
-        condPopover.classList.add('hidden');
-        if (condBtn) condBtn.classList.remove('open');
-      }
-    }
+    toggleConditionPopover('main');
   }
 }
 
@@ -1459,6 +1843,8 @@ function closeAllPopovers() {
   const priceBtn = document.getElementById('btn-filter-price');
   const condPopover = document.getElementById('popover-filter-condition');
   const condBtn = document.getElementById('btn-filter-condition');
+  const libCondPopover = document.getElementById('popover-lib-filter-condition');
+  const libCondBtn = document.getElementById('btn-lib-filter-condition');
 
   if (countryPopover) countryPopover.classList.add('hidden');
   if (countryBtn) countryBtn.classList.remove('open');
@@ -1466,6 +1852,8 @@ function closeAllPopovers() {
   if (priceBtn) priceBtn.classList.remove('open');
   if (condPopover) condPopover.classList.add('hidden');
   if (condBtn) condBtn.classList.remove('open');
+  if (libCondPopover) libCondPopover.classList.add('hidden');
+  if (libCondBtn) libCondBtn.classList.remove('open');
 }
 
 // ── FILTER BAR PLACEMENT & SYNC ──────────────────────────────
@@ -1497,6 +1885,7 @@ function syncFilterBarPlacement() {
   updateFilterMatchCount();
   updateCountryTriggerLabel();
   updatePriceTriggerLabel();
+  updateConditionTriggerLabels();
   updateColumnCounters();
 }
 
@@ -1518,13 +1907,8 @@ function applyFilters() {
   updateFilterMatchCount();
   updateCountryTriggerLabel();
   updatePriceTriggerLabel();
-  if (state.focusCol) {
-    const colMap = { margin: getSortedByMargin, roi: getSortedByROI, velocity: getSortedByVelocity };
-    renderColumn(`col-${state.focusCol}`, colMap[state.focusCol](true), state.focusCol);
-  }
-  renderMobileColumn();
-  updateLoadMoreLabels();
-  updateColumnCounters();
+  updateConditionTriggerLabels();
+  renderAllColumns();
   if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -1731,18 +2115,33 @@ let detailModalState = {
   mode: 'raw',           // 'raw' | 'graded'
   rawCondition: 'NM',    // 'NM' | 'EX' | 'LP' | 'PL'
   company: 'PSA',        // 'PSA' | 'BGS' | 'CGC' | 'PCA' | 'ARS'
-  grade: '10'            // '10' | '9.5' | '9' | '8'
+  grade: '10 (Gem Mint)' // Authentic grade string from GRADING_SCALES[company]
 };
 
 function openCardDetail(cardId, initialMode = null) {
   detailModalState.cardId = cardId;
   if (initialMode) {
     detailModalState.mode = initialMode;
-  } else if (state.conditionFilter === 'graded') {
+  } else if (state.condition?.mode === 'graded') {
     detailModalState.mode = 'graded';
   } else {
     detailModalState.mode = 'raw';
   }
+
+  if (detailModalState.mode === 'graded') {
+    if (state.condition?.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') {
+      detailModalState.company = state.condition.companies[0];
+    } else if (!detailModalState.company || !GRADING_COMPANIES[detailModalState.company]) {
+      detailModalState.company = 'PSA';
+    }
+    const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
+    const activeGrades = state.condition?.grades || [];
+    const matched = scale.find(g => activeGrades.includes(g.grade));
+    detailModalState.grade = matched ? matched.grade : scale[0].grade;
+  } else {
+    detailModalState.rawCondition = state.condition?.rawConditions?.[0] || 'NM';
+  }
+
   renderCardDetailModal();
   openModal('modal-card-detail');
 }
@@ -1761,7 +2160,7 @@ function renderCardDetailModal() {
 
   const currentConditionLabel = isRaw
     ? (RAW_CONDITIONS.find(c => c.key === detailModalState.rawCondition)?.label || 'Near Mint (NM)')
-    : `${detailModalState.company} Note ${detailModalState.grade}`;
+    : `${detailModalState.company} ${detailModalState.grade}`;
 
   const frActive = getActiveFrPrice(card, condOrGradeStr);
   const jpActive = getActiveJpPrice(card, condOrGradeStr);
@@ -1893,9 +2292,14 @@ function renderCardDetailModal() {
     `;
   } else {
     const currentCompany = GRADING_COMPANIES[detailModalState.company] || GRADING_COMPANIES.PSA;
-    const gradesList = currentCompany.grades;
+    const currentScale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
 
-    const summaryTableRows = gradesList.map(g => {
+    // Safety check: ensure selected grade exists in current company scale
+    if (!currentScale.some(g => g.grade === detailModalState.grade)) {
+      detailModalState.grade = currentScale[0].grade;
+    }
+
+    const summaryTableRows = currentScale.map(g => {
       const gFr = getActiveFrPrice(card, `${detailModalState.company} ${g.grade}`);
       const gJp = getActiveJpPrice(card, `${detailModalState.company} ${g.grade}`);
       const gMargin = netMargin(card, `${detailModalState.company} ${g.grade}`);
@@ -1907,7 +2311,7 @@ function renderCardDetailModal() {
         <tr class="${isSelected ? 'selected' : ''} cursor-pointer" data-select-grade="${g.grade}">
           <td class="font-bold flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-slate-300'}"></span>
-            <span>${g.label}</span>
+            <span>${g.grade}</span>
           </td>
           <td>¥${gJp.toLocaleString('fr-FR')}</td>
           <td class="font-semibold text-slate-800">${gFr.toFixed(2)} €</td>
@@ -1920,7 +2324,10 @@ function renderCardDetailModal() {
     modeControlsHtml = `
       <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
         <!-- Grading Companies -->
-        <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2">Société de gradation</div>
+        <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center justify-between">
+          <span>Société de gradation</span>
+          <span class="text-blue-600 font-semibold">${currentCompany.fullName}</span>
+        </div>
         <div class="flex flex-wrap gap-1.5 mb-3" id="detail-company-tabs">
           ${Object.keys(GRADING_COMPANIES).map(k => `
             <button type="button" class="company-tab ${detailModalState.company === k ? 'active' : ''}" data-company-key="${k}">
@@ -1932,12 +2339,12 @@ function renderCardDetailModal() {
         <!-- Grade Selector Pills -->
         <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center justify-between">
           <span>Note sélectionnée</span>
-          <span class="text-blue-600 font-semibold">${currentCompany.fullName}</span>
+          <span class="text-blue-600 font-semibold">Échelle ${detailModalState.company}</span>
         </div>
         <div class="flex flex-wrap gap-1.5 mb-3" id="detail-grade-pills">
-          ${gradesList.map(g => `
+          ${currentScale.map(g => `
             <button type="button" class="grade-pill ${detailModalState.grade === g.grade ? 'active' : ''}" data-grade-key="${g.grade}">
-              Note ${g.grade}
+              ${g.grade}
             </button>
           `).join('')}
         </div>
@@ -2161,6 +2568,10 @@ function renderCardDetailModal() {
   content.querySelectorAll('[data-company-key]').forEach(btn => {
     btn.addEventListener('click', () => {
       detailModalState.company = btn.dataset.companyKey;
+      const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
+      if (!scale.some(g => g.grade === detailModalState.grade)) {
+        detailModalState.grade = scale[0].grade;
+      }
       renderCardDetailModal();
     });
   });
@@ -2481,10 +2892,10 @@ function renderLibrary() {
 
   let cards = [...CARDS];
 
-  // 1. Condition filter
-  if (libraryState.condition === 'raw_nm' || libraryState.condition === 'raw_all') {
+  // 1. Unified condition filter
+  if (!state.condition || state.condition.mode === 'raw') {
     // all cards qualify raw
-  } else if (libraryState.condition === 'graded') {
+  } else if (state.condition.mode === 'graded') {
     cards = cards.filter(c => {
       const nameLower = (c.name || '').toLowerCase();
       const subLower = (c.subName || '').toLowerCase();
@@ -2544,13 +2955,20 @@ function renderLibrary() {
     return;
   }
 
-  const isGraded = libraryState.condition === 'graded';
-  const customCond = isGraded ? 'PSA 10' : 'Raw NM';
+  const isGraded = state.condition?.mode === 'graded';
+  let badgeText = 'Raw NM';
+  if (isGraded) {
+    const co = (state.condition.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') ? state.condition.companies[0] : 'Slabs';
+    const gr = state.condition.grades && state.condition.grades.length > 0 ? ' ' + state.condition.grades[0].split(' ')[0] : '';
+    badgeText = `${co}${gr}`;
+  } else {
+    badgeText = 'Raw ' + (state.condition?.rawConditions && state.condition.rawConditions.length > 0 ? state.condition.rawConditions.join('/') : 'NM');
+  }
 
   grid.innerHTML = cards.slice(0, 120).map(card => {
-    const frPrice = getActiveFrPrice(card, customCond);
-    const jpPrice = getActiveJpPrice(card, customCond);
-    const margin = netMargin(card, customCond);
+    const frPrice = getActiveFrPrice(card);
+    const jpPrice = getActiveJpPrice(card);
+    const margin = netMargin(card);
     const profitCls = margin >= 0 ? 'profit-positive' : 'profit-negative';
     const marginSign = margin >= 0 ? '+' : '';
     const hasSubName = card.subName && card.subName !== card.name;
@@ -2564,7 +2982,7 @@ function renderLibrary() {
           <div class="flex items-center gap-1 mt-0.5 flex-wrap">
             ${editionBadge(card)}
             <span class="text-[8px] font-semibold ${isGraded ? 'text-indigo-600 bg-indigo-50 border border-indigo-200' : 'text-slate-500 bg-slate-100'} px-1 py-0.2 rounded">
-              ${isGraded ? 'PSA 10' : 'Raw NM'}
+              ${badgeText}
             </span>
           </div>
           <div class="flex items-center justify-between mt-1">
@@ -3106,6 +3524,7 @@ function bindEvents() {
     const countryWrapper = document.getElementById('country-popover-wrapper');
     const priceWrapper = document.getElementById('price-popover-wrapper');
     const condWrapper = document.getElementById('condition-popover-wrapper');
+    const libCondWrapper = document.getElementById('lib-condition-popover-wrapper');
 
     if (countryWrapper && !countryWrapper.contains(e.target)) {
       const p = document.getElementById('popover-filter-country');
@@ -3125,27 +3544,33 @@ function bindEvents() {
       if (p) p.classList.add('hidden');
       if (b) b.classList.remove('open');
     }
+    if (libCondWrapper && !libCondWrapper.contains(e.target)) {
+      const p = document.getElementById('popover-lib-filter-condition');
+      const b = document.getElementById('btn-lib-filter-condition');
+      if (p) p.classList.add('hidden');
+      if (b) b.classList.remove('open');
+    }
   });
 
-  // Condition popover trigger & radio inputs (Focus Filter Bar)
+  // Condition popover triggers (Focus Filter Bar & Library Modal)
   const btnFilterCondition = document.getElementById('btn-filter-condition');
   if (btnFilterCondition) {
     btnFilterCondition.addEventListener('click', e => {
       e.stopPropagation();
-      togglePopover('condition');
+      toggleConditionPopover('main');
     });
   }
 
-  document.querySelectorAll('input[name="global-condition"]').forEach(radio => {
-    radio.addEventListener('change', e => {
-      state.conditionFilter = e.target.value;
-      updateConditionTriggerLabel();
-      closeAllPopovers();
-      applyFilters();
-      const lbl = state.conditionFilter === 'raw_nm' ? 'Non-gradé (NM)' : state.conditionFilter === 'graded' ? 'Gradée (Slabs)' : state.conditionFilter === 'raw_all' ? 'Non-gradé (Tous)' : 'Tous';
-      showToast(`Filtre état : ${lbl}`);
+  const btnLibFilterCondition = document.getElementById('btn-lib-filter-condition');
+  if (btnLibFilterCondition) {
+    btnLibFilterCondition.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleConditionPopover('lib');
     });
-  });
+  }
+
+  renderConditionPopovers();
+  updateConditionTriggerLabels();
 
   // Escape key closes popovers & scanner
   document.addEventListener('keydown', e => {
@@ -3208,10 +3633,11 @@ function bindEvents() {
   const btnLibrary = document.getElementById('btn-library');
   if (btnLibrary) {
     btnLibrary.addEventListener('click', () => {
-      libraryState = { condition: 'raw_nm', editions: ['all'], search: '', platformFr: 'avg', platformJp: 'min', year: 'all' };
-      document.querySelectorAll('[data-lib-condition]').forEach(b => {
-        b.classList.toggle('active', b.dataset.libCondition === 'raw_nm');
-      });
+      libraryState.editions = ['all'];
+      libraryState.search = '';
+      libraryState.year = 'all';
+      renderConditionPopovers();
+      updateConditionTriggerLabels();
       document.querySelectorAll('[data-lib-edition]').forEach(b => {
         b.classList.toggle('active', b.dataset.libEdition === 'all');
       });
@@ -3222,17 +3648,6 @@ function bindEvents() {
       if (typeof lucide !== 'undefined') lucide.createIcons();
     });
   }
-
-  // Library Condition Pills
-  document.querySelectorAll('[data-lib-condition]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      libraryState.condition = btn.dataset.libCondition;
-      document.querySelectorAll('[data-lib-condition]').forEach(b => {
-        b.classList.toggle('active', b.dataset.libCondition === libraryState.condition);
-      });
-      renderLibrary();
-    });
-  });
 
   // Library Edition Pills (Multi-select)
   document.querySelectorAll('[data-lib-edition]').forEach(btn => {
@@ -3329,33 +3744,149 @@ function bindEvents() {
 
 // ── INIT ─────────────────────────────────────────────────────
 function initApp() {
-  updateTimestamp();
-  state.activeMobileTab = 'margin';
-  state.pricingRefFr = 'avg';
-  state.pricingRefJp = 'min';
+  // Step 1: Base state defaults & initial timestamp
+  try {
+    updateTimestamp();
+    state.activeMobileTab = 'margin';
+    state.pricingRefFr = 'avg';
+    state.pricingRefJp = 'min';
+  } catch (err) {
+    console.error('[PokéSpread] Init error in base state/timestamp:', err);
+  }
 
-  renderCountryOptionsList();
-  renderPricePresets();
-  updateCountryTriggerLabel();
-  updatePriceTriggerLabel();
-  updateConditionTriggerLabel();
-  renderAllColumns();
-  renderMobileColumn();
-  syncFilterBarPlacement();
-  updateColumnCounters();
-  bindEvents();
-  updatePurchaseBadge();
+  // Step 2: Instant rate display (prevents 1€=—¥ from displaying while async rate fetches)
+  try {
+    const liveRateEl = document.getElementById('live-rate');
+    if (liveRateEl && (!liveRateEl.textContent || liveRateEl.textContent.trim() === '—')) {
+      liveRateEl.textContent = (state.rate || 163.5).toFixed(2);
+    }
+  } catch (err) {
+    console.error('[PokéSpread] Init error in initial live rate setup:', err);
+  }
 
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+  // Step 3: Filter UI components & triggers
+  try {
+    renderCountryOptionsList();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in renderCountryOptionsList:', err);
+  }
 
-  // Async tasks
-  fetchLiveRate();
-  CatalogService.fetchAllMultiLangSets();
-  PriceService.loadPricesJson();
+  try {
+    renderPricePresets();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in renderPricePresets:', err);
+  }
+
+  try {
+    updateCountryTriggerLabel();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in updateCountryTriggerLabel:', err);
+  }
+
+  try {
+    updatePriceTriggerLabel();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in updatePriceTriggerLabel:', err);
+  }
+
+  try {
+    updateConditionTriggerLabels();
+    renderConditionPopovers();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in condition trigger labels/popovers:', err);
+  }
+
+  // Step 4: Core recommendation rendering & counters (Always renders bootstrap cards immediately)
+  try {
+    renderAllColumns();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in renderAllColumns:', err);
+  }
+
+  try {
+    renderMobileColumn();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in renderMobileColumn:', err);
+  }
+
+  try {
+    syncFilterBarPlacement();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in syncFilterBarPlacement:', err);
+  }
+
+  try {
+    updateColumnCounters();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in updateColumnCounters:', err);
+  }
+
+  // Step 5: Event listeners, badges & icons
+  try {
+    bindEvents();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in bindEvents:', err);
+  }
+
+  try {
+    updatePurchaseBadge();
+  } catch (err) {
+    console.error('[PokéSpread] Init error in updatePurchaseBadge:', err);
+  }
+
+  try {
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
+  } catch (err) {
+    console.error('[PokéSpread] Init error creating Lucide icons:', err);
+  }
+
+  // Step 6: Non-blocking async background fetch tasks
+  try {
+    fetchLiveRate().catch(err => console.warn('[PokéSpread] Background live rate warning:', err));
+  } catch (err) {
+    console.warn('[PokéSpread] fetchLiveRate error:', err);
+  }
+
+  try {
+    if (typeof CatalogService !== 'undefined' && CatalogService.fetchAllMultiLangSets) {
+      CatalogService.fetchAllMultiLangSets().catch(err => console.warn('[PokéSpread] Background CatalogService warning:', err));
+    }
+  } catch (err) {
+    console.warn('[PokéSpread] CatalogService error:', err);
+  }
+
+  try {
+    if (typeof PriceService !== 'undefined' && PriceService.loadPricesJson) {
+      PriceService.loadPricesJson().catch(err => console.warn('[PokéSpread] Background PriceService warning:', err));
+    }
+  } catch (err) {
+    console.warn('[PokéSpread] PriceService error:', err);
+  }
+}
+
+function safeInit() {
+  try {
+    initApp();
+  } catch (globalErr) {
+    console.error('[PokéSpread] Critical unexpected error during initApp:', globalErr);
+    // Emergency fallback to ensure columns and counters are not empty
+    try {
+      renderAllColumns();
+      updateColumnCounters();
+      const liveRateEl = document.getElementById('live-rate');
+      if (liveRateEl && liveRateEl.textContent === '—') {
+        liveRateEl.textContent = (state.rate || 163.5).toFixed(2);
+      }
+    } catch (fallbackErr) {
+      console.error('[PokéSpread] Emergency fallback render failed:', fallbackErr);
+    }
+  }
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', safeInit);
 } else {
-  initApp();
+  safeInit();
 }

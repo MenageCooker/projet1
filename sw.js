@@ -1,6 +1,6 @@
-// PokéSpread Service Worker v2
-const CACHE_NAME = 'pokespread-cache-v2';
-const IMAGE_CACHE_NAME = 'pokespread-images-v2';
+// PokéSpread Service Worker v4
+const CACHE_NAME = 'pokespread-cache-v4';
+const IMAGE_CACHE_NAME = 'pokespread-images-v4';
 
 const PRECACHE_ASSETS = [
   './',
