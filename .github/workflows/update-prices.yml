@@ -1,0 +1,85 @@
+# PokéSpread JP→FR — Automated Price Updater
+# Runs every 6 hours via GitHub Actions (cron schedule)
+# Fetches real eBay FR, Vinted, LeBonCoin, Mercari JP, Yahoo! Auctions & Card Rush prices
+# Writes prices.json and auto-commits to the repository
+
+name: Update Pokémon Card Prices
+
+on:
+  schedule:
+    # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: '0 0,6,12,18 * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub Actions UI
+    inputs:
+      force_refresh:
+        description: 'Force full refresh (ignore cache)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write  # Required to commit prices.json back to the repo
+
+jobs:
+  update-prices:
+    name: Scrape & Update prices.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install scraper dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml
+
+      - name: Run price scraper
+        env:
+          POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
+        run: |
+          python scraper/fetch_prices.py
+        continue-on-error: false
+
+      - name: Validate prices.json output
+        run: |
+          python -c "
+          import json, sys
+          with open('prices.json') as f:
+              data = json.load(f)
+          meta = data.get('_meta', {})
+          prices = data.get('prices', {})
+          print(f'✅ prices.json valid: {len(prices)} cards, generated at {meta.get(\"generated_at\")}')
+          if not meta.get('generated_at'):
+              print('ERROR: missing generated_at')
+              sys.exit(1)
+          "
+
+      - name: Commit and push prices.json
+        run: |
+          git config user.name  "pokespread-bot[bot]"
+          git config user.email "pokespread-bot@users.noreply.github.com"
+          git add prices.json
+          if git diff --staged --quiet; then
+            echo "No changes to prices.json — skipping commit"
+          else
+            CARD_COUNT=$(python -c "import json; d=json.load(open('prices.json')); print(len(d.get('prices', {})))")
+            git commit -m "chore(prices): auto-update ${CARD_COUNT} cards [$(date -u +'%Y-%m-%d %H:%M UTC')]"
+            git push
+            echo "✅ prices.json committed and pushed"
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "⚠️ Price scraper failed — app.js will fall back to Pokémon TCG API"

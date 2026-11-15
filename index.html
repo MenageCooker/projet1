@@ -1,202 +1,663 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
   <title>PokéSpread JP→FR</title>
+  <meta name="description" content="Opportunités d'arbitrage de cartes Pokémon Japon → France en direct">
+  <meta name="theme-color" content="#f1f5f9">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="PokéSpread">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            'poke-red': '#dc2626',
-            'poke-dark': '#0f172a',
-            'poke-card': '#1e293b',
-            'poke-border': '#334155',
-          }
-        }
-      }
-    }
-  </script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
-<body class="bg-poke-dark text-slate-100 min-h-screen font-sans">
+<body class="bg-white text-slate-900 min-h-screen">
 
-  <!-- STICKY HEADER -->
-  <header id="app-header" class="sticky top-0 z-40 bg-poke-dark border-b border-poke-border shadow-lg">
-    <div class="flex items-center gap-2 px-4 py-3">
-      <i data-lucide="zap" class="text-poke-red w-6 h-6 flex-shrink-0" style="color:#dc2626;fill:#dc2626"></i>
-      <span class="font-black text-lg tracking-tight text-white">PokéSpread <span class="text-poke-red">JP→FR</span></span>
+  <!-- ===== TOP BAR (FIX 1 — 2-row mobile layout) ===== -->
+  <header class="bg-slate-100 border-b border-slate-200 px-4 sticky top-0 z-40">
+    <!-- Row 1 (mobile only): Centered logo + brand -->
+    <div class="flex items-center justify-center py-2 sm:hidden">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/International_Pok%C3%A9mon_logo.svg"
+           height="24" class="h-6" alt="Pokémon logo">
+      <span class="font-black text-base ml-2 text-slate-900">PokéSpread</span>
     </div>
-    <div class="grid grid-cols-2 gap-2 px-4 pb-3">
-      <!-- Exchange rate -->
-      <div class="flex items-center gap-2 bg-poke-card rounded-xl px-3 py-2 border border-poke-border">
-        <span class="text-xs text-slate-400 whitespace-nowrap">1 EUR =</span>
-        <input id="exchangeRate" type="number" min="100" max="250" step="0.5" value="163"
-          class="w-full bg-transparent text-white text-sm font-bold outline-none" />
-        <span class="text-xs text-slate-400">¥</span>
+    <!-- Row 2 (mobile): last-update left + rate badge right | Full 3-col on sm+ -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 items-center pb-2 sm:py-2.5 gap-x-2">
+
+      <!-- LEFT: last update + refresh -->
+      <div class="flex flex-col text-xs text-slate-500">
+        <span class="font-medium text-slate-600 leading-tight">Dernière actualisation</span>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span id="last-update" class="tabular-nums">—</span>
+          <button id="btn-refresh" class="ml-1 p-0.5 rounded hover:bg-slate-200 transition-colors" title="Actualiser">
+            <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+          </button>
+          <span id="prices-source-badge" class="prices-source-badge prices-source-api ml-1">🔵 TCG API</span>
+        </div>
       </div>
-      <!-- Shipping -->
-      <div class="flex items-center gap-2 bg-poke-card rounded-xl px-3 py-2 border border-poke-border">
-        <span class="text-xs text-slate-400 whitespace-nowrap">Frais/carte:</span>
-        <input id="shippingCost" type="number" min="0" max="20" step="0.1" value="1.50"
-          class="w-full bg-transparent text-white text-sm font-bold outline-none" />
-        <span class="text-xs text-slate-400">€</span>
+
+      <!-- CENTER: logo + brand — hidden on mobile (shown in Row 1) -->
+      <div class="hidden sm:flex flex-row items-center justify-center">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/9/98/International_Pok%C3%A9mon_logo.svg"
+             height="28" class="h-7" alt="Pokémon logo">
+        <span class="font-black text-lg ml-2 text-slate-900">PokéSpread</span>
       </div>
-      <!-- Platform fee toggle -->
-      <div class="col-span-2 flex gap-2">
-        <button id="feeVinted" class="fee-btn active-fee flex-1 text-xs py-2 px-3 rounded-xl border border-poke-border font-semibold transition-all">
-          Vinted / LBC (0%)
-        </button>
-        <button id="feeEbay" class="fee-btn flex-1 text-xs py-2 px-3 rounded-xl border border-poke-border font-semibold transition-all">
-          eBay (13%)
-        </button>
+
+      <!-- RIGHT: live rate badge -->
+      <div class="flex items-center justify-end text-xs">
+        <div id="rate-badge" class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 shadow-sm min-w-0">
+          <span class="font-medium text-slate-500 whitespace-nowrap hidden sm:inline">Spread JPY/€</span>
+          <span class="text-slate-300 hidden sm:inline">|</span>
+          <span class="font-bold text-slate-900 whitespace-nowrap text-[11px] sm:text-xs">1€=<span id="live-rate">—</span>¥</span>
+          <span id="live-indicator" class="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 flex-shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span>
+            <span class="hidden xs:inline">Live</span>
+          </span>
+        </div>
       </div>
+
     </div>
   </header>
 
-  <!-- MAIN CONTENT -->
-  <main id="main-content" class="pb-24">
-
-    <!-- TAB 1: Scanner -->
-    <section id="tab-scanner" class="tab-section px-4 pt-4">
-      <!-- Search bar -->
-      <div class="relative mb-3">
-        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
-        <input id="searchInput" type="text"
-          placeholder="Ex: sv2a 205/165 ou Dracaufeu SAR"
-          class="w-full bg-poke-card border border-poke-border rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-poke-red transition-colors" />
+  <!-- ===== FULL-WIDTH SEARCH BAR (UPDATE 2 — centered placeholder) ===== -->
+  <section class="px-4 py-3 border-b border-slate-200 bg-white">
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
+        <i data-lucide="search" style="width:18px;height:18px;"></i>
+      </span>
+      <input id="search-input"
+             type="search"
+             placeholder="Rechercher une carte (ex: sv2a 205/165, Dracaufeu SAR, Pikachu...)"
+             autocomplete="off"
+             class="search-centered w-full py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors">
+      <div id="search-dropdown"
+           class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
       </div>
+    </div>
+  </section>
 
-      <!-- Camera button -->
-      <button id="cameraBtn" class="w-full flex items-center justify-center gap-2 bg-poke-card border border-poke-border rounded-xl py-3 mb-4 text-sm font-semibold text-slate-300 hover:border-poke-red hover:text-white transition-all">
-        <i data-lucide="camera" class="w-5 h-5 text-poke-red"></i>
-        📷 Scanner une carte (Photo)
+  <!-- ===== THREE IMAGE-BUTTON CARDS (UPDATE 3 — centered SVG illustrations) ===== -->
+  <section class="px-4 py-4 grid grid-cols-3 gap-3">
+
+    <!-- Card 1: Library -->
+    <button id="btn-library"
+            class="relative h-32 rounded-2xl overflow-hidden focus:outline-none hover:scale-105 transition-transform duration-200 shadow-md"
+            style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 50%, #4a90d9 100%);">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-center">
+        <!-- Binder SVG (UPDATE 3) -->
+        <svg class="w-11 h-11 text-white/90" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="4" width="36" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="2"/>
+          <line x1="14" y1="4" x2="14" y2="40" stroke="currentColor" stroke-width="2"/>
+          <line x1="4" y1="14" x2="14" y2="14" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="4" y1="22" x2="14" y2="22" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="4" y1="30" x2="14" y2="30" stroke="currentColor" stroke-width="1.5"/>
+          <!-- 3x3 pockets -->
+          <rect x="17" y="7" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="27" y="7" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="17" y="18" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="27" y="18" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="17" y="29" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="27" y="29" width="7" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span class="text-white font-bold text-xs text-center leading-tight drop-shadow">Librairie de toutes les cartes</span>
+      </div>
+    </button>
+
+    <!-- Card 2: Scanner -->
+    <button id="btn-scanner"
+            class="relative h-32 rounded-2xl overflow-hidden focus:outline-none hover:scale-105 transition-transform duration-200 shadow-md"
+            style="background: linear-gradient(135deg, #1a4731 0%, #2d7d50 50%, #4ab07a 100%);">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-center">
+        <!-- Camera + viewfinder SVG (UPDATE 3) -->
+        <svg class="w-11 h-11 text-white/90" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Scan frame corners -->
+          <path d="M4 12V6H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M34 6H40V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M40 32V38H34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 38H4V32" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Camera body -->
+          <rect x="11" y="17" width="22" height="15" rx="3" stroke="currentColor" stroke-width="1.5"/>
+          <!-- Lens -->
+          <circle cx="22" cy="24" r="5" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="22" cy="24" r="2.5" stroke="currentColor" stroke-width="1"/>
+          <!-- Flash bump -->
+          <path d="M15 17v-2.5a1.5 1.5 0 0 1 1.5-1.5h5a1.5 1.5 0 0 1 1.5 1.5V17" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span class="text-white font-bold text-xs text-center leading-tight drop-shadow">Scanner photo</span>
+      </div>
+    </button>
+
+    <!-- Card 3: Purchases -->
+    <button id="btn-purchases"
+            class="relative h-32 rounded-2xl overflow-hidden focus:outline-none hover:scale-105 transition-transform duration-200 shadow-md"
+            style="background: linear-gradient(135deg, #5f1e3a 0%, #9f2d5a 50%, #d94a7a 100%);">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+      <!-- Badge -->
+      <span id="purchase-badge"
+            class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 shadow hidden z-20">
+        0
+      </span>
+      <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 text-center">
+        <!-- Parcel box + checkmark SVG (UPDATE 3) -->
+        <svg class="w-11 h-11 text-white/90" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Box sides -->
+          <path d="M8 20v16l14 5 14-5V20" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+          <!-- Box lid (open) -->
+          <path d="M4 14l18-7 18 7-18 7-18-7z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+          <!-- Lid flap open -->
+          <path d="M22 21v20" stroke="currentColor" stroke-width="1.5"/>
+          <!-- Checkmark inside box -->
+          <path d="M15 29l4.5 4.5L30 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="text-white font-bold text-xs text-center leading-tight drop-shadow">Cartes achetées dernièrement</span>
+      </div>
+    </button>
+
+  </section>
+
+  <!-- ===== RECOMMENDATIONS SECTION ===== -->
+  <section class="px-4 pb-8" id="recommendations-section">
+
+    <!-- Section header -->
+    <div class="text-center my-4">
+      <h2 class="text-xl font-bold text-slate-800">Recommandations</h2>
+      <p class="text-sm text-slate-500 mt-0.5">Cartes du moment</p>
+    </div>
+
+    <!-- FIX 3: Mobile tab switcher (visible < md) -->
+    <div id="mobile-tabs" class="flex flex-row gap-2 w-full mb-3 md:hidden">
+      <button class="mobile-tab flex-1 h-10 flex items-center justify-center gap-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white shadow-sm transition-all mobile-tab-active" data-tab="margin">
+        <i data-lucide="trending-up" style="width:13px;height:13px;" class="text-blue-500"></i>
+        <span>Marge</span>
       </button>
-      <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden" />
-
-      <!-- Camera preview -->
-      <div id="cameraPreview" class="hidden mb-4 bg-poke-card border border-poke-border rounded-xl overflow-hidden">
-        <div class="p-3 border-b border-poke-border flex items-center gap-2">
-          <i data-lucide="scan-line" class="w-4 h-4 text-poke-red"></i>
-          <span class="text-xs font-semibold text-slate-300">Analyse IA en cours…</span>
-          <div id="aiSpinner" class="ml-auto spinner hidden"></div>
-        </div>
-        <img id="cameraImg" src="" alt="Carte scannée" class="w-full max-h-48 object-contain p-3" />
-        <div id="aiResult" class="hidden px-3 pb-3">
-          <div class="flex items-center gap-2 bg-emerald-900/30 border border-emerald-700 rounded-lg px-3 py-2 text-xs">
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-            <span class="text-emerald-300" id="aiResultText">Carte détectée : sv2a 205/165 (confiance: 94%)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Search results list -->
-      <div id="searchResults" class="hidden mb-4">
-        <p class="text-xs text-slate-500 mb-2 px-1">Résultats de recherche</p>
-        <div id="searchResultsList" class="space-y-2"></div>
-      </div>
-
-      <!-- Detailed card view -->
-      <div id="detailView" class="hidden"></div>
-    </section>
-
-    <!-- TAB 2: Top Opportunités -->
-    <section id="tab-opportunities" class="tab-section hidden px-4 pt-4">
-      <!-- Sort buttons -->
-      <div class="flex gap-2 mb-3">
-        <button id="sortProfit" class="sort-btn active-sort flex-1 text-xs py-2 px-3 rounded-xl border font-semibold transition-all">
-          <i data-lucide="trending-up" class="w-3 h-3 inline mr-1"></i>Meilleur Profit (€)
-        </button>
-        <button id="sortROI" class="sort-btn flex-1 text-xs py-2 px-3 rounded-xl border font-semibold transition-all">
-          <i data-lucide="percent" class="w-3 h-3 inline mr-1"></i>Meilleur ROI (%)
-        </button>
-      </div>
-      <!-- Filter chips -->
-      <div class="flex gap-2 mb-4 flex-wrap">
-        <button class="filter-chip active-chip text-xs py-1 px-3 rounded-full border font-semibold transition-all" data-filter="all">Tous</button>
-        <button class="filter-chip text-xs py-1 px-3 rounded-full border font-semibold transition-all" data-filter="SAR">SAR</button>
-        <button class="filter-chip text-xs py-1 px-3 rounded-full border font-semibold transition-all" data-filter="AR">AR</button>
-        <button class="filter-chip text-xs py-1 px-3 rounded-full border font-semibold transition-all" data-filter="Gold">Gold</button>
-      </div>
-      <!-- Opportunities list -->
-      <div id="opportunitiesList" class="space-y-3"></div>
-    </section>
-
-    <!-- TAB 3: Colis en cours -->
-    <section id="tab-parcel" class="tab-section hidden px-4 pt-4">
-      <!-- Parcel summary -->
-      <div id="parcelSummary" class="hidden mb-4 bg-poke-card border border-poke-border rounded-xl p-4">
-        <div class="flex items-center gap-2 mb-3">
-          <i data-lucide="package" class="w-4 h-4 text-poke-red"></i>
-          <span class="font-bold text-sm">Résumé du Colis</span>
-        </div>
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p class="text-slate-400 text-xs">Total investi</p>
-            <p class="font-bold text-white" id="parcelTotalJPY">¥0</p>
-            <p class="text-slate-400 text-xs" id="parcelTotalEUR">≈ 0.00 €</p>
-          </div>
-          <div>
-            <p class="text-slate-400 text-xs">Revente estimée</p>
-            <p class="font-bold text-emerald-400" id="parcelResale">0.00 €</p>
-          </div>
-          <div>
-            <p class="text-slate-400 text-xs">Profit Net estimé</p>
-            <p class="font-bold text-lg" id="parcelProfit">+0.00 €</p>
-          </div>
-          <div>
-            <p class="text-slate-400 text-xs">Nombre de cartes</p>
-            <p class="font-bold text-white" id="parcelCount">0</p>
-          </div>
-        </div>
-        <div class="mt-3 flex gap-2">
-          <button id="exportCSV" class="flex-1 flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 rounded-xl py-2 text-xs font-semibold transition-all">
-            <i data-lucide="download" class="w-3 h-3"></i>Exporter CSV
-          </button>
-          <button id="clearParcel" class="flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-900/60 border border-red-800 rounded-xl py-2 px-3 text-xs font-semibold text-red-400 transition-all">
-            <i data-lucide="trash-2" class="w-3 h-3"></i>Vider
-          </button>
-        </div>
-      </div>
-      <!-- Empty state -->
-      <div id="parcelEmpty" class="flex flex-col items-center justify-center py-16 text-center">
-        <i data-lucide="package-open" class="w-16 h-16 text-slate-600 mb-4"></i>
-        <p class="text-slate-400 font-semibold mb-2">Colis vide</p>
-        <p class="text-slate-500 text-sm">Aucune carte dans votre colis.<br>Commencez à scanner!</p>
-      </div>
-      <!-- Parcel items list -->
-      <div id="parcelList" class="space-y-3"></div>
-    </section>
-
-  </main>
-
-  <!-- BOTTOM TAB BAR -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-poke-dark border-t border-poke-border">
-    <div class="grid grid-cols-3">
-      <button class="tab-nav active-tab flex flex-col items-center py-3 gap-1 transition-all" data-tab="scanner">
-        <i data-lucide="scan" class="w-5 h-5"></i>
-        <span class="text-xs font-semibold">Scanner</span>
+      <button class="mobile-tab flex-1 h-10 flex items-center justify-center gap-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 bg-white shadow-sm transition-all" data-tab="roi">
+        <i data-lucide="percent" style="width:13px;height:13px;" class="text-violet-500"></i>
+        <span>ROI</span>
       </button>
-      <button class="tab-nav flex flex-col items-center py-3 gap-1 transition-all" data-tab="opportunities">
-        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-        <span class="text-xs font-semibold">Opportunités</span>
-        <span id="oppBadge" class="hidden absolute -top-1 -right-1 bg-poke-red text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
-      </button>
-      <button class="tab-nav flex flex-col items-center py-3 gap-1 transition-all relative" data-tab="parcel">
-        <i data-lucide="package" class="w-5 h-5"></i>
-        <span class="text-xs font-semibold">Colis</span>
-        <span id="parcelBadge" class="hidden absolute top-1 right-6 bg-poke-red text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"></span>
+      <button class="mobile-tab flex-1 h-10 flex items-center justify-center gap-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 bg-white shadow-sm transition-all" data-tab="velocity">
+        <i data-lucide="zap" style="width:13px;height:13px;" class="text-amber-500"></i>
+        <span>Quick Turnover</span>
       </button>
     </div>
-  </nav>
 
-  <!-- TOAST CONTAINER -->
-  <div id="toastContainer" class="fixed bottom-20 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4"></div>
+    <!-- FOCUS FILTER BAR (Visible in Focus Mode & on Mobile) -->
+    <div id="focus-filter-bar" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 flex-wrap items-center justify-between gap-3 shadow-sm relative z-40">
+      <!-- Left group: Popover Triggers -->
+      <div class="flex items-center gap-2.5 flex-wrap">
 
+        <!-- 1. Country / Edition Filter Popover Trigger & Dropdown -->
+        <div class="relative" id="country-popover-wrapper">
+          <button type="button" id="btn-filter-country"
+                  class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+            <span id="label-filter-country">🌐 Édition pays : ————</span>
+            <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
+          </button>
+
+          <!-- Country Dropdown Popover -->
+          <div id="popover-filter-country"
+               class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-72 p-3 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
+            <!-- Popover header / mini search -->
+            <div class="relative mb-2.5">
+              <i data-lucide="search" style="width:13px;height:13px;" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" id="input-search-country" placeholder="Rechercher un pays..."
+                     class="w-full pl-7 pr-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none transition-colors" autocomplete="off">
+            </div>
+
+            <!-- Country list (multi-select) -->
+            <div id="country-options-list" class="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              <!-- Dynamically rendered via JS -->
+            </div>
+
+            <!-- Popover footer: clear button -->
+            <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between">
+              <button type="button" id="btn-clear-country"
+                      class="text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors">
+                Retirer tous les filtres de pays
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Price Range Filter Popover Trigger & Dropdown -->
+        <div class="relative" id="price-popover-wrapper">
+          <button type="button" id="btn-filter-price"
+                  class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+            <span id="label-filter-price">💰 Prix : Min — | Max — €</span>
+            <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
+          </button>
+
+          <!-- Price Dropdown Popover -->
+          <div id="popover-filter-price"
+               class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-80 p-3.5 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
+            <!-- Currency Switcher (€ vs ¥) -->
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+              <span class="text-xs font-semibold text-slate-700">Devise du filtre :</span>
+              <div class="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200" id="price-currency-toggle">
+                <button type="button" class="price-curr-btn active px-2.5 py-1 text-xs font-bold rounded-lg transition-all" data-curr="EUR">€ (EUR)</button>
+                <button type="button" class="price-curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600" data-curr="JPY">¥ (JPY)</button>
+              </div>
+            </div>
+
+            <!-- Manual Min / Max inputs -->
+            <div class="mb-3">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Fourchette personnalisée</label>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                  <input type="number" id="input-price-min" placeholder="Min" min="0" step="1"
+                         class="w-full px-2.5 py-1.5 text-xs text-center bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none">
+                </div>
+                <span class="text-xs text-slate-400">à</span>
+                <div class="relative flex-1">
+                  <input type="number" id="input-price-max" placeholder="Max" min="0" step="1"
+                         class="w-full px-2.5 py-1.5 text-xs text-center bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none">
+                </div>
+                <span id="price-unit-symbol" class="text-xs font-bold text-slate-700 min-w-[12px]">€</span>
+              </div>
+            </div>
+
+            <!-- Quick-select Presets -->
+            <div class="mb-3">
+              <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Paliers rapides</label>
+              <div id="price-presets-container" class="grid grid-cols-2 gap-1.5">
+                <!-- Dynamically rendered based on currency -->
+              </div>
+            </div>
+
+            <!-- Popover footer: clear price -->
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <button type="button" id="btn-clear-price"
+                      class="text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors">
+                Effacer le prix
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Global Grading / Condition Filter Popover Trigger & Dropdown -->
+        <div class="relative" id="condition-popover-wrapper">
+          <button type="button" id="btn-filter-condition"
+                  class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+            <span id="label-filter-condition">💎 État : Non-gradé (NM)</span>
+            <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
+          </button>
+
+          <!-- Condition Dropdown Popover -->
+          <div id="popover-filter-condition"
+               class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-72 p-3 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">État / Gradation</div>
+            <div class="space-y-1.5" id="condition-options-list">
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                <input type="radio" name="global-condition" value="raw_nm" checked class="text-blue-600 focus:ring-blue-400">
+                <div class="text-xs">
+                  <div class="font-bold text-slate-900">Non-gradé (NM)</div>
+                  <div class="text-[10px] text-slate-500">Near Mint — standard revente directe</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                <input type="radio" name="global-condition" value="raw_all" class="text-blue-600 focus:ring-blue-400">
+                <div class="text-xs">
+                  <div class="font-bold text-slate-900">Non-gradé (Tous états)</div>
+                  <div class="text-[10px] text-slate-500">NM, EX, LP, Played</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                <input type="radio" name="global-condition" value="graded" class="text-blue-600 focus:ring-blue-400">
+                <div class="text-xs">
+                  <div class="font-bold text-slate-900">Gradée (PSA / BGS / CGC / PCA / ARS)</div>
+                  <div class="text-[10px] text-slate-500">Slabs certifiés (Notes 8 à 10)</div>
+                </div>
+              </label>
+              <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
+                <input type="radio" name="global-condition" value="all" class="text-blue-600 focus:ring-blue-400">
+                <div class="text-xs">
+                  <div class="font-bold text-slate-900">Tous</div>
+                  <div class="text-[10px] text-slate-500">Toutes conditions et boîtiers</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing Reference Selector -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <select id="pricing-ref-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base de revente FR">
+            <option value="avg">📊 FR: Moyenne 3 plateformes FR (Lissée 30j)</option>
+            <option value="ebay">eBay FR uniquement</option>
+            <option value="vinted">Vinted uniquement</option>
+            <option value="lbc">LeBonCoin uniquement</option>
+          </select>
+          <select id="pricing-ref-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base d'achat JP">
+            <option value="min">🏆 JP: Meilleur prix JP (Min)</option>
+            <option value="mercari">Mercari JP</option>
+            <option value="yahoo">Yahoo! Auctions</option>
+            <option value="cardrush">Card Rush</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Right group: Match Counter & Global Reset -->
+      <div class="flex items-center gap-2 ml-auto">
+        <span id="filter-match-count" class="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap">
+          0 cartes trouvées
+        </span>
+        <button type="button" id="filter-reset-btn"
+                class="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shadow-sm whitespace-nowrap">
+          <i data-lucide="rotate-ccw" style="width:13px;height:13px;"></i>
+          <span>Réinitialiser</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- FIX 2 & 3: columns grid — hidden on mobile (tab-driven), 3-col on md+ -->
+    <div id="columns-grid" class="hidden md:grid md:grid-cols-3 md:gap-4">
+
+      <!-- Column 1: Marge -->
+      <div id="col-wrapper-margin" class="flex flex-col">
+        <!-- FIX 2: uniform height h-12 -->
+        <button id="col-header-margin"
+                class="col-header sticky top-[53px] z-30 h-12 bg-white border border-slate-200 rounded-xl px-3 mb-2 text-center font-semibold text-sm text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-1.5 leading-tight"
+                data-col="margin">
+          <i data-lucide="trending-up" style="width:14px;height:14px;" class="text-blue-500 flex-shrink-0"></i>
+          <span>Meilleure marge</span>
+          <span class="col-card-counter ml-1 text-[10px] font-bold bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5" id="counter-margin">—</span>
+          <i data-lucide="maximize-2" style="width:12px;height:12px;" class="col-expand-icon text-slate-400 flex-shrink-0"></i>
+        </button>
+        <div id="col-margin" class="flex flex-col gap-2"></div>
+        <button id="load-more-margin" class="mt-3 text-xs text-slate-500 hover:text-slate-700 underline transition-colors">
+          Afficher plus (25 / 100)
+        </button>
+      </div>
+
+      <!-- Column 2: ROI -->
+      <div id="col-wrapper-roi" class="flex flex-col">
+        <button id="col-header-roi"
+                class="col-header sticky top-[53px] z-30 h-12 bg-white border border-slate-200 rounded-xl px-3 mb-2 text-center font-semibold text-sm text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-1.5 leading-tight"
+                data-col="roi">
+          <i data-lucide="percent" style="width:14px;height:14px;" class="text-violet-500 flex-shrink-0"></i>
+          <span>Meilleur ROI</span>
+          <span class="col-card-counter ml-1 text-[10px] font-bold bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5" id="counter-roi">—</span>
+          <i data-lucide="maximize-2" style="width:12px;height:12px;" class="col-expand-icon text-slate-400 flex-shrink-0"></i>
+        </button>
+        <div id="col-roi" class="flex flex-col gap-2"></div>
+        <button id="load-more-roi" class="mt-3 text-xs text-slate-500 hover:text-slate-700 underline transition-colors">
+          Afficher plus (25 / 100)
+        </button>
+      </div>
+
+      <!-- Column 3: Quick Turnover -->
+      <div id="col-wrapper-velocity" class="flex flex-col">
+        <button id="col-header-velocity"
+                class="col-header sticky top-[53px] z-30 h-12 bg-white border border-slate-200 rounded-xl px-3 mb-2 text-center font-semibold text-sm text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-1.5 leading-tight"
+                data-col="velocity">
+          <i data-lucide="zap" style="width:14px;height:14px;" class="text-amber-500 flex-shrink-0"></i>
+          <span>Quick Turnover</span>
+          <span class="col-card-counter ml-1 text-[10px] font-bold bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5" id="counter-velocity">—</span>
+          <i data-lucide="maximize-2" style="width:12px;height:12px;" class="col-expand-icon text-slate-400 flex-shrink-0"></i>
+        </button>
+        <div id="col-velocity" class="flex flex-col gap-2"></div>
+        <button id="load-more-velocity" class="mt-3 text-xs text-slate-500 hover:text-slate-700 underline transition-colors">
+          Afficher plus (25 / 100)
+        </button>
+      </div>
+
+    </div>
+
+    <!-- FIX 3: Mobile single-column panel (2-col card grid) -->
+    <div id="mobile-col-panel" class="md:hidden">
+      <div id="mobile-col-content" class="grid grid-cols-2 gap-2.5"></div>
+      <button id="mobile-load-more" class="mt-3 w-full text-xs text-slate-500 hover:text-slate-700 underline transition-colors text-center">
+        Afficher plus (25 / 100)
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ===== FLOATING SCROLL-TO-TOP BUTTON (UPDATE 7) ===== -->
+  <button id="btn-scroll-top"
+          class="fixed bottom-6 right-6 z-40 rounded-full bg-slate-900 text-white p-3 shadow-lg hidden hover:bg-slate-700 transition-all"
+          aria-label="Retour en haut">
+    <i data-lucide="arrow-up" style="width:20px;height:20px;"></i>
+  </button>
+
+  <!-- ===== MODALS ===== -->
+
+  <!-- Modal: Library -->
+  <div id="modal-library" class="modal-overlay">
+    <div class="modal-box max-w-3xl">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg font-bold text-slate-800">Librairie de toutes les cartes</h3>
+          <span id="library-counter" class="text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5">0 cartes</span>
+        </div>
+        <button class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" data-close-modal="modal-library" aria-label="Fermer">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+      <!-- Library Search Bar -->
+      <div class="relative mb-3">
+        <i data-lucide="search" style="width:15px;height:15px;" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="library-search" type="search" placeholder="Rechercher dans la librairie..." autocomplete="off"
+               class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors">
+      </div>
+      <!-- Library Filters Row -->
+      <div class="flex flex-col gap-2.5 mb-3" id="library-filters">
+        <!-- État / Gradation pills -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] font-semibold text-slate-500 min-w-[55px]">État :</span>
+          <div class="flex flex-wrap gap-1" id="lib-condition-pills">
+            <button type="button" class="lib-filter-btn active" data-lib-condition="raw_nm">Non-gradé (NM)</button>
+            <button type="button" class="lib-filter-btn" data-lib-condition="raw_all">Non-gradé (Tous)</button>
+            <button type="button" class="lib-filter-btn" data-lib-condition="graded">Gradée (PSA/BGS/CGC/PCA/ARS)</button>
+            <button type="button" class="lib-filter-btn" data-lib-condition="all">Tous</button>
+          </div>
+        </div>
+        <!-- Pays / Edition multi-select -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] font-semibold text-slate-500 min-w-[55px]">Édition :</span>
+          <div class="flex flex-wrap gap-1" id="lib-edition-pills">
+            <button type="button" class="lib-filter-btn active" data-lib-edition="all">🌐 Tous</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="JP">🇯🇵 JP</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="FR">🇫🇷 FR</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="EN">🇺🇸 EN</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="KR">🇰🇷 KR</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="CN">🇨🇳 CN</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="DE">🇩🇪 DE</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="IT">🇮🇹 IT</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="ES">🇪🇸 ES</button>
+          </div>
+        </div>
+      </div>
+      <!-- Secondary filters row -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <select id="lib-filter-platform-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+          <option value="avg">📊 Moyenne 3 plateformes FR (Lissée 30j)</option>
+          <option value="ebay">eBay FR uniquement</option>
+          <option value="vinted">Vinted uniquement</option>
+          <option value="lbc">LeBonCoin uniquement</option>
+        </select>
+        <select id="lib-filter-platform-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+          <option value="min">🏆 Meilleur prix JP (Min)</option>
+          <option value="mercari">Mercari JP</option>
+          <option value="yahoo">Yahoo! Auctions</option>
+          <option value="cardrush">Card Rush</option>
+        </select>
+        <select id="lib-filter-year" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+          <option value="all">📅 Toutes années</option>
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+          <option value="2021">2021</option>
+          <option value="2020">2020 et avant</option>
+        </select>
+      </div>
+      <div id="library-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[55vh] overflow-y-auto custom-scrollbar"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Scanner (Full-screen camera overlay) -->
+  <div id="modal-scanner" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center" style="display:none;">
+    <!-- Close button -->
+    <button id="scanner-close-btn" class="fixed top-4 right-4 z-[60] bg-white/95 text-slate-900 rounded-full p-3 shadow-2xl hover:bg-white hover:scale-105 transition-all focus:outline-none cursor-pointer" aria-label="Fermer le scanner">
+      <i data-lucide="x" style="width:22px;height:22px;"></i>
+    </button>
+    <!-- Camera viewfinder -->
+    <div class="relative w-full max-w-md mx-auto flex flex-col items-center px-4">
+      <video id="scanner-video" class="w-full max-h-[60vh] object-cover rounded-2xl bg-black shadow-2xl" autoplay playsinline muted></video>
+      <!-- QR-style corner frame overlay -->
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="relative w-64 h-80">
+          <!-- Corner brackets -->
+          <span class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+          <span class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+          <span class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+          <span class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+          <!-- Animated scan line -->
+          <div class="scanner-scanline absolute left-2 right-2 h-0.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]" style="top:0;"></div>
+        </div>
+      </div>
+      <!-- Scanner result overlay -->
+      <div id="scanner-results" class="mt-4 w-full text-white text-center"></div>
+    </div>
+    <!-- Bottom controls -->
+    <div class="mt-6 flex flex-col items-center gap-3 w-full max-w-sm px-4">
+      <button id="scanner-capture-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-2xl text-sm shadow-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
+        <i data-lucide="camera" style="width:18px;height:18px;"></i>
+        Scanner la carte
+      </button>
+      <div class="flex items-center gap-2 w-full">
+        <div class="flex-1 h-px bg-white/20"></div>
+        <span class="text-white/50 text-xs">ou</span>
+        <div class="flex-1 h-px bg-white/20"></div>
+      </div>
+      <!-- Manual ref input -->
+      <div class="flex gap-2 w-full">
+        <input id="scanner-manual-ref" type="text" placeholder="Saisir réf. manuellement (ex: sv2a 201)" 
+               class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <button id="scanner-manual-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer">OK</button>
+      </div>
+      <!-- Fallback: upload photo -->
+      <label class="text-white/60 hover:text-white text-xs underline cursor-pointer transition-colors">
+        Uploader une photo à la place
+        <input type="file" accept="image/*" id="scanner-file-fallback" class="hidden">
+      </label>
+    </div>
+  </div>
+
+  <!-- Modal: Purchases -->
+  <div id="modal-purchases" class="modal-overlay">
+    <div class="modal-box max-w-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg font-bold text-slate-800">Cartes achetées dernièrement</h3>
+          <span id="purchases-counter" class="text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200 rounded-full px-2.5 py-0.5 shadow-sm">0 cartes</span>
+        </div>
+        <button class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" data-close-modal="modal-purchases" aria-label="Fermer">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+      <!-- Quick Entry Form -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+        <div class="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">⚡ Entrée rapide</div>
+        <div class="flex flex-wrap gap-2 items-end">
+          <div class="flex-1 min-w-[140px] relative">
+            <input id="quick-entry-ref" type="text" placeholder="Réf / Nom de la carte" autocomplete="off"
+                   class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors">
+            <div id="quick-entry-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto"></div>
+          </div>
+          <select id="quick-entry-condition" class="px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors font-medium">
+            <optgroup label="Non-gradé (Raw)">
+              <option value="Raw NM" selected>Raw NM (Near Mint)</option>
+              <option value="Raw EX">Raw EX (Excellent)</option>
+              <option value="Raw LP">Raw LP (Lightly Played)</option>
+              <option value="Raw PL">Raw PL (Played / Poor)</option>
+            </optgroup>
+            <optgroup label="PSA Slabs">
+              <option value="PSA 10">PSA 10 (Gem Mint)</option>
+              <option value="PSA 9.5">PSA 9.5 (Mint+)</option>
+              <option value="PSA 9">PSA 9 (Mint)</option>
+              <option value="PSA 8">PSA 8 (NM-MT)</option>
+            </optgroup>
+            <optgroup label="BGS Slabs">
+              <option value="BGS 10">BGS 10 (Pristine)</option>
+              <option value="BGS 9.5">BGS 9.5 (Gem Mint)</option>
+              <option value="BGS 9">BGS 9 (Mint)</option>
+              <option value="BGS 8">BGS 8 (NM-MT)</option>
+            </optgroup>
+            <optgroup label="CGC Slabs">
+              <option value="CGC 10">CGC 10 (Pristine)</option>
+              <option value="CGC 9.5">CGC 9.5 (Gem Mint)</option>
+              <option value="CGC 9">CGC 9 (Mint)</option>
+            </optgroup>
+            <optgroup label="PCA Slabs (FR)">
+              <option value="PCA 10">PCA 10 (Parfait)</option>
+              <option value="PCA 9.5">PCA 9.5 (Neuf+)</option>
+              <option value="PCA 9">PCA 9 (Neuf)</option>
+            </optgroup>
+            <optgroup label="ARS Slabs (JP)">
+              <option value="ARS 10">ARS 10 (Grade 10+ / 10)</option>
+              <option value="ARS 9.5">ARS 9.5 (Grade 9.5)</option>
+              <option value="ARS 9">ARS 9 (Grade 9)</option>
+            </optgroup>
+          </select>
+          <input id="quick-entry-price" type="number" placeholder="Prix JP (¥)" min="0"
+                 class="w-28 px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors">
+          <input id="quick-entry-qty" type="number" value="1" min="1" max="99"
+                 class="w-16 px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors">
+          <button id="quick-entry-add" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors flex items-center gap-1 shadow-sm">
+            <i data-lucide="plus" style="width:13px;height:13px;"></i>
+            Ajouter
+          </button>
+        </div>
+      </div>
+      <!-- KPI Summary -->
+      <div id="purchase-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4"></div>
+      <!-- Purchases table -->
+      <div id="purchase-list" class="flex flex-col gap-1 mb-4 max-h-64 overflow-y-auto custom-scrollbar"></div>
+      <!-- Footer -->
+      <div class="flex justify-end">
+        <button id="btn-export-csv" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow">
+          <i data-lucide="download" style="width:16px;height:16px;"></i>
+          Exporter le rapport (CSV)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Card Detail (upgraded) -->
+  <div id="modal-card-detail" class="modal-overlay">
+    <div class="modal-box max-w-3xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-slate-800">Détail de la carte</h3>
+        <button class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" data-close-modal="modal-card-detail" aria-label="Fermer">
+          <i data-lucide="x" style="width:20px;height:20px;"></i>
+        </button>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('PokéSpread Service Worker registered:', reg.scope))
+          .catch((err) => console.error('PokéSpread Service Worker registration failed:', err));
+      });
+    }
+  </script>
+
 </body>
 </html>

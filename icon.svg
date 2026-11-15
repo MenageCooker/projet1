@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <linearGradient id="whiteGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <clipPath id="ballClip">
+      <circle cx="256" cy="256" r="236" />
+    </clipPath>
+  </defs>
+
+  <!-- Outer ball circle -->
+  <g clip-path="url(#ballClip)">
+    <!-- Top red hemisphere -->
+    <path d="M 20,256 A 236,236 0 0,1 492,256 Z" fill="url(#redGrad)" />
+    <!-- Bottom white hemisphere -->
+    <path d="M 20,256 A 236,236 0 0,0 492,256 Z" fill="url(#whiteGrad)" />
+    <!-- Center divider band -->
+    <rect x="20" y="238" width="472" height="36" fill="#0f172a" />
+    <!-- Gloss highlight -->
+    <ellipse cx="256" cy="115" rx="140" ry="55" fill="#ffffff" opacity="0.25" />
+  </g>
+
+  <!-- Outer ring border -->
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#0f172a" stroke-width="22" />
+
+  <!-- Center button outer black ring -->
+  <circle cx="256" cy="256" r="70" fill="#0f172a" />
+
+  <!-- Center button white body -->
+  <circle cx="256" cy="256" r="46" fill="url(#btnGrad)" />
+
+  <!-- Center button inner ring -->
+  <circle cx="256" cy="256" r="26" fill="none" stroke="#64748b" stroke-width="4" />
+</svg>
