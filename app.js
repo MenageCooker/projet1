@@ -3505,9 +3505,7 @@ const CardRecognizer = {
   }
 };
 
-// ── FULL-SCREEN CAMERA SCANNER ───────────────────────────────
-let scannerStream = null;
-let lastFocusTapTime = 0;
+// ── FULL-SCREEN CAMERA SCANNER (NATIVE CAMERA CAPTURE) ──────────
 
 // Software sharpening & contrast boost on canvas snapshot for crisp matching
 function enhanceCanvasSnapshot(canvas) {
@@ -3564,102 +3562,28 @@ function enhanceCanvasSnapshot(canvas) {
   return canvas;
 }
 
-// Tap-to-Focus interaction on mobile viewfinder
-function triggerTapToFocus(e) {
-  const container = document.getElementById('scanner-viewport-container') || document.getElementById('scanner-video')?.parentElement;
-  if (!container) return;
+function resetScannerPreview() {
+  const previewImg = document.getElementById('scanner-captured-preview');
+  const placeholder = document.getElementById('scanner-guide-placeholder');
+  const camInput = document.getElementById('native-camera-input');
+  const fileFallback = document.getElementById('scanner-file-fallback');
+  const resultsEl = document.getElementById('scanner-results');
 
-  const rect = container.getBoundingClientRect();
-  let clientX = e.clientX;
-  let clientY = e.clientY;
-  if (e.touches && e.touches.length > 0) {
-    clientX = e.touches[0].clientX;
-    clientY = e.touches[0].clientY;
-  } else if (e.changedTouches && e.changedTouches.length > 0) {
-    clientX = e.changedTouches[0].clientX;
-    clientY = e.changedTouches[0].clientY;
-  } else if (clientX === undefined) {
-    clientX = rect.left + rect.width / 2;
-    clientY = rect.top + rect.height / 2;
+  if (previewImg) {
+    previewImg.src = '';
+    previewImg.classList.add('hidden');
   }
-
-  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-  const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-
-  // Visual feedback: briefly flash a small white focus ring animation with 📍
-  container.querySelectorAll('.scanner-focus-ring').forEach(r => r.remove());
-
-  const ring = document.createElement('div');
-  ring.className = 'scanner-focus-ring';
-  ring.style.left = `${x}px`;
-  ring.style.top = `${y}px`;
-  ring.innerHTML = `<span class="scanner-focus-ring-pin select-none">📍</span>`;
-  container.appendChild(ring);
-
-  setTimeout(() => {
-    if (ring && ring.parentNode) ring.remove();
-  }, 900);
-
-  // Trigger browser's native camera focus recalculation
-  recalculateCameraFocus(clientX, clientY, rect);
-}
-
-async function recalculateCameraFocus(clientX, clientY, rect) {
-  if (!scannerStream) return;
-  const track = scannerStream.getVideoTracks()[0];
-  if (!track || !track.applyConstraints) return;
-
-  try {
-    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-
-    // 1. If pointsOfInterest supported (Chrome Android / WebRTC)
-    if (capabilities.pointsOfInterest && rect && rect.width > 0 && rect.height > 0) {
-      const normX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      const normY = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-      try {
-        await track.applyConstraints({
-          advanced: [{ pointsOfInterest: [{ x: normX, y: normY }] }]
-        });
-      } catch (poiErr) {
-        console.debug('pointsOfInterest error:', poiErr);
-      }
-    }
-
-    // 2. Trigger native focus recalculation by cycling single-shot -> continuous-picture / continuous
-    if (capabilities.focusMode && Array.isArray(capabilities.focusMode)) {
-      if (capabilities.focusMode.includes('single-shot')) {
-        await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
-        setTimeout(async () => {
-          try {
-            await track.applyConstraints({ advanced: [{ focusMode: 'continuous-picture' }] });
-          } catch (e1) {
-            try {
-              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-            } catch (e2) {}
-          }
-        }, 250);
-        return;
-      }
-    }
-
-    // Direct continuous-picture re-application for Samsung S10 / Android
-    try {
-      await track.applyConstraints({
-        advanced: [{ focusMode: 'continuous-picture' }]
-      });
-    } catch (e1) {
-      try {
-        await track.applyConstraints({
-          advanced: [{ focusMode: 'continuous' }]
-        });
-      } catch (e2) {}
-    }
-  } catch (err) {
-    console.debug('Native camera focus trigger error:', err);
+  if (placeholder) {
+    placeholder.classList.remove('hidden');
+  }
+  if (camInput) camInput.value = '';
+  if (fileFallback) fileFallback.value = '';
+  if (resultsEl) {
+    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Prenez une photo nette de la carte entière avec l\'appareil photo</p>';
   }
 }
 
-async function openScanner() {
+function openScanner() {
   const overlay = document.getElementById('modal-scanner');
   if (!overlay) return;
   overlay.style.display = 'flex';
@@ -3671,82 +3595,8 @@ async function openScanner() {
   // Preload catalog signatures
   CardRecognizer.init(CARDS);
 
-  const video = document.getElementById('scanner-video');
-  const resultsEl = document.getElementById('scanner-results');
-  if (resultsEl) {
-    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
-  }
-
-  // Ensure tap-to-focus listener is bound on camera container
-  const container = document.getElementById('scanner-viewport-container') || video?.parentElement;
-  if (container && !container._tapFocusBound) {
-    container._tapFocusBound = true;
-    const handleTap = (e) => {
-      const now = Date.now();
-      if (now - lastFocusTapTime < 250) return;
-      lastFocusTapTime = now;
-      triggerTapToFocus(e);
-    };
-    container.addEventListener('click', handleTap);
-    container.addEventListener('touchstart', handleTap, { passive: true });
-  }
-
-  try {
-    const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        focusMode: { ideal: 'continuous' }
-      },
-      audio: false
-    };
-
-    let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (constraintErr) {
-      console.warn('Advanced constraints rejected, trying fallback:', constraintErr);
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false
-      });
-    }
-
-    scannerStream = stream;
-    if (video) {
-      video.srcObject = stream;
-      video.play();
-    }
-
-    // Force Android/Chrome (like Samsung S10) macro / continuous-picture focus right after video starts
-    const track = stream.getVideoTracks()[0];
-    if (track && track.applyConstraints) {
-      try {
-        await track.applyConstraints({
-          advanced: [{ focusMode: 'continuous-picture' }]
-        });
-      } catch (err1) {
-        try {
-          await track.applyConstraints({
-            advanced: [{ focusMode: 'continuous' }]
-          });
-        } catch (err2) {
-          console.debug('Native focusMode constraint not supported:', err2);
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('Camera access error:', e);
-    if (resultsEl) {
-      resultsEl.innerHTML = `
-        <div class="text-white/80 text-sm text-center px-4">
-          <p class="font-bold mb-1">📷 Caméra non disponible</p>
-          <p class="text-white/50 text-xs">Utilisez le champ référence ou importez une photo ci-dessous.</p>
-        </div>
-      `;
-    }
-  }
+  // Reset UI
+  resetScannerPreview();
 }
 
 function updateScannerEditionPill() {
@@ -3766,50 +3616,44 @@ function updateScannerEditionPill() {
 function closeScanner() {
   const overlay = document.getElementById('modal-scanner');
   if (overlay) overlay.style.display = 'none';
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
-  }
-  const video = document.getElementById('scanner-video');
-  if (video) {
-    video.srcObject = null;
-  }
-  const container = document.getElementById('scanner-viewport-container');
-  if (container) {
-    container.querySelectorAll('.scanner-focus-ring').forEach(r => r.remove());
-  }
+  resetScannerPreview();
 }
 
-async function captureAndScan() {
-  const video = document.getElementById('scanner-video');
+// Process snapped photo or gallery image through 4x4 structural grayscale grid matcher
+async function processCapturedPhoto(file) {
+  if (!file) return;
   const resultsEl = document.getElementById('scanner-results');
-  if (!resultsEl) return;
+  const previewImg = document.getElementById('scanner-captured-preview');
+  const placeholder = document.getElementById('scanner-guide-placeholder');
 
-  if (!video || !video.srcObject || video.videoWidth === 0) {
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/90 border border-amber-500/40 rounded-xl p-3 text-amber-300 text-xs text-center">
-        Caméra non active. Importez une photo ou saisissez la référence manuellement ci-dessous.
-      </div>
-    `;
-    return;
+  // Immediately display preview in the card frame
+  const objectUrl = URL.createObjectURL(file);
+  if (previewImg) {
+    previewImg.src = objectUrl;
+    previewImg.classList.remove('hidden');
+  }
+  if (placeholder) {
+    placeholder.classList.add('hidden');
   }
 
-  // Smooth loading card with animated spinner and multi-step progress bar (~1.8s budget)
-  resultsEl.innerHTML = `
-    <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
-      <div class="flex items-center gap-3">
-        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-        <div class="text-left flex-1 min-w-0">
-          <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate">Cadrage de l'illustration...</div>
-          <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Extraction de la zone centrale de la carte</div>
+  // Smooth loading card with animated spinner and progress step (~1s UX budget)
+  if (resultsEl) {
+    resultsEl.innerHTML = `
+      <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+          <div class="text-left flex-1 min-w-0">
+            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate">Analyse de l'image en cours...</div>
+            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Calcul de la grille structurelle 4x4 de l'artwork</div>
+          </div>
+          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">45%</span>
         </div>
-        <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">25%</span>
+        <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 45%;"></div>
+        </div>
       </div>
-      <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-        <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 25%;"></div>
-      </div>
-    </div>
-  `;
+    `;
+  }
 
   const stepTitle = document.getElementById('scanner-step-title');
   const stepDesc = document.getElementById('scanner-step-desc');
@@ -3823,71 +3667,73 @@ async function captureAndScan() {
     if (stepProgress) stepProgress.style.width = `${pct}%`;
   };
 
-  try {
-    // 1. Crop captured video frame strictly to 4-corner viewfinder box (object-cover mapped)
-    const viewfinder = document.getElementById('scanner-viewfinder');
-    const crop = CardRecognizer.getCropRect(video, viewfinder);
-    const cropCanvas = document.createElement('canvas');
-    cropCanvas.width = crop.sw;
-    cropCanvas.height = crop.sh;
-    const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
-    cropCtx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
+  const img = new Image();
+  img.onload = async () => {
+    try {
+      // 1. Crop to central card proportion
+      const crop = CardRecognizer.getDefaultCropRect(img.naturalWidth || img.width, img.naturalHeight || img.height);
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = crop.sw;
+      cropCanvas.height = crop.sh;
+      const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+      cropCtx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
 
-    // Apply software sharpening & contrast boost on canvas snapshot
-    enhanceCanvasSnapshot(cropCanvas);
+      // Enhance canvas snapshot (sharpening + contrast boost)
+      enhanceCanvasSnapshot(cropCanvas);
 
-    // Stage 1 delay (~450ms) to ensure smooth 60fps UI on mobile
-    await new Promise(r => setTimeout(r, 450));
+      // Smooth step delay (~400ms)
+      await new Promise(r => setTimeout(r, 400));
 
-    // 2. Stage 2: 4x4 Grayscale Grid & Edge Analysis
-    updateProgress(
-      "Analyse des contrastes de l'artwork...",
-      "Calcul de la grille structurelle 4x4 & densité des contours",
-      65
-    );
+      // 2. Extract 4x4 structural grayscale grid signature
+      updateProgress(
+        "Comparaison avec le catalogue...",
+        "Recherche structurelle sans faux positifs",
+        75
+      );
 
-    const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
-    if (!scanSignature || scanSignature.isPoorQuality) {
-      showNoMatchResult(scanSignature?.score || 10, resultsEl);
-      return;
-    }
+      const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
+      if (!scanSignature || scanSignature.isPoorQuality) {
+        showNoMatchResult(scanSignature?.score || 10, resultsEl);
+        return;
+      }
 
-    // Stage 2 delay (~650ms)
-    await new Promise(r => setTimeout(r, 650));
+      // Smooth step delay (~450ms)
+      await new Promise(r => setTimeout(r, 450));
 
-    // 3. Stage 3: Structural comparison with loaded catalog
-    updateProgress(
-      "Comparaison structurelle avec le catalogue...",
-      "Recherche de correspondances géométriques sans faux positifs",
-      90
-    );
+      // 3. Compare signature against loaded catalog
+      const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
+      if (!ranked || ranked.length === 0) {
+        showNoMatchResult(0, resultsEl);
+        return;
+      }
 
-    const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
+      const bestMatch = ranked[0];
 
-    // Stage 3 delay (~550ms) -> total elapsed ~1.7s cleanly within budget
-    await new Promise(r => setTimeout(r, 550));
-
-    if (!ranked || ranked.length === 0) {
+      // 4. Enforce strict thresholds:
+      // - Score >= 75%: Valid primary match
+      // - 50% <= Score < 75%: "⚠️ Correspondance probable mais incertaine (Vérifiez)"
+      // - Score < 50%: Honest rejection -> "Photo non concluante — Réessayez"
+      if (bestMatch.score < 50) {
+        showNoMatchResult(bestMatch.score, resultsEl);
+      } else {
+        const runnerUps = ranked.slice(1, 4);
+        showScannerResult(bestMatch, runnerUps, resultsEl);
+      }
+    } catch (e) {
+      console.error('Scan processing error:', e);
       showNoMatchResult(0, resultsEl);
-      return;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
     }
+  };
 
-    const bestMatch = ranked[0];
-
-    // 4. Honest Confidence Scoring & Strict Thresholds:
-    // - Score >= 75%: Valid primary match
-    // - 50% <= Score < 75%: "⚠️ Correspondance probable mais incertaine (Vérifiez)"
-    // - Score < 50%: Complete rejection -> "Carte non reconnue — Rapprochez ou centrez la carte dans le cadre"
-    if (bestMatch.score < 50) {
-      showNoMatchResult(bestMatch.score, resultsEl);
-    } else {
-      const runnerUps = ranked.slice(1, 4);
-      showScannerResult(bestMatch, runnerUps, resultsEl);
-    }
-  } catch (e) {
-    console.error('Scan error:', e);
+  img.onerror = () => {
+    console.error('Image load error for captured photo');
+    URL.revokeObjectURL(objectUrl);
     showNoMatchResult(0, resultsEl);
-  }
+  };
+
+  img.src = objectUrl;
 }
 
 // Honest threshold display when confidence is below 50% (Stop guessing wrong cards)
@@ -3901,14 +3747,14 @@ function showNoMatchResult(score = 0, resultsEl = null) {
         <i data-lucide="scan" style="width:24px;height:24px;"></i>
       </div>
       <div class="space-y-1">
-        <div class="text-sm font-bold text-amber-300">Carte non reconnue — Rapprochez ou centrez la carte dans le cadre</div>
-        <p class="text-xs text-white/60">Aucune correspondance structurelle suffisante dans le catalogue (${Math.round(score)}% &lt; 50%). Évitez les reflets et vérifiez le cadrage.</p>
+        <div class="text-sm font-bold text-amber-300">Photo non concluante — Réessayez</div>
+        <p class="text-xs text-white/60">Aucune correspondance structurelle suffisante dans le catalogue (${Math.round(score)}% &lt; 50%). Assurez-vous que l'illustration est nette et bien cadrée.</p>
       </div>
 
       <div class="flex gap-2">
         <button id="scanner-retry-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-900 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
-          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
-          <span>Réessayer</span>
+          <i data-lucide="camera" style="width:14px;height:14px;"></i>
+          <span>Reprendre une photo</span>
         </button>
       </div>
 
@@ -3926,9 +3772,10 @@ function showNoMatchResult(score = 0, resultsEl = null) {
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  // Retry button resets the scanner hint
+  // Retry button resets preview and triggers native camera
   document.getElementById('scanner-retry-btn')?.addEventListener('click', () => {
-    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+    resetScannerPreview();
+    document.getElementById('native-camera-input')?.click();
   });
 
   // Inline manual reference lookup
@@ -4122,7 +3969,8 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   });
 
   document.getElementById('scanner-rescan-btn')?.addEventListener('click', () => {
-    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+    resetScannerPreview();
+    document.getElementById('native-camera-input')?.click();
   });
 
   // Inline manual reference lookup if rendered
@@ -4157,63 +4005,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 }
 
 function handleScannerFileUpload(file) {
-  if (!file) return;
-  const resultsEl = document.getElementById('scanner-results');
-  if (!resultsEl) return;
-
-  resultsEl.innerHTML = `
-    <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
-      <div class="flex items-center gap-3">
-        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-        <div class="text-left flex-1 min-w-0">
-          <div class="text-xs font-bold text-emerald-300 truncate">Analyse de la photo...</div>
-          <div class="text-[11px] text-white/50 truncate">Extraction des contrastes de l'artwork (grille 4x4)</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = async () => {
-    try {
-      const crop = CardRecognizer.getDefaultCropRect(img.naturalWidth || img.width, img.naturalHeight || img.height);
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = crop.sw;
-      cropCanvas.height = crop.sh;
-      const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
-      cropCtx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
-
-      // Clean up soft/blurry photo snapshot with software sharpening & contrast boost
-      enhanceCanvasSnapshot(cropCanvas);
-
-      await new Promise(r => setTimeout(r, 600));
-
-      const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
-      if (!ranked || ranked.length === 0) {
-        showNoMatchResult(0, resultsEl);
-        return;
-      }
-
-      const bestMatch = ranked[0];
-      if (bestMatch.score < 50) {
-        showNoMatchResult(bestMatch.score, resultsEl);
-      } else {
-        const runnerUps = ranked.slice(1, 4);
-        showScannerResult(bestMatch, runnerUps, resultsEl);
-      }
-    } catch (e) {
-      console.error('File scan error:', e);
-      showNoMatchResult(0, resultsEl);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  };
-  img.onerror = () => {
-    URL.revokeObjectURL(url);
-    showNoMatchResult(0, resultsEl);
-  };
-  img.src = url;
+  processCapturedPhoto(file);
 }
 
 // Manual Reference Search helper
@@ -4695,7 +4487,7 @@ function bindEvents() {
     syncFilterBarPlacement();
   });
 
-  // ── SCANNER BUTTON & OVERLAY ──
+  // ── SCANNER BUTTON & OVERLAY (NATIVE CAMERA CAPTURE) ──
   const btnScanner = document.getElementById('btn-scanner');
   if (btnScanner) {
     btnScanner.addEventListener('click', openScanner);
@@ -4706,26 +4498,39 @@ function bindEvents() {
     scannerCloseBtn.addEventListener('click', closeScanner);
   }
 
-  const scannerCaptureBtn = document.getElementById('scanner-capture-btn');
-  if (scannerCaptureBtn) {
-    scannerCaptureBtn.addEventListener('click', captureAndScan);
+  // Native camera trigger button
+  const scannerNativeBtn = document.getElementById('scanner-native-btn');
+  const nativeCameraInput = document.getElementById('native-camera-input');
+  if (scannerNativeBtn && nativeCameraInput) {
+    scannerNativeBtn.addEventListener('click', () => {
+      nativeCameraInput.click();
+    });
   }
 
-  // Tap-to-Focus on mobile camera viewfinder
-  const scannerViewportContainer = document.getElementById('scanner-viewport-container');
-  const scannerVideoEl = document.getElementById('scanner-video');
-  const handleFocusTap = (e) => {
-    const now = Date.now();
-    if (now - lastFocusTapTime < 250) return;
-    lastFocusTapTime = now;
-    triggerTapToFocus(e);
-  };
-  if (scannerViewportContainer) {
-    scannerViewportContainer.addEventListener('click', handleFocusTap);
-    scannerViewportContainer.addEventListener('touchstart', handleFocusTap, { passive: true });
-  } else if (scannerVideoEl) {
-    scannerVideoEl.addEventListener('click', handleFocusTap);
-    scannerVideoEl.addEventListener('touchstart', handleFocusTap, { passive: true });
+  if (nativeCameraInput) {
+    nativeCameraInput.addEventListener('change', () => {
+      if (nativeCameraInput.files && nativeCameraInput.files[0]) {
+        processCapturedPhoto(nativeCameraInput.files[0]);
+      }
+    });
+  }
+
+  // Gallery file button & fallback
+  const scannerGalleryBtn = document.getElementById('scanner-gallery-btn');
+  const scannerFileFallback = document.getElementById('scanner-file-fallback');
+  if (scannerGalleryBtn && scannerFileFallback) {
+    scannerGalleryBtn.addEventListener('click', () => {
+      scannerFileFallback.click();
+    });
+  }
+
+  if (scannerFileFallback) {
+    scannerFileFallback.addEventListener('change', () => {
+      if (scannerFileFallback.files && scannerFileFallback.files[0]) {
+        processCapturedPhoto(scannerFileFallback.files[0]);
+        scannerFileFallback.value = '';
+      }
+    });
   }
 
   const scannerManualBtn = document.getElementById('scanner-manual-btn');
@@ -4737,16 +4542,6 @@ function bindEvents() {
     scannerManualBtn.addEventListener('click', triggerManual);
     scannerManualRef.addEventListener('keydown', e => {
       if (e.key === 'Enter') triggerManual();
-    });
-  }
-
-  const scannerFileFallback = document.getElementById('scanner-file-fallback');
-  if (scannerFileFallback) {
-    scannerFileFallback.addEventListener('change', () => {
-      if (scannerFileFallback.files && scannerFileFallback.files[0]) {
-        handleScannerFileUpload(scannerFileFallback.files[0]);
-        scannerFileFallback.value = '';
-      }
     });
   }
 

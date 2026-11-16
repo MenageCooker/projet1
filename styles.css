@@ -923,18 +923,6 @@ body {
   transform: scale(1.05);
 }
 
-@keyframes scanline-sweep {
-  0%   { top: 0; opacity: 1; }
-  48%  { opacity: 1; }
-  50%  { top: calc(100% - 2px); opacity: 0.3; }
-  52%  { opacity: 1; }
-  100% { top: 0; opacity: 1; }
-}
-
-.scanner-scanline {
-  animation: scanline-sweep 2.5s linear infinite;
-}
-
 /* ============================================================
    25. LIBRARY MODAL ENHANCED
    ============================================================ */
@@ -1203,67 +1191,19 @@ body {
 }
 
 /* ============================================================
-   33. SCANNER QR VIEWFINDER & ANIMATION
+   33. NATIVE CAMERA SCANNER UI & CARD PREVIEW
    ============================================================ */
-@keyframes scanlineAnim {
-  0% {
-    top: 4%;
-    opacity: 0.85;
-  }
-  50% {
-    top: 92%;
-    opacity: 1;
-  }
-  100% {
-    top: 4%;
-    opacity: 0.85;
-  }
+#scanner-preview-wrapper {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
-.scanner-scanline {
-  animation: scanlineAnim 2.4s ease-in-out infinite;
+#scanner-native-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
-/* ── Tap-to-Focus white ring & pin animation ── */
-@keyframes focusRingFlash {
-  0% {
-    transform: translate(-50%, -50%) scale(1.45);
-    opacity: 0;
-  }
-  20% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.95;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(0.85);
-    opacity: 0;
-  }
-}
-
-.scanner-focus-ring {
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.95), inset 0 0 8px rgba(255, 255, 255, 0.5);
-  pointer-events: none;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: focusRingFlash 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-}
-
-.scanner-focus-ring-pin {
-  font-size: 15px;
-  line-height: 1;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
-  transform: translateY(-1px);
+#scanner-native-btn:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 }
 
 /* ============================================================
