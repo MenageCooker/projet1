@@ -3005,9 +3005,9 @@ function renderLibrary() {
   });
 }
 
-// ── MULTI-CRITERIA CARD RECOGNITION ENGINE (`CardRecognizer`) ─────────────────
+// ── PURE VISUAL & LANGUAGE-AWARE CARD RECOGNITION ENGINE (`CardRecognizer`) ──
 const CardRecognizer = {
-  colorSignatureCache: new Map(),
+  fingerprintCache: new Map(),
   _preloading: false,
 
   init(catalog) {
@@ -3016,68 +3016,80 @@ const CardRecognizer = {
     this.preloadCatalogSignatures(catalog || (typeof CARDS !== 'undefined' ? CARDS : []));
   },
 
-  // Preload & cache 8x8 color signatures from catalog card images
+  // Preload and cache visual fingerprints from high-res card artwork
   preloadCatalogSignatures(catalog) {
     if (!catalog || !Array.isArray(catalog)) return;
-    const cardsToLoad = catalog.slice(0, 100);
-
-    cardsToLoad.forEach(card => {
-      if (!card || !card.id || this.colorSignatureCache.has(card.id)) return;
+    catalog.forEach(card => {
+      if (!card || !card.id || this.fingerprintCache.has(card.id)) return;
       if (!card.image || typeof card.image !== 'string') return;
 
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
-          const sig = this.extractImageSignature(img);
-          if (sig) {
-            this.colorSignatureCache.set(card.id, sig);
+          const fp = this.extractFingerprint(img);
+          if (fp && !fp.isPoorQuality) {
+            this.fingerprintCache.set(card.id, fp);
           }
         } catch (e) {
-          // Gracefully skip CORS blocked images
+          // CORS or canvas extraction blocked: fallback synthetic signature will be used
         }
       };
       img.onerror = () => {
-        // Fallback to synthetic signature if needed
+        // Fallback synthetic signature will be used
       };
-      img.src = card.image;
+      const highResUrl = (typeof formatHighResCardImage === 'function')
+        ? formatHighResCardImage(card.image)
+        : (card.image.includes('/high.webp') ? card.image : `${card.image}/high.webp`);
+      img.src = highResUrl;
     });
   },
 
-  // 1. Crop calculations: maps viewfinder box in DOM to video frame coords
+  // Viewfinder coordinate mapping: maps viewfinder box in DOM to intrinsic video frame coords
+  // Accounts for CSS object-fit: cover
   getCropRect(video, viewfinder) {
-    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+    if (!video || !video.videoWidth || !video.videoHeight) {
       return { sx: 0, sy: 0, sw: 600, sh: 840 };
     }
-    if (viewfinder) {
-      const vRect = video.getBoundingClientRect();
-      const vfRect = viewfinder.getBoundingClientRect();
-      if (vRect.width > 0 && vRect.height > 0 && vfRect.width > 0 && vfRect.height > 0) {
-        const relX = Math.max(0, (vfRect.left - vRect.left) / vRect.width);
-        const relY = Math.max(0, (vfRect.top - vRect.top) / vRect.height);
-        const relW = Math.min(1.0 - relX, vfRect.width / vRect.width);
-        const relH = Math.min(1.0 - relY, vfRect.height / vRect.height);
-
-        const sx = Math.round(relX * video.videoWidth);
-        const sy = Math.round(relY * video.videoHeight);
-        const sw = Math.round(relW * video.videoWidth);
-        const sh = Math.round(relH * video.videoHeight);
-        if (sw > 30 && sh > 30) {
-          return { sx, sy, sw, sh };
-        }
-      }
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!viewfinder) {
+      return this.getDefaultCropRect(vw, vh);
     }
-    return this.getDefaultCropRect(video.videoWidth, video.videoHeight);
+    const vRect = video.getBoundingClientRect();
+    const vfRect = viewfinder.getBoundingClientRect();
+    if (vRect.width <= 0 || vRect.height <= 0 || vfRect.width <= 0 || vfRect.height <= 0) {
+      return this.getDefaultCropRect(vw, vh);
+    }
+
+    // Exact coordinate mapping for object-fit: cover
+    const scale = Math.max(vRect.width / vw, vRect.height / vh);
+    const visibleW = vRect.width / scale;
+    const visibleH = vRect.height / scale;
+    const offsetX = (vw - visibleW) / 2;
+    const offsetY = (vh - visibleH) / 2;
+
+    const relX = (vfRect.left - vRect.left) / vRect.width;
+    const relY = (vfRect.top - vRect.top) / vRect.height;
+    const relW = vfRect.width / vRect.width;
+    const relH = vfRect.height / vRect.height;
+
+    const sx = Math.max(0, Math.min(vw - 10, Math.round(offsetX + relX * visibleW)));
+    const sy = Math.max(0, Math.min(vh - 10, Math.round(offsetY + relY * visibleH)));
+    const sw = Math.max(30, Math.min(vw - sx, Math.round(relW * visibleW)));
+    const sh = Math.max(30, Math.min(vh - sy, Math.round(relH * visibleH)));
+
+    return { sx, sy, sw, sh };
   },
 
   getDefaultCropRect(sourceWidth, sourceHeight) {
     const targetAspect = 63 / 88; // Standard Pokémon card aspect ratio ~0.716
     let sw, sh;
     if (sourceWidth / sourceHeight > targetAspect) {
-      sh = Math.round(sourceHeight * 0.85);
+      sh = Math.round(sourceHeight * 0.88);
       sw = Math.round(sh * targetAspect);
     } else {
-      sw = Math.round(sourceWidth * 0.85);
+      sw = Math.round(sourceWidth * 0.88);
       sh = Math.round(sw / targetAspect);
     }
     const sx = Math.max(0, Math.round((sourceWidth - sw) / 2));
@@ -3085,460 +3097,399 @@ const CardRecognizer = {
     return { sx, sy, sw, sh };
   },
 
-  // 2. Criterion A — Visual Artwork Fingerprint (50% weight, works even when blurry):
-  //    Resize captured frame to 8x8 color grid on offscreen canvas & extract normalized RGB/luminance vectors
-  extractImageSignature(source, sx = 0, sy = 0, sw = 0, sh = 0) {
+  // Extract 64x64 visual fingerprint (Artwork Color-Histogram + 8x8 Spatial Grid + Normalized Luminance)
+  extractFingerprint(source, sx = 0, sy = 0, sw = 0, sh = 0) {
     try {
       const c = document.createElement('canvas');
-      c.width = 8;
-      c.height = 8;
+      c.width = 64;
+      c.height = 64;
       const ctx = c.getContext('2d', { willReadFrequently: true });
       if (sw > 0 && sh > 0) {
-        ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 8, 8);
+        ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 64, 64);
       } else {
-        ctx.drawImage(source, 0, 0, 8, 8);
+        ctx.drawImage(source, 0, 0, 64, 64);
       }
-      const imgData = ctx.getImageData(0, 0, 8, 8).data;
+      const imgData = ctx.getImageData(0, 0, 64, 64).data;
+
+      // 1. Overall quality / darkness / contrast analysis
+      let sumL = 0;
+      let sumLSq = 0;
+      const numPixels = 64 * 64;
+      for (let i = 0; i < imgData.length; i += 4) {
+        const r = imgData[i] / 255;
+        const g = imgData[i + 1] / 255;
+        const b = imgData[i + 2] / 255;
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        sumL += lum;
+        sumLSq += lum * lum;
+      }
+      const meanL = sumL / numPixels;
+      const varL = Math.max(0, (sumLSq / numPixels) - (meanL * meanL));
+      const stdL = Math.sqrt(varL);
+
+      // Honest rejection condition: too dark (< 0.085), blown-out white (> 0.95 with flat contrast), or uniform (< 0.035)
+      if (meanL < 0.085 || (meanL > 0.95 && stdL < 0.04) || stdL < 0.035) {
+        return {
+          isPoorQuality: true,
+          qualityReason: meanL < 0.085 ? 'too_dark' : 'no_contrast',
+          score: Math.max(5, Math.min(25, Math.round(stdL * 300)))
+        };
+      }
+
+      // 2. Central Artwork Box Color Histogram (32 bins: 8 grayscale + 24 Hue sectors)
+      // Illustration box spans x in [7..56], y in [10..40] on 64x64 card
+      const hist = new Float32Array(32);
+      let artPixels = 0;
+      for (let y = 10; y <= 40; y++) {
+        for (let x = 7; x <= 56; x++) {
+          const p = (y * 64 + x) * 4;
+          const r = imgData[p] / 255;
+          const g = imgData[p + 1] / 255;
+          const b = imgData[p + 2] / 255;
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          const delta = max - min;
+          const sat = max > 0 ? delta / max : 0;
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+          artPixels++;
+          if (sat < 0.16) {
+            // Neutral / Grayscale bin [0..7]
+            const grayBin = Math.min(7, Math.floor(lum * 8));
+            hist[grayBin]++;
+          } else {
+            // Chromatic Hue bin [8..31]
+            let hue = 0;
+            if (delta > 0) {
+              if (max === r) hue = 60 * (((g - b) / delta) % 6);
+              else if (max === g) hue = 60 * (((b - r) / delta) + 2);
+              else hue = 60 * (((r - g) / delta) + 4);
+              if (hue < 0) hue += 360;
+            }
+            const hueBin = Math.min(23, Math.floor(hue / 15));
+            hist[8 + hueBin]++;
+          }
+        }
+      }
+      if (artPixels > 0) {
+        for (let i = 0; i < 32; i++) hist[i] /= artPixels;
+      }
+
+      // 3. 8x8 Spatial Color & Luminance Grid (64 cells)
       const rgb = new Float32Array(64 * 3);
       const lum = new Float32Array(64);
       const weights = new Float32Array(64);
 
-      let weightedNormSq = 0;
-      for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
-          const idx = y * 8 + x;
-          const p = idx * 4;
-          const r = imgData[p] / 255;
-          const g = imgData[p + 1] / 255;
-          const b = imgData[p + 2] / 255;
-          const l = 0.299 * r + 0.587 * g + 0.114 * b;
-
-          rgb[idx * 3] = r;
-          rgb[idx * 3 + 1] = g;
-          rgb[idx * 3 + 2] = b;
-          lum[idx] = l;
-
-          // Spatial weighting: upper artwork zone (y=1..4, x=1..6) and borders (outer ring)
-          let w = 1.0;
-          if (y >= 1 && y <= 4 && x >= 1 && x <= 6) {
-            w = 1.6; // Primary artwork zone
-          } else if (x === 0 || x === 7 || y === 0 || y === 7) {
-            w = 1.4; // Card borders (silver, yellow, gold)
-          } else {
-            w = 0.8; // Text / rule box zone
+      let gridLumSum = 0;
+      for (let cy = 0; cy < 8; cy++) {
+        for (let cx = 0; cx < 8; cx++) {
+          const idx = cy * 8 + cx;
+          let rSum = 0, gSum = 0, bSum = 0;
+          for (let py = cy * 8; py < (cy + 1) * 8; py++) {
+            for (let px = cx * 8; px < (cx + 1) * 8; px++) {
+              const p = (py * 64 + px) * 4;
+              rSum += imgData[p] / 255;
+              gSum += imgData[p + 1] / 255;
+              bSum += imgData[p + 2] / 255;
+            }
           }
-          weights[idx] = w;
-          weightedNormSq += w * (r * r + g * g + b * b);
+          const rCell = rSum / 64;
+          const gCell = gSum / 64;
+          const bCell = bSum / 64;
+          const lCell = 0.299 * rCell + 0.587 * gCell + 0.114 * bCell;
+
+          rgb[idx * 3] = rCell;
+          rgb[idx * 3 + 1] = gCell;
+          rgb[idx * 3 + 2] = bCell;
+          lum[idx] = lCell;
+          gridLumSum += lCell;
+
+          // Weighting: Heavy focus on the central artwork box
+          if (cy >= 1 && cy <= 4 && cx >= 1 && cx <= 6) {
+            weights[idx] = 2.5; // Central Pokémon artwork
+          } else if (cx === 0 || cx === 7 || cy === 0 || cy === 7) {
+            weights[idx] = 1.3; // Card border (silver / yellow)
+          } else {
+            weights[idx] = 0.8; // Text and rule box
+          }
         }
       }
 
+      // 4. Contrast-Normalized Zero-Mean Luminance Grid
+      const gridMeanL = gridLumSum / 64;
+      let gridVarL = 0;
+      for (let i = 0; i < 64; i++) {
+        gridVarL += (lum[i] - gridMeanL) * (lum[i] - gridMeanL);
+      }
+      const gridStdL = Math.sqrt(gridVarL / 64);
+      const lumNorm = new Float32Array(64);
+      for (let i = 0; i < 64; i++) {
+        lumNorm[i] = (lum[i] - gridMeanL) / (gridStdL + 1e-4);
+      }
+
+      // 5. Border Cue Extraction
+      let borderSatSum = 0, borderLumSum = 0, borderCells = 0;
+      for (let i = 0; i < 64; i++) {
+        const cy = Math.floor(i / 8);
+        const cx = i % 8;
+        if (cx === 0 || cx === 7 || cy === 0 || cy === 7) {
+          const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
+          const max = Math.max(r, g, b), min = Math.min(r, g, b);
+          const sat = max > 0 ? (max - min) / max : 0;
+          borderSatSum += sat;
+          borderLumSum += lum[i];
+          borderCells++;
+        }
+      }
+      const avgBorderSat = borderSatSum / (borderCells || 1);
+      const avgBorderLum = borderLumSum / (borderCells || 1);
+      let border = 'silver';
+      if (avgBorderSat > 0.35) border = 'yellow';
+      else if (avgBorderLum < 0.25) border = 'dark';
+
       return {
+        isPoorQuality: false,
+        hist,
         rgb,
         lum,
+        lumNorm,
         weights,
-        norm: Math.sqrt(Math.max(1e-6, weightedNormSq))
+        border,
+        meanL,
+        stdL
       };
     } catch (e) {
       return null;
     }
   },
 
-  // Compute cosine/Euclidean similarity against cached 8x8 color signatures
-  computeVisualSimilarity(sigA, sigB) {
-    if (!sigA || !sigB) return 25;
-    const { rgb: aRgb, lum: aLum, weights: wA, norm: normA } = sigA;
-    const { rgb: bRgb, lum: bLum, norm: normB } = sigB;
+  // Visual Fingerprint Similarity: Histogram + Spatial RGB + Normalized Luminance + Language Edition
+  computeVisualSimilarity(fpA, fpB, options = {}) {
+    if (!fpA || !fpB || fpA.isPoorQuality || fpB.isPoorQuality) return 15;
 
-    let dot = 0;
-    let distSq = 0;
-    let totalW = 0;
-    let lumDiff = 0;
-
-    for (let i = 0; i < 64; i++) {
-      const w = wA[i];
-      totalW += w;
-
-      const ar = aRgb[i * 3], ag = aRgb[i * 3 + 1], ab = aRgb[i * 3 + 2];
-      const br = bRgb[i * 3], bg = bRgb[i * 3 + 1], bb = bRgb[i * 3 + 2];
-
-      dot += w * (ar * br + ag * bg + ab * bb);
-
-      const dr = ar - br;
-      const dg = ag - bg;
-      const db = ab - bb;
-      distSq += w * (dr * dr + dg * dg + db * db);
-
-      lumDiff += w * Math.abs(aLum[i] - bLum[i]);
+    // 1. Central Artwork Box Histogram Intersection (0.0 to 1.0)
+    let histIntersection = 0;
+    const hA = fpA.hist;
+    const hB = fpB.hist;
+    for (let i = 0; i < 32; i++) {
+      histIntersection += Math.min(hA[i], hB[i]);
     }
 
-    const cosineSim = Math.min(1.0, Math.max(0, dot / (normA * normB)));
-    const euclDist = Math.sqrt(distSq / (totalW * 3));
-    const euclSim = Math.max(0, 1.0 - euclDist);
-    const lumSim = Math.max(0, 1.0 - (lumDiff / totalW));
+    // 2. Spatial RGB Grid Similarity (Weighted Euclidean Distance)
+    const rgbA = fpA.rgb;
+    const rgbB = fpB.rgb;
+    const w = fpA.weights;
+    let distSqSum = 0;
+    let totalWeight = 0;
+    for (let i = 0; i < 64; i++) {
+      const weight = w[i];
+      totalWeight += weight;
+      const dr = rgbA[i * 3] - rgbB[i * 3];
+      const dg = rgbA[i * 3 + 1] - rgbB[i * 3 + 1];
+      const db = rgbA[i * 3 + 2] - rgbB[i * 3 + 2];
+      distSqSum += weight * (dr * dr + dg * dg + db * db);
+    }
+    const euclDist = Math.sqrt(distSqSum / (totalWeight * 3));
+    const spatialSim = Math.max(0, 1.0 - euclDist * 1.35);
 
-    // Blended visual similarity (cosine + Euclidean + luminance)
-    const combined = 0.45 * cosineSim + 0.35 * euclSim + 0.20 * lumSim;
-    const score = ((combined - 0.65) / 0.30) * 100;
-    return Math.min(100, Math.max(0, score));
+    // 3. Contrast-Normalized Structural Luminance Correlation
+    const lNormA = fpA.lumNorm;
+    const lNormB = fpB.lumNorm;
+    let dotProd = 0;
+    let normSqA = 0;
+    let normSqB = 0;
+    for (let i = 0; i < 64; i++) {
+      const weight = w[i];
+      dotProd += weight * lNormA[i] * lNormB[i];
+      normSqA += weight * lNormA[i] * lNormA[i];
+      normSqB += weight * lNormB[i] * lNormB[i];
+    }
+    const denom = Math.sqrt(normSqA * normSqB);
+    const lumCorrelation = denom > 1e-6 ? Math.max(0, dotProd / denom) : 0;
+
+    // Blended Visual Closeness
+    const blendedVisual = (0.45 * histIntersection) + (0.35 * spatialSim) + (0.20 * lumCorrelation);
+    let visualScore = blendedVisual * 100;
+
+    // 4. Language Edition & Border Awareness
+    let editionBonus = 0;
+    const activeCountries = options.activeCountries || [];
+    const card = options.card;
+    if (card && card.edition) {
+      if (activeCountries.length > 0) {
+        if (activeCountries.includes(card.edition)) {
+          editionBonus += 10; // Match active language filter
+        } else {
+          editionBonus -= 12; // De-prioritize cards from other unselected editions
+        }
+      }
+      // Border cue bonus (silver for modern SV/JP, yellow for SWSH)
+      if (fpA.border === 'silver' && (card.edition === 'JP' || (card.ref && card.ref.includes('sv')))) {
+        editionBonus += 3;
+      } else if (fpA.border === 'yellow' && (card.ref && card.ref.includes('swsh'))) {
+        editionBonus += 3;
+      }
+    }
+
+    const finalScore = Math.min(99, Math.max(0, Math.round(visualScore + editionBonus)));
+    return finalScore;
   },
 
-  // Fallback synthetic 8x8 signature if card image is CORS blocked or offline
-  generateFallbackSignature(card) {
+  // Generate synthetic visual fingerprint for instant matching before high-res image finishes loading
+  generateSyntheticFingerprint(card) {
     if (!card) return null;
     const nameLower = ((card.name || '') + ' ' + (card.subName || '')).toLowerCase();
-    let r = 0.5, g = 0.5, b = 0.5;
+
+    // Default neutral palette
+    let primaryR = 0.5, primaryG = 0.5, primaryB = 0.5;
+    let borderHue = 'silver';
+    let domHueBin = 0;
 
     if (/pikachu|electhor|zapdos|lightning|raichu/.test(nameLower)) {
-      r = 0.95; g = 0.85; b = 0.15; // Yellow
-    } else if (/charizard|dracaufeu.*shiny/.test(nameLower) && nameLower.includes('shiny')) {
-      r = 0.22; g = 0.22; b = 0.28; // Charcoal Shiny
+      primaryR = 0.95; primaryG = 0.85; primaryB = 0.15; // Yellow
+      domHueBin = 11;
+    } else if (nameLower.includes('shiny') && /charizard|dracaufeu/.test(nameLower)) {
+      primaryR = 0.20; primaryG = 0.20; primaryB = 0.25; // Charcoal Shiny
+      domHueBin = 1;
     } else if (/charizard|dracaufeu|salameche|reptincel|glurak|feu/.test(nameLower)) {
-      r = 0.90; g = 0.40; b = 0.15; // Fire Orange
+      primaryR = 0.92; primaryG = 0.42; primaryB = 0.12; // Fiery Orange
+      domHueBin = 9;
     } else if (/tortank|blastoise|carapuce|amphinobi|greninja|eau/.test(nameLower)) {
-      r = 0.18; g = 0.45; b = 0.82; // Water Blue
+      primaryR = 0.15; primaryG = 0.45; primaryB = 0.85; // Water Blue
+      domHueBin = 22;
     } else if (/florizarre|venusaur|bulbizarre|plante/.test(nameLower)) {
-      r = 0.25; g = 0.70; b = 0.35; // Plant Green
+      primaryR = 0.22; primaryG = 0.68; primaryB = 0.35; // Plant Green
+      domHueBin = 17;
     } else if (/mew|psy/.test(nameLower)) {
-      r = 0.92; g = 0.62; b = 0.80; // Psychic Pink
+      primaryR = 0.92; primaryG = 0.60; primaryB = 0.80; // Psychic Pink
+      domHueBin = 29;
     } else if (/umbreon|noctali|obscurite/.test(nameLower)) {
-      r = 0.12; g = 0.15; b = 0.22; // Dark Navy
+      primaryR = 0.10; primaryG = 0.12; primaryB = 0.20; // Dark Navy
+      domHueBin = 0;
     } else if (/rayquaza/.test(nameLower)) {
-      r = 0.15; g = 0.55; b = 0.35; // Dragon Emerald
+      primaryR = 0.15; primaryG = 0.55; primaryB = 0.35; // Emerald Dragon
+      domHueBin = 17;
     } else if (/gardevoir/.test(nameLower)) {
-      r = 0.45; g = 0.82; b = 0.72; // Fairy Teal
+      primaryR = 0.45; primaryG = 0.82; primaryB = 0.72; // Fairy Teal
+      domHueBin = 19;
     }
 
+    if (card.ref && card.ref.toLowerCase().includes('swsh')) {
+      borderHue = 'yellow';
+    }
+
+    // 32-bin synthetic histogram
+    const hist = new Float32Array(32);
+    if (domHueBin > 0) {
+      hist[domHueBin] = 0.50;
+      hist[Math.min(31, domHueBin + 1)] = 0.20;
+      hist[Math.max(0, domHueBin - 1)] = 0.15;
+      hist[7] = 0.15; // white highlights
+    } else {
+      hist[0] = 0.40;
+      hist[1] = 0.30;
+      hist[7] = 0.30;
+    }
+
+    // 8x8 synthetic grid
     const rgb = new Float32Array(64 * 3);
     const lum = new Float32Array(64);
     const weights = new Float32Array(64);
-    let weightedNormSq = 0;
+    let lumSum = 0;
 
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        const idx = y * 8 + x;
-        const isBorder = (x === 0 || x === 7 || y === 0 || y === 7);
-        const isArtwork = (y >= 1 && y <= 4 && x >= 1 && x <= 6);
+    for (let cy = 0; cy < 8; cy++) {
+      for (let cx = 0; cx < 8; cx++) {
+        const idx = cy * 8 + cx;
+        const isBorder = (cx === 0 || cx === 7 || cy === 0 || cy === 7);
+        const isArtwork = (cy >= 1 && cy <= 4 && cx >= 1 && cx <= 6);
 
-        let cellR = isBorder ? 0.82 : (isArtwork ? r : r * 0.7 + 0.15);
-        let cellG = isBorder ? 0.82 : (isArtwork ? g : g * 0.7 + 0.15);
-        let cellB = isBorder ? 0.85 : (isArtwork ? b : b * 0.7 + 0.15);
+        let cellR = isBorder ? (borderHue === 'yellow' ? 0.92 : 0.82) : (isArtwork ? primaryR : primaryR * 0.7 + 0.15);
+        let cellG = isBorder ? (borderHue === 'yellow' ? 0.82 : 0.82) : (isArtwork ? primaryG : primaryG * 0.7 + 0.15);
+        let cellB = isBorder ? (borderHue === 'yellow' ? 0.20 : 0.85) : (isArtwork ? primaryB : primaryB * 0.7 + 0.15);
         let cellL = 0.299 * cellR + 0.587 * cellG + 0.114 * cellB;
 
         rgb[idx * 3] = cellR;
         rgb[idx * 3 + 1] = cellG;
         rgb[idx * 3 + 2] = cellB;
         lum[idx] = cellL;
+        lumSum += cellL;
 
-        const w = isArtwork ? 1.6 : (isBorder ? 1.4 : 0.8);
-        weights[idx] = w;
-        weightedNormSq += w * (cellR * cellR + cellG * cellG + cellB * cellB);
+        weights[idx] = isArtwork ? 2.5 : (isBorder ? 1.3 : 0.8);
       }
     }
 
+    const meanL = lumSum / 64;
+    let varL = 0;
+    for (let i = 0; i < 64; i++) {
+      varL += (lum[i] - meanL) * (lum[i] - meanL);
+    }
+    const stdL = Math.sqrt(varL / 64);
+    const lumNorm = new Float32Array(64);
+    for (let i = 0; i < 64; i++) {
+      lumNorm[i] = (lum[i] - meanL) / (stdL + 1e-4);
+    }
+
     return {
+      isPoorQuality: false,
+      hist,
       rgb,
       lum,
+      lumNorm,
       weights,
-      norm: Math.sqrt(Math.max(1e-6, weightedNormSq))
+      border: borderHue,
+      meanL,
+      stdL
     };
   },
 
-  getCardSignature(card) {
+  getCardFingerprint(card) {
     if (!card) return null;
-    if (this.colorSignatureCache.has(card.id)) {
-      return this.colorSignatureCache.get(card.id);
+    if (this.fingerprintCache.has(card.id)) {
+      return this.fingerprintCache.get(card.id);
     }
-    const fallback = this.generateFallbackSignature(card);
-    if (fallback) {
-      this.colorSignatureCache.set(card.id, fallback);
-      return fallback;
+    const synthetic = this.generateSyntheticFingerprint(card);
+    if (synthetic) {
+      this.fingerprintCache.set(card.id, synthetic);
+      return synthetic;
     }
     return null;
   },
 
-  // 3. High-contrast grayscale/thresholded preprocessing for OCR
-  preprocessForOCR(cropCanvas) {
-    const ocrCanvas = document.createElement('canvas');
-    ocrCanvas.width = 600;
-    ocrCanvas.height = Math.round(600 * (cropCanvas.height / cropCanvas.width)) || 840;
-    const ctx = ocrCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(cropCanvas, 0, 0, ocrCanvas.width, ocrCanvas.height);
-
-    const imgData = ctx.getImageData(0, 0, ocrCanvas.width, ocrCanvas.height);
-    const d = imgData.data;
-
-    let min = 255, max = 0;
-    const lums = new Uint8Array(d.length / 4);
-    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-      const l = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
-      lums[j] = l;
-      if (l < min) min = l;
-      if (l > max) max = l;
-    }
-
-    const range = Math.max(1, max - min);
-    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
-      const stretched = ((lums[j] - min) / range) * 255;
-      // High-contrast S-curve to sharpen characters on phone screens or blurry captures
-      let v;
-      if (stretched < 95) v = Math.max(0, stretched * 0.45);
-      else if (stretched > 160) v = Math.min(255, stretched * 1.3);
-      else v = stretched;
-
-      d[i] = v;
-      d[i + 1] = v;
-      d[i + 2] = v;
-    }
-    ctx.putImageData(imgData, 0, 0);
-    return ocrCanvas;
-  },
-
-  // 4. String normalization & Levenshtein distance for fuzzy matching
-  normalizeText(str) {
-    if (!str) return '';
-    return str
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  },
-
-  levenshtein(a, b) {
-    if (a === b) return 0;
-    if (!a.length) return b.length;
-    if (!b.length) return a.length;
-    const al = a.length, bl = b.length;
-    const prev = new Array(bl + 1);
-    const curr = new Array(bl + 1);
-    for (let j = 0; j <= bl; j++) prev[j] = j;
-    for (let i = 1; i <= al; i++) {
-      curr[0] = i;
-      const ca = a.charCodeAt(i - 1);
-      for (let j = 1; j <= bl; j++) {
-        const cost = ca === b.charCodeAt(j - 1) ? 0 : 1;
-        curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
-      }
-      for (let j = 0; j <= bl; j++) prev[j] = curr[j];
-    }
-    return curr[bl];
-  },
-
-  getCardKeywords(card) {
-    const rawName = card.name || '';
-    const cleanName = rawName.replace(/[-\s]*(ex|vmax|v|sar|ar|shiny|alt|radieux)\b/gi, '').trim();
-    const primary = [rawName, cleanName];
-
-    const enMap = {
-      'Dracaufeu': 'Charizard',
-      'Salamèche': 'Charmander',
-      'Reptincel': 'Charmeleon',
-      'Bulbizarre': 'Bulbasaur',
-      'Herbizarre': 'Ivysaur',
-      'Florizarre': 'Venusaur',
-      'Carapuce': 'Squirtle',
-      'Carabaffe': 'Wartortle',
-      'Tortank': 'Blastoise',
-      'Pikachu': 'Pikachu',
-      'Raichu': 'Raichu',
-      'Mew': 'Mew',
-      'Mewtwo': 'Mewtwo',
-      'Électhor': 'Zapdos',
-      'Artikodin': 'Articuno',
-      'Sulfura': 'Moltres',
-      'Ectoplasma': 'Gengar',
-      'Dracolosse': 'Dragonite',
-      'Noctali': 'Umbreon',
-      'Mentali': 'Espeon',
-      'Amphinobi': 'Greninja',
-      'Gardevoir': 'Gardevoir',
-      'Rayquaza': 'Rayquaza',
-      'Glurak': 'Dracaufeu'
-    };
-
-    if (enMap[cleanName]) primary.push(enMap[cleanName]);
-    for (const [fr, en] of Object.entries(enMap)) {
-      if (en.toLowerCase() === cleanName.toLowerCase()) {
-        primary.push(fr);
-      }
-    }
-
-    const asian = [];
-    if (card.subName) asian.push(card.subName.trim());
-    if (typeof POKEMON_JA_NAMES !== 'undefined') {
-      for (const [ja, fr] of Object.entries(POKEMON_JA_NAMES)) {
-        if (fr.toLowerCase() === cleanName.toLowerCase()) asian.push(ja);
-      }
-    }
-    if (typeof POKEMON_CN_NAMES !== 'undefined') {
-      for (const [cn, fr] of Object.entries(POKEMON_CN_NAMES)) {
-        if (fr.toLowerCase() === cleanName.toLowerCase()) asian.push(cn);
-      }
-    }
-
-    return { primary, asian };
-  },
-
-  // 5. Criterion B — Fuzzy Title & Attack Text OCR (30% weight):
-  //    Matches detected words against French, English, and Japanese names using Levenshtein distance
-  scoreCriterionB(ocrText, card) {
-    if (!ocrText || typeof ocrText !== 'string' || !ocrText.trim()) return 0;
-    const cleanOcr = this.normalizeText(ocrText);
-    if (!cleanOcr) return 0;
-
-    const keywords = this.getCardKeywords(card);
-    let bestSim = 0;
-
-    // Direct substring check on primary names
-    for (const kw of keywords.primary) {
-      const normKw = this.normalizeText(kw);
-      if (normKw.length >= 3 && cleanOcr.includes(normKw)) {
-        bestSim = Math.max(bestSim, 1.0);
-      }
-    }
-
-    // Direct substring check on Asian/Japanese names
-    for (const ja of keywords.asian) {
-      if (ja && ja.length >= 2 && ocrText.includes(ja)) {
-        bestSim = Math.max(bestSim, 1.0);
-      }
-    }
-
-    // Token & N-Gram fuzzy Levenshtein comparison (e.g. "Plkachu" -> "Pikachu")
-    const words = cleanOcr.split(/\s+/).filter(w => w.length >= 3);
-    const ngrams = [...words];
-    for (let i = 0; i < words.length - 1; i++) {
-      ngrams.push(`${words[i]} ${words[i + 1]}`);
-    }
-
-    for (const target of keywords.primary) {
-      const normTarget = this.normalizeText(target);
-      if (normTarget.length < 3) continue;
-
-      for (const token of ngrams) {
-        if (Math.abs(token.length - normTarget.length) > 3) continue;
-        const dist = this.levenshtein(token, normTarget);
-        const sim = 1.0 - (dist / Math.max(token.length, normTarget.length));
-        if (sim > bestSim) {
-          bestSim = sim;
-        }
-      }
-    }
-
-    // Card type modifiers bonus (ex, vmax, sar, ar, shiny)
-    let modifierBonus = 0;
-    const nameLower = ((card.name || '') + ' ' + (card.subName || '')).toLowerCase();
-    if (nameLower.includes('ex') && /\bex\b/i.test(ocrText)) modifierBonus += 8;
-    if (nameLower.includes('vmax') && /vmax/i.test(ocrText)) modifierBonus += 10;
-    if (nameLower.includes('sar') && /sar/i.test(ocrText)) modifierBonus += 10;
-    if (nameLower.includes('ar') && /\bar\b/i.test(ocrText)) modifierBonus += 8;
-    if (nameLower.includes('shiny') && /shiny/i.test(ocrText)) modifierBonus += 8;
-
-    let score = 0;
-    if (bestSim >= 0.85) {
-      score = 85 + (bestSim - 0.85) * 100 + modifierBonus;
-    } else if (bestSim >= 0.70) {
-      score = 65 + (bestSim - 0.70) * 100 + modifierBonus;
-    } else if (bestSim >= 0.55) {
-      score = 40 + (bestSim - 0.55) * 80 + modifierBonus;
-    } else {
-      score = bestSim * 40;
-    }
-
-    return Math.min(100, Math.max(0, Math.round(score)));
-  },
-
-  // 6. Criterion C — Set Number & HP Extraction (20% weight):
-  //    Extracts regex patterns like \d{1,3}\s*\/\s*\d{1,3} and \d{2,3}\s*PV|HP
-  scoreCriterionC(ocrText, card) {
-    if (!ocrText || typeof ocrText !== 'string' || !ocrText.trim()) return 0;
-    let score = 0;
-
-    // 1. Set number fraction match: e.g. "201/165" or "199/165" or "331/190"
-    const fractionRegex = /(\d{1,3})\s*[\/|\\]\s*(\d{1,3})/g;
-    let fracMatch;
-    let foundExactRef = false;
-    let foundLocalId = false;
-
-    const cardRefLower = (card.ref || '').toLowerCase();
-    const cardLocalId = parseInt(card.localId, 10);
-
-    while ((fracMatch = fractionRegex.exec(ocrText)) !== null) {
-      const num = parseInt(fracMatch[1], 10);
-      const den = parseInt(fracMatch[2], 10);
-      const fracStr = `${num}/${den}`;
-      if (cardRefLower.includes(fracStr)) {
-        foundExactRef = true;
-      }
-      if (!isNaN(cardLocalId) && cardLocalId === num) {
-        foundLocalId = true;
-      }
-    }
-
-    if (foundExactRef) {
-      score += 85;
-    } else if (foundLocalId) {
-      score += 65;
-    }
-
-    // 2. Set code match: e.g. "sv2a", "sv03.5", "sv4a", "sv6", "swsh7"
-    const setCodeMatch = cardRefLower.match(/(sv[\w.]+|swsh\d+)/i);
-    if (setCodeMatch) {
-      const setCode = setCodeMatch[1].toLowerCase();
-      if (ocrText.toLowerCase().includes(setCode)) {
-        score += 20;
-      }
-    }
-
-    // 3. HP / PV match: e.g. "330 PV" or "HP 330"
-    const hpRegex = /(?:pv|hp)\s*(\d{2,3})|(\d{2,3})\s*(?:pv|hp)/gi;
-    let hpMatch;
-    const extractedHps = [];
-    while ((hpMatch = hpRegex.exec(ocrText)) !== null) {
-      const val = parseInt(hpMatch[1] || hpMatch[2], 10);
-      if (val >= 30 && val <= 400) extractedHps.push(val);
-    }
-
-    if (card.hp && extractedHps.includes(parseInt(card.hp, 10))) {
-      score += 30;
-    } else if (extractedHps.length > 0 && /ex|vmax/i.test(card.name) && extractedHps.some(h => h >= 220)) {
-      score += 15;
-    }
-
-    return Math.min(100, score);
-  },
-
-  // 7. Multi-Criteria Ranking against loaded catalog
-  rankCards(cropCanvas, ocrText, catalog) {
+  // Pure Visual Card Ranking against catalog
+  rankCards(cropCanvas, catalog, options = {}) {
     if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return [];
 
-    const scanSig = this.extractImageSignature(cropCanvas);
+    const scanFp = this.extractFingerprint(cropCanvas);
+    if (!scanFp || scanFp.isPoorQuality) {
+      const rejectScore = scanFp && scanFp.score !== undefined ? scanFp.score : 15;
+      return catalog.map(c => ({
+        card: c,
+        score: rejectScore,
+        scoreVisual: rejectScore,
+        isPoorQuality: true,
+        reason: scanFp ? scanFp.qualityReason : 'too_dark_or_blurry'
+      }));
+    }
+
+    const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
+      ? state.filters.countries
+      : [];
 
     const scored = catalog.map(card => {
-      const cardSig = this.getCardSignature(card);
-      const scoreA = cardSig ? this.computeVisualSimilarity(scanSig, cardSig) : 25;
-      const scoreB = this.scoreCriterionB(ocrText, card);
-      const scoreC = this.scoreCriterionC(ocrText, card);
-
-      // Weighted multi-criteria confidence score (0-100)
-      const totalScore = (0.50 * scoreA) + (0.30 * scoreB) + (0.20 * scoreC);
+      const cardFp = this.getCardFingerprint(card);
+      const score = cardFp
+        ? this.computeVisualSimilarity(scanFp, cardFp, { card, activeCountries })
+        : 20;
 
       return {
         card,
-        score: totalScore,
-        scoreA,
-        scoreB,
-        scoreC,
-        matchedCriteria: {
-          visual: scoreA >= 50,
-          name: scoreB >= 45,
-          number: scoreC >= 40
-        }
+        score,
+        scoreVisual: score,
+        isPoorQuality: false
       };
     });
 
-    // Rank highest-scoring first
+    // Rank highest visual score first
     scored.sort((a, b) => b.score - a.score);
     return scored;
   }
@@ -3553,12 +3504,17 @@ async function openScanner() {
   overlay.style.display = 'flex';
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  // Initialize and preload catalog signatures
+  // Update edition indicator pill
+  updateScannerEditionPill();
+
+  // Preload catalog signatures
   CardRecognizer.init(CARDS);
 
   const video = document.getElementById('scanner-video');
   const resultsEl = document.getElementById('scanner-results');
-  if (resultsEl) resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+  if (resultsEl) {
+    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+  }
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -3583,6 +3539,20 @@ async function openScanner() {
   }
 }
 
+function updateScannerEditionPill() {
+  const pillText = document.getElementById('scanner-edition-text');
+  if (!pillText) return;
+  if (typeof state !== 'undefined' && state.filters && state.filters.countries && state.filters.countries.length > 0) {
+    const flags = state.filters.countries.map(code => {
+      const c = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(x => x.code === code) : null;
+      return `${c ? c.flag : '🌐'} ${code}`;
+    }).join(', ');
+    pillText.textContent = `Édition : ${flags} (Prioritaire)`;
+  } else {
+    pillText.textContent = 'Édition : Toutes (Auto-détection)';
+  }
+}
+
 function closeScanner() {
   const overlay = document.getElementById('modal-scanner');
   if (overlay) overlay.style.display = 'none';
@@ -3604,7 +3574,7 @@ async function captureAndScan() {
   resultsEl.innerHTML = `
     <div class="inline-flex items-center gap-2 bg-black/70 backdrop-blur px-4 py-2.5 rounded-full text-emerald-300 text-xs border border-emerald-500/30 shadow-lg">
       <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-      <span class="font-medium">Analyse multi-critères en cours (Empreinte 8x8 + OCR + N°)...</span>
+      <span class="font-medium">Analyse visuelle de l'illustration en cours...</span>
     </div>
   `;
 
@@ -3618,7 +3588,7 @@ async function captureAndScan() {
       return;
     }
 
-    // 1. Crop captured video frame to 4-corner viewfinder box
+    // 1. Crop captured video frame strictly to 4-corner viewfinder box (object-cover mapped)
     const viewfinder = document.getElementById('scanner-viewfinder');
     const crop = CardRecognizer.getCropRect(video, viewfinder);
     const cropCanvas = document.createElement('canvas');
@@ -3627,81 +3597,108 @@ async function captureAndScan() {
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
     cropCtx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
 
-    // 2. High-contrast OCR preprocessing
-    const ocrCanvas = CardRecognizer.preprocessForOCR(cropCanvas);
-
-    // 3. Run OCR with Tesseract.js
-    let ocrText = '';
-    if (typeof Tesseract !== 'undefined') {
-      try {
-        const { data: { text } } = await Tesseract.recognize(ocrCanvas, 'eng+jpn', { logger: () => {} });
-        ocrText = text || '';
-      } catch (err) {
-        console.warn('Tesseract OCR error:', err);
-      }
-    }
-
-    // 4. Compute weighted multi-criteria score against loaded catalog
-    const ranked = CardRecognizer.rankCards(cropCanvas, ocrText, CARDS);
+    // 2. Pure Visual Matching against loaded catalog
+    const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
     if (!ranked || ranked.length === 0) {
-      resultsEl.innerHTML = `
-        <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 text-white/70 text-xs text-center">
-          Aucune carte dans le catalogue.
-        </div>
-      `;
+      showNoMatchResult(0, resultsEl);
       return;
     }
 
-    // Highest-scoring card is primary match
     const bestMatch = ranked[0];
-    const runnerUps = ranked.slice(1, 4);
-    showScannerResult(bestMatch, runnerUps, resultsEl);
+
+    // 3. HONEST CONFIDENCE THRESHOLD & ZERO FALSE POSITIVES (< 40% vs >= 40%)
+    if (bestMatch.score < 40) {
+      showNoMatchResult(bestMatch.score, resultsEl);
+    } else {
+      const runnerUps = ranked.slice(1, 4);
+      showScannerResult(bestMatch, runnerUps, resultsEl);
+    }
   } catch (e) {
     console.error('Scan error:', e);
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/90 border border-red-500/40 rounded-xl p-3 text-red-300 text-xs text-center">
-        Erreur lors de l'analyse. Réessayez avec un cadrage net.
-      </div>
-    `;
+    showNoMatchResult(0, resultsEl);
   }
 }
 
+// Honest threshold display when confidence is below 40%
+function showNoMatchResult(score = 0, resultsEl = null) {
+  if (!resultsEl) resultsEl = document.getElementById('scanner-results');
+  if (!resultsEl) return;
+
+  resultsEl.innerHTML = `
+    <div class="scanner-no-match bg-slate-900/95 border border-amber-500/50 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-3">
+      <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+        <i data-lucide="scan" style="width:24px;height:24px;"></i>
+      </div>
+      <div class="space-y-1">
+        <div class="text-sm font-bold text-amber-300">Carte non reconnue clairement — Rapprochez ou stabilisez</div>
+        <p class="text-xs text-white/60">Image floue, reflet ou carte hors du viseur (${Math.round(score)}% de correspondance visuelle).</p>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="scanner-retry-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-900 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i>
+          <span>Réessayer</span>
+        </button>
+      </div>
+
+      <!-- Quick manual reference input box -->
+      <div class="border-t border-white/10 pt-3 text-left">
+        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro (ex: 201/165) :</label>
+        <div class="flex gap-2">
+          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou sv2a 201" 
+                 class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Retry button resets the scanner hint
+  document.getElementById('scanner-retry-btn')?.addEventListener('click', () => {
+    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+  });
+
+  // Inline manual reference lookup
+  const inlineInput = document.getElementById('scanner-inline-manual-ref');
+  const inlineBtn = document.getElementById('scanner-inline-manual-btn');
+  if (inlineInput && inlineBtn) {
+    const handleInlineLookup = () => {
+      runScannerManualLookup(inlineInput.value, resultsEl);
+    };
+    inlineBtn.addEventListener('click', handleInlineLookup);
+    inlineInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleInlineLookup();
+    });
+  }
+}
+
+// Display recognized card with confidence score >= 40%
 function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl || !matchedResult) return;
 
   const card = matchedResult.card || matchedResult;
   const score = matchedResult.score !== undefined ? Math.round(matchedResult.score) : 100;
-  const scoreA = matchedResult.scoreA !== undefined ? Math.round(matchedResult.scoreA) : 100;
-  const scoreB = matchedResult.scoreB !== undefined ? Math.round(matchedResult.scoreB) : 100;
-  const scoreC = matchedResult.scoreC !== undefined ? Math.round(matchedResult.scoreC) : 100;
 
-  const margin = netMargin(card);
-  const roi = netROI(card);
+  const margin = (typeof netMargin === 'function') ? netMargin(card) : 0;
+  const roi = (typeof netROI === 'function') ? netROI(card) : 0;
   const profitCls = margin >= 0 ? 'text-emerald-400' : 'text-red-400';
   const marginSign = margin >= 0 ? '+' : '';
-  const frActive = getActiveFrPrice(card);
-  const jpActive = getActiveJpPrice(card);
+  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card) : 0;
+  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card) : 0;
 
-  const scoreBadgeBg = score >= 65 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                       score >= 45 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                       'bg-slate-500/20 text-slate-300 border-slate-500/40';
+  const scoreBadgeBg = score >= 70 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                       score >= 50 ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
+                       'bg-amber-500/20 text-amber-300 border-amber-500/40';
 
-  const critA_ok = scoreA >= 50;
-  const critB_ok = scoreB >= 45;
-  const critC_ok = scoreC >= 40;
+  const cardCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === card.edition) : null;
+  const editionFlag = cardCountry ? cardCountry.flag : '🌐';
 
-  const pillA = critA_ok
-    ? `<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full" title="Empreinte visuelle: ${scoreA}%">✓ Empreinte visuelle</span>`
-    : `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/40 px-2 py-0.5 rounded-full" title="Empreinte visuelle: ${scoreA}%">✗ Empreinte faible</span>`;
-
-  const pillB = critB_ok
-    ? `<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full" title="Nom détecté: ${scoreB}%">✓ Nom détecté</span>`
-    : `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/40 px-2 py-0.5 rounded-full" title="Nom non lu: ${scoreB}%">✗ Nom non lu</span>`;
-
-  const pillC = critC_ok
-    ? `<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-full" title="N° & PV: ${scoreC}%">✓ N° & PV identifiés</span>`
-    : `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-800/60 border border-slate-700/40 px-2 py-0.5 rounded-full" title="N° flou: ${scoreC}%">✗ N° flou</span>`;
+  const highResImg = (typeof formatHighResCardImage === 'function')
+    ? formatHighResCardImage(card.image)
+    : card.image;
 
   const runnerUpsHtml = (runnerUps && runnerUps.length > 0) ? `
     <div class="border-t border-white/10 pt-2.5 mt-2">
@@ -3710,19 +3707,24 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
           <i data-lucide="help-circle" style="width:13px;height:13px;" class="text-amber-400"></i>
           <span>Pas la bonne carte ?</span>
         </span>
-        <span class="text-[10px] text-white/40 normal-case font-normal">Top 3 suggestions</span>
+        <span class="text-[10px] text-white/40 normal-case font-normal">Top suggestions</span>
       </div>
       <div class="grid grid-cols-1 gap-1.5">
         ${runnerUps.map((item, idx) => {
           const rCard = item.card;
           const rScore = Math.round(item.score);
+          const rCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === rCard.edition) : null;
+          const rFlag = rCountry ? rCountry.flag : '🌐';
+          const rImg = (typeof formatHighResCardImage === 'function') ? formatHighResCardImage(rCard.image) : rCard.image;
           return `
             <div class="scanner-runner-card flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-emerald-400/50 transition-all text-left cursor-pointer group" data-idx="${idx}" data-card-id="${rCard.id}">
               <div class="flex items-center gap-2 min-w-0 flex-1">
-                <img src="${rCard.image}" class="w-8 h-11 object-cover rounded flex-shrink-0 border border-white/20 shadow-sm" alt="${rCard.name}" onerror="onCardImageError(this)">
+                <img src="${rImg}" class="w-8 h-11 object-cover rounded flex-shrink-0 border border-white/20 shadow-sm" alt="${rCard.name}" onerror="onCardImageError(this)">
                 <div class="min-w-0 flex-1">
-                  <div class="text-xs font-semibold text-white truncate group-hover:text-emerald-300 transition-colors">${rCard.name}</div>
-                  <div class="text-[10px] text-white/50 truncate font-mono">${rCard.ref}</div>
+                  <div class="text-xs font-semibold text-white truncate group-hover:text-emerald-300 transition-colors">
+                    <span>${rFlag}</span> ${rCard.name}
+                  </div>
+                  <div class="text-[10px] text-white/50 truncate font-mono">${rCard.ref || ''}</div>
                 </div>
               </div>
               <div class="flex items-center gap-1.5 flex-shrink-0">
@@ -3749,33 +3751,43 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
           <span>Carte identifiée</span>
         </div>
         <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${scoreBadgeBg}">
-          ${score}% confiance
+          ${score}% correspondance visuelle
         </span>
       </div>
 
-      <!-- Checklist -->
-      <div class="flex flex-wrap gap-1.5 justify-center">
-        ${pillA}
-        ${pillB}
-        ${pillC}
+      <!-- Match Validation Pills -->
+      <div class="flex items-center justify-center gap-2">
+        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
+          <span>Artwork & couleurs validées</span>
+        </span>
+        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
+          <span>${editionFlag} ${card.edition || 'JP'}</span>
+        </span>
       </div>
 
       <!-- Primary Card Info -->
       <div class="flex gap-3 items-center bg-white/5 border border-white/10 rounded-xl p-2.5">
-        <img src="${card.image}" class="w-16 h-22 object-cover rounded-lg flex-shrink-0 shadow-lg border border-white/20" alt="${card.name}" onerror="onCardImageError(this)">
+        <img src="${highResImg}" class="w-16 h-22 object-cover rounded-lg flex-shrink-0 shadow-lg border border-white/20" alt="${card.name}" onerror="onCardImageError(this)">
         <div class="flex-1 min-w-0 text-left">
           <div class="font-bold text-sm truncate text-white">${card.name}</div>
           ${card.subName ? `<div class="text-white/60 text-[11px] truncate">${card.subName}</div>` : ''}
-          <div class="text-white/40 text-[10px] mt-0.5 font-mono">${card.ref}</div>
+          <div class="text-white/40 text-[10px] mt-0.5 font-mono">${card.ref || ''}</div>
           <div class="text-xs text-white/80 mt-1">JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €</div>
           <div class="text-xs font-bold ${profitCls} mt-0.5">Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)</div>
         </div>
       </div>
 
-      <!-- Action Button -->
+      <!-- Action Button: Open Full Card Detail View -->
       <button type="button" class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-900 text-xs font-bold py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer" id="scanner-open-detail">
         <span>Ouvrir le détail complet</span>
         <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+      </button>
+
+      <!-- Scan next card / rescan button -->
+      <button type="button" class="w-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-[11px] font-semibold py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer" id="scanner-rescan-btn">
+        <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
+        <span>Scanner une autre carte</span>
       </button>
 
       <!-- Runner-ups -->
@@ -3787,7 +3799,11 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
   document.getElementById('scanner-open-detail')?.addEventListener('click', () => {
     closeScanner();
-    openCardDetail(card.id);
+    if (typeof openCardDetail === 'function') openCardDetail(card.id);
+  });
+
+  document.getElementById('scanner-rescan-btn')?.addEventListener('click', () => {
+    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
   });
 
   resultsEl.querySelectorAll('.scanner-runner-card').forEach(elem => {
@@ -3795,7 +3811,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
       if (e.target.closest('.scanner-runner-open')) {
         const id = e.target.closest('.scanner-runner-open').dataset.cardId;
         closeScanner();
-        openCardDetail(id);
+        if (typeof openCardDetail === 'function') openCardDetail(id);
         return;
       }
       const idx = parseInt(elem.dataset.idx, 10);
@@ -3816,7 +3832,7 @@ function handleScannerFileUpload(file) {
   resultsEl.innerHTML = `
     <div class="inline-flex items-center gap-2 bg-black/70 backdrop-blur px-4 py-2.5 rounded-full text-emerald-300 text-xs border border-emerald-500/30 shadow-lg">
       <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-      <span class="font-medium">Analyse de la photo (Empreinte 8x8 + OCR + N°)...</span>
+      <span class="font-medium">Analyse visuelle de la photo...</span>
     </div>
   `;
 
@@ -3831,50 +3847,96 @@ function handleScannerFileUpload(file) {
       const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
       cropCtx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
 
-      const ocrCanvas = CardRecognizer.preprocessForOCR(cropCanvas);
-      let ocrText = '';
-      if (typeof Tesseract !== 'undefined') {
-        try {
-          const { data: { text } } = await Tesseract.recognize(ocrCanvas, 'eng+jpn', { logger: () => {} });
-          ocrText = text || '';
-        } catch (err) {
-          console.warn('Tesseract OCR error on file:', err);
-        }
-      }
-
-      const ranked = CardRecognizer.rankCards(cropCanvas, ocrText, CARDS);
+      const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
       if (!ranked || ranked.length === 0) {
-        resultsEl.innerHTML = `
-          <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-3 text-white/70 text-xs text-center">
-            Aucune carte correspondante trouvée.
-          </div>
-        `;
+        showNoMatchResult(0, resultsEl);
         return;
       }
 
       const bestMatch = ranked[0];
-      const runnerUps = ranked.slice(1, 4);
-      showScannerResult(bestMatch, runnerUps, resultsEl);
+      if (bestMatch.score < 40) {
+        showNoMatchResult(bestMatch.score, resultsEl);
+      } else {
+        const runnerUps = ranked.slice(1, 4);
+        showScannerResult(bestMatch, runnerUps, resultsEl);
+      }
     } catch (e) {
       console.error('File scan error:', e);
-      resultsEl.innerHTML = `
-        <div class="bg-slate-900/90 border border-red-500/40 rounded-xl p-3 text-red-300 text-xs text-center">
-          Erreur lors de l'analyse de l'image.
-        </div>
-      `;
+      showNoMatchResult(0, resultsEl);
     } finally {
       URL.revokeObjectURL(url);
     }
   };
   img.onerror = () => {
     URL.revokeObjectURL(url);
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/90 border border-red-500/40 rounded-xl p-3 text-red-300 text-xs text-center">
-        Impossible de charger le fichier image.
-      </div>
-    `;
+    showNoMatchResult(0, resultsEl);
   };
   img.src = url;
+}
+
+// Manual Reference Search helper
+function runScannerManualLookup(rawQuery, resultsEl = null) {
+  if (!resultsEl) resultsEl = document.getElementById('scanner-results');
+  if (!resultsEl) return;
+
+  const q = (rawQuery || '').trim().toLowerCase();
+  if (!q) return;
+
+  const catalog = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
+  const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
+    ? state.filters.countries
+    : [];
+
+  const matchedList = catalog.filter(c => {
+    const ref = (c.ref || '').toLowerCase();
+    const name = (c.name || '').toLowerCase();
+    const subName = (c.subName || '').toLowerCase();
+    const localId = (c.localId || '').toLowerCase();
+
+    // Match "201/165" or "sv2a 201" or "201"
+    return ref.includes(q) || localId === q || name.includes(q) || subName.includes(q) || (c.id && c.id.toLowerCase() === q);
+  });
+
+  // Prioritize active language edition
+  if (activeCountries.length > 0) {
+    matchedList.sort((a, b) => {
+      const aMatch = activeCountries.includes(a.edition) ? 1 : 0;
+      const bMatch = activeCountries.includes(b.edition) ? 1 : 0;
+      return bMatch - aMatch;
+    });
+  }
+
+  if (matchedList.length > 0) {
+    const primary = {
+      card: matchedList[0],
+      score: 100,
+      scoreVisual: 100
+    };
+    const runners = matchedList.slice(1, 4).map(c => ({
+      card: c,
+      score: 95,
+      scoreVisual: 95
+    }));
+    showScannerResult(primary, runners, resultsEl);
+  } else {
+    resultsEl.innerHTML = `
+      <div class="bg-slate-900/95 border border-amber-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-2">
+        <div class="text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i>
+          <span>Carte non trouvée</span>
+        </div>
+        <p class="text-xs text-white/70">Aucune carte trouvée pour <span class="font-mono text-emerald-300">"${q}"</span> dans le catalogue.</p>
+        <p class="text-[11px] text-white/50">Vérifiez le numéro de set (ex: 201/165 ou sv2a 201) ou le nom du Pokémon.</p>
+        <button id="scanner-retry-manual-btn" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all cursor-pointer mt-1">
+          Réessayer
+        </button>
+      </div>
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    document.getElementById('scanner-retry-manual-btn')?.addEventListener('click', () => {
+      resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+    });
+  }
 }
 
 // ── FOCUS MODE (DESKTOP) ─────────────────────────────────────
@@ -4310,49 +4372,12 @@ function bindEvents() {
   const scannerManualBtn = document.getElementById('scanner-manual-btn');
   const scannerManualRef = document.getElementById('scanner-manual-ref');
   if (scannerManualBtn && scannerManualRef) {
-    const runManualLookup = () => {
-      const q = scannerManualRef.value.trim().toLowerCase();
-      if (!q) return;
-      const matchedList = CARDS.filter(c =>
-        (c.ref && c.ref.toLowerCase().includes(q)) ||
-        (c.name && c.name.toLowerCase().includes(q)) ||
-        (c.subName && c.subName.toLowerCase().includes(q)) ||
-        (c.localId && c.localId.toLowerCase() === q)
-      );
-
-      const resultsEl = document.getElementById('scanner-results');
-      if (matchedList.length > 0) {
-        const primary = {
-          card: matchedList[0],
-          score: 100,
-          scoreA: 100,
-          scoreB: 100,
-          scoreC: 100,
-          matchedCriteria: { visual: true, name: true, number: true }
-        };
-        const runners = matchedList.slice(1, 4).map(c => ({
-          card: c,
-          score: 95,
-          scoreA: 90,
-          scoreB: 95,
-          scoreC: 90
-        }));
-        showScannerResult(primary, runners, resultsEl);
-      } else if (resultsEl) {
-        resultsEl.innerHTML = `
-          <div class="bg-slate-900/95 border border-amber-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl">
-            <div class="text-amber-400 font-bold text-xs uppercase tracking-wide mb-1 flex items-center justify-center gap-1">
-              <span>⚠ Carte non trouvée</span>
-            </div>
-            <p class="text-xs text-white/70">Aucune carte trouvée pour <span class="font-mono text-emerald-300">"${q}"</span> dans le catalogue.</p>
-            <p class="text-[11px] text-white/50 mt-1">Vérifiez le numéro de set (ex: sv2a 201) ou le nom du Pokémon.</p>
-          </div>
-        `;
-      }
+    const triggerManual = () => {
+      runScannerManualLookup(scannerManualRef.value);
     };
-    scannerManualBtn.addEventListener('click', runManualLookup);
+    scannerManualBtn.addEventListener('click', triggerManual);
     scannerManualRef.addEventListener('keydown', e => {
-      if (e.key === 'Enter') runManualLookup();
+      if (e.key === 'Enter') triggerManual();
     });
   }
 
