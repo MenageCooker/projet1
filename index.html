@@ -481,34 +481,36 @@
   </div>
 
   <!-- Modal: Scanner (Full-screen camera overlay) -->
-  <div id="modal-scanner" class="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center" style="display:none;">
+  <div id="modal-scanner" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center overflow-y-auto py-6 px-3" style="display:none;">
     <!-- Close button -->
     <button id="scanner-close-btn" class="fixed top-4 right-4 z-[60] bg-white/95 text-slate-900 rounded-full p-3 shadow-2xl hover:bg-white hover:scale-105 transition-all focus:outline-none cursor-pointer" aria-label="Fermer le scanner">
       <i data-lucide="x" style="width:22px;height:22px;"></i>
     </button>
     <!-- Camera viewfinder -->
-    <div class="relative w-full max-w-md mx-auto flex flex-col items-center px-4">
-      <video id="scanner-video" class="w-full max-h-[60vh] object-cover rounded-2xl bg-black shadow-2xl" autoplay playsinline muted></video>
-      <!-- QR-style corner frame overlay -->
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="relative w-64 h-80">
-          <!-- Corner brackets -->
-          <span class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
-          <span class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
-          <span class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
-          <span class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
-          <!-- Animated scan line -->
-          <div class="scanner-scanline absolute left-2 right-2 h-0.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]" style="top:0;"></div>
+    <div class="relative w-full max-w-md mx-auto flex flex-col items-center px-2">
+      <div class="relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl flex items-center justify-center">
+        <video id="scanner-video" class="w-full max-h-[50vh] sm:max-h-[55vh] object-cover bg-black" autoplay playsinline muted></video>
+        <!-- QR-style corner frame overlay -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div id="scanner-viewfinder" class="relative w-56 h-72 sm:w-64 sm:h-80">
+            <!-- Corner brackets -->
+            <span class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+            <span class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+            <span class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+            <span class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-400 rounded-br-lg shadow-[0_0_12px_rgba(52,211,153,0.6)]"></span>
+            <!-- Animated scan line -->
+            <div class="scanner-scanline absolute left-2 right-2 h-0.5 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]" style="top:0;"></div>
+          </div>
         </div>
       </div>
       <!-- Scanner result overlay -->
       <div id="scanner-results" class="mt-4 w-full text-white text-center"></div>
     </div>
     <!-- Bottom controls -->
-    <div class="mt-6 flex flex-col items-center gap-3 w-full max-w-sm px-4">
-      <button id="scanner-capture-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-2xl text-sm shadow-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
+    <div class="mt-4 flex flex-col items-center gap-3 w-full max-w-sm px-2">
+      <button id="scanner-capture-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-900 font-bold py-3 px-6 rounded-2xl text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
         <i data-lucide="camera" style="width:18px;height:18px;"></i>
-        Scanner la carte
+        <span>Scanner la carte</span>
       </button>
       <div class="flex items-center gap-2 w-full">
         <div class="flex-1 h-px bg-white/20"></div>
@@ -522,7 +524,7 @@
         <button id="scanner-manual-btn" class="bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer">OK</button>
       </div>
       <!-- Fallback: upload photo -->
-      <label class="text-white/60 hover:text-white text-xs underline cursor-pointer transition-colors">
+      <label class="text-white/60 hover:text-white text-xs underline cursor-pointer transition-colors pb-4">
         Uploader une photo à la place
         <input type="file" accept="image/*" id="scanner-file-fallback" class="hidden">
       </label>
