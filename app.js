@@ -3497,6 +3497,157 @@ const CardRecognizer = {
 
 // ── FULL-SCREEN CAMERA SCANNER ───────────────────────────────
 let scannerStream = null;
+let lastFocusTapTime = 0;
+
+// Software sharpening & contrast boost on canvas snapshot for crisp matching
+function enhanceCanvasSnapshot(canvas) {
+  if (!canvas || !canvas.width || !canvas.height) return canvas;
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const w = canvas.width;
+    const h = canvas.height;
+    const srcData = ctx.getImageData(0, 0, w, h);
+    const src = srcData.data;
+    const outData = ctx.createImageData(w, h);
+    const dst = outData.data;
+
+    // Fast 3x3 unsharp mask sharpening + dynamic contrast expansion
+    const sharpen = 0.35;
+    const centerWeight = 1.0 + (4.0 * sharpen); // 2.4
+    const neighborWeight = -sharpen;            // -0.35
+    const contrast = 1.22;                      // +22% contrast boost
+
+    for (let y = 0; y < h; y++) {
+      const yOffset = y * w * 4;
+      const yTop = (y > 0 ? y - 1 : 0) * w * 4;
+      const yBottom = (y < h - 1 ? y + 1 : h - 1) * w * 4;
+
+      for (let x = 0; x < w; x++) {
+        const idx = yOffset + (x * 4);
+        const xLeft = (x > 0 ? x - 1 : 0) * 4;
+        const xRight = (x < w - 1 ? x + 1 : w - 1) * 4;
+
+        const topIdx = yTop + (x * 4);
+        const bottomIdx = yBottom + (x * 4);
+        const leftIdx = yOffset + xLeft;
+        const rightIdx = yOffset + xRight;
+
+        for (let c = 0; c < 3; c++) {
+          // 3x3 Convolution Sharpening
+          const sharpVal = src[idx + c] * centerWeight +
+            (src[topIdx + c] + src[bottomIdx + c] + src[leftIdx + c] + src[rightIdx + c]) * neighborWeight;
+
+          // Dynamic Contrast Boost around midpoint 128
+          const contrastVal = ((sharpVal - 128) * contrast) + 128;
+
+          // Clamp [0..255]
+          dst[idx + c] = contrastVal < 0 ? 0 : (contrastVal > 255 ? 255 : contrastVal);
+        }
+        dst[idx + 3] = src[idx + 3]; // Preserve alpha
+      }
+    }
+
+    ctx.putImageData(outData, 0, 0);
+  } catch (err) {
+    console.debug('Snapshot enhancement skipped:', err);
+  }
+  return canvas;
+}
+
+// Tap-to-Focus interaction on mobile viewfinder
+function triggerTapToFocus(e) {
+  const container = document.getElementById('scanner-viewport-container') || document.getElementById('scanner-video')?.parentElement;
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+  let clientX = e.clientX;
+  let clientY = e.clientY;
+  if (e.touches && e.touches.length > 0) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else if (e.changedTouches && e.changedTouches.length > 0) {
+    clientX = e.changedTouches[0].clientX;
+    clientY = e.changedTouches[0].clientY;
+  } else if (clientX === undefined) {
+    clientX = rect.left + rect.width / 2;
+    clientY = rect.top + rect.height / 2;
+  }
+
+  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+  // Visual feedback: briefly flash a small white focus ring animation with 📍
+  container.querySelectorAll('.scanner-focus-ring').forEach(r => r.remove());
+
+  const ring = document.createElement('div');
+  ring.className = 'scanner-focus-ring';
+  ring.style.left = `${x}px`;
+  ring.style.top = `${y}px`;
+  ring.innerHTML = `<span class="scanner-focus-ring-pin select-none">📍</span>`;
+  container.appendChild(ring);
+
+  setTimeout(() => {
+    if (ring && ring.parentNode) ring.remove();
+  }, 900);
+
+  // Trigger browser's native camera focus recalculation
+  recalculateCameraFocus(clientX, clientY, rect);
+}
+
+async function recalculateCameraFocus(clientX, clientY, rect) {
+  if (!scannerStream) return;
+  const track = scannerStream.getVideoTracks()[0];
+  if (!track || !track.applyConstraints) return;
+
+  try {
+    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+    // 1. If pointsOfInterest supported (Chrome Android / WebRTC)
+    if (capabilities.pointsOfInterest && rect && rect.width > 0 && rect.height > 0) {
+      const normX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      const normY = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
+      try {
+        await track.applyConstraints({
+          advanced: [{ pointsOfInterest: [{ x: normX, y: normY }] }]
+        });
+      } catch (poiErr) {
+        console.debug('pointsOfInterest error:', poiErr);
+      }
+    }
+
+    // 2. Trigger native focus recalculation by cycling single-shot -> continuous-picture / continuous
+    if (capabilities.focusMode && Array.isArray(capabilities.focusMode)) {
+      if (capabilities.focusMode.includes('single-shot')) {
+        await track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+        setTimeout(async () => {
+          try {
+            await track.applyConstraints({ advanced: [{ focusMode: 'continuous-picture' }] });
+          } catch (e1) {
+            try {
+              await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            } catch (e2) {}
+          }
+        }, 250);
+        return;
+      }
+    }
+
+    // Direct continuous-picture re-application for Samsung S10 / Android
+    try {
+      await track.applyConstraints({
+        advanced: [{ focusMode: 'continuous-picture' }]
+      });
+    } catch (e1) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous' }]
+        });
+      } catch (e2) {}
+    }
+  } catch (err) {
+    console.debug('Native camera focus trigger error:', err);
+  }
+}
 
 async function openScanner() {
   const overlay = document.getElementById('modal-scanner');
@@ -3516,15 +3667,64 @@ async function openScanner() {
     resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
   }
 
+  // Ensure tap-to-focus listener is bound on camera container
+  const container = document.getElementById('scanner-viewport-container') || video?.parentElement;
+  if (container && !container._tapFocusBound) {
+    container._tapFocusBound = true;
+    const handleTap = (e) => {
+      const now = Date.now();
+      if (now - lastFocusTapTime < 250) return;
+      lastFocusTapTime = now;
+      triggerTapToFocus(e);
+    };
+    container.addEventListener('click', handleTap);
+    container.addEventListener('touchstart', handleTap, { passive: true });
+  }
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+    const constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        focusMode: { ideal: 'continuous' }
+      },
       audio: false
-    });
+    };
+
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (constraintErr) {
+      console.warn('Advanced constraints rejected, trying fallback:', constraintErr);
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false
+      });
+    }
+
     scannerStream = stream;
     if (video) {
       video.srcObject = stream;
       video.play();
+    }
+
+    // Force Android/Chrome (like Samsung S10) macro / continuous-picture focus right after video starts
+    const track = stream.getVideoTracks()[0];
+    if (track && track.applyConstraints) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous-picture' }]
+        });
+      } catch (err1) {
+        try {
+          await track.applyConstraints({
+            advanced: [{ focusMode: 'continuous' }]
+          });
+        } catch (err2) {
+          console.debug('Native focusMode constraint not supported:', err2);
+        }
+      }
     }
   } catch (e) {
     console.warn('Camera access error:', e);
@@ -3564,6 +3764,10 @@ function closeScanner() {
   if (video) {
     video.srcObject = null;
   }
+  const container = document.getElementById('scanner-viewport-container');
+  if (container) {
+    container.querySelectorAll('.scanner-focus-ring').forEach(r => r.remove());
+  }
 }
 
 async function captureAndScan() {
@@ -3597,7 +3801,10 @@ async function captureAndScan() {
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
     cropCtx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
 
-    // 2. Pure Visual Matching against loaded catalog
+    // 2. Trigger quick software sharpening & contrast boost on canvas snapshot before running visual matcher
+    enhanceCanvasSnapshot(cropCanvas);
+
+    // 3. Pure Visual Matching against loaded catalog
     const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
     if (!ranked || ranked.length === 0) {
       showNoMatchResult(0, resultsEl);
@@ -3606,7 +3813,7 @@ async function captureAndScan() {
 
     const bestMatch = ranked[0];
 
-    // 3. HONEST CONFIDENCE THRESHOLD & ZERO FALSE POSITIVES (< 40% vs >= 40%)
+    // 4. HONEST CONFIDENCE THRESHOLD & ZERO FALSE POSITIVES (< 40% vs >= 40%)
     if (bestMatch.score < 40) {
       showNoMatchResult(bestMatch.score, resultsEl);
     } else {
@@ -3846,6 +4053,9 @@ function handleScannerFileUpload(file) {
       cropCanvas.height = crop.sh;
       const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
       cropCtx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
+
+      // Clean up soft/blurry photo snapshot with software sharpening & contrast boost
+      enhanceCanvasSnapshot(cropCanvas);
 
       const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
       if (!ranked || ranked.length === 0) {
@@ -4367,6 +4577,23 @@ function bindEvents() {
   const scannerCaptureBtn = document.getElementById('scanner-capture-btn');
   if (scannerCaptureBtn) {
     scannerCaptureBtn.addEventListener('click', captureAndScan);
+  }
+
+  // Tap-to-Focus on mobile camera viewfinder
+  const scannerViewportContainer = document.getElementById('scanner-viewport-container');
+  const scannerVideoEl = document.getElementById('scanner-video');
+  const handleFocusTap = (e) => {
+    const now = Date.now();
+    if (now - lastFocusTapTime < 250) return;
+    lastFocusTapTime = now;
+    triggerTapToFocus(e);
+  };
+  if (scannerViewportContainer) {
+    scannerViewportContainer.addEventListener('click', handleFocusTap);
+    scannerViewportContainer.addEventListener('touchstart', handleFocusTap, { passive: true });
+  } else if (scannerVideoEl) {
+    scannerVideoEl.addEventListener('click', handleFocusTap);
+    scannerVideoEl.addEventListener('touchstart', handleFocusTap, { passive: true });
   }
 
   const scannerManualBtn = document.getElementById('scanner-manual-btn');

@@ -1224,6 +1224,48 @@ body {
   animation: scanlineAnim 2.4s ease-in-out infinite;
 }
 
+/* ── Tap-to-Focus white ring & pin animation ── */
+@keyframes focusRingFlash {
+  0% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0;
+  }
+}
+
+.scanner-focus-ring {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.95), inset 0 0 8px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: focusRingFlash 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.scanner-focus-ring-pin {
+  font-size: 15px;
+  line-height: 1;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.9));
+  transform: translateY(-1px);
+}
+
 /* ============================================================
    34. CARD DETAIL MODAL — DUAL MODES (RAW & GRADED SLABS)
    ============================================================ */
