@@ -3005,7 +3005,7 @@ function renderLibrary() {
   });
 }
 
-// ── PURE VISUAL & LANGUAGE-AWARE CARD RECOGNITION ENGINE (`CardRecognizer`) ──
+// ── STRUCTURAL GRAYSCALE GRID (4x4 BLOCK SIMILARITY) RECOGNITION ENGINE (`CardRecognizer`) ──
 const CardRecognizer = {
   fingerprintCache: new Map(),
   _preloading: false,
@@ -3016,27 +3016,38 @@ const CardRecognizer = {
     this.preloadCatalogSignatures(catalog || (typeof CARDS !== 'undefined' ? CARDS : []));
   },
 
-  // Preload and cache visual fingerprints from high-res card artwork
+  // Preload and cache 4x4 structural signatures from catalog card artwork
   preloadCatalogSignatures(catalog) {
     if (!catalog || !Array.isArray(catalog)) return;
     catalog.forEach(card => {
       if (!card || !card.id || this.fingerprintCache.has(card.id)) return;
-      if (!card.image || typeof card.image !== 'string') return;
+      if (!card.image || typeof card.image !== 'string') {
+        const synthetic = this.generateSyntheticSignature(card);
+        if (synthetic) this.fingerprintCache.set(card.id, synthetic);
+        return;
+      }
 
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
-          const fp = this.extractFingerprint(img);
-          if (fp && !fp.isPoorQuality) {
-            this.fingerprintCache.set(card.id, fp);
+          const sig = this.extractArtworkSignatureFromImage(img);
+          if (sig && !sig.isPoorQuality) {
+            this.fingerprintCache.set(card.id, sig);
           }
         } catch (e) {
-          // CORS or canvas extraction blocked: fallback synthetic signature will be used
+          // If canvas extraction blocked by CORS, fallback to synthetic structural signature
+          if (!this.fingerprintCache.has(card.id)) {
+            const synthetic = this.generateSyntheticSignature(card);
+            if (synthetic) this.fingerprintCache.set(card.id, synthetic);
+          }
         }
       };
       img.onerror = () => {
-        // Fallback synthetic signature will be used
+        if (!this.fingerprintCache.has(card.id)) {
+          const synthetic = this.generateSyntheticSignature(card);
+          if (synthetic) this.fingerprintCache.set(card.id, synthetic);
+        }
       };
       const highResUrl = (typeof formatHighResCardImage === 'function')
         ? formatHighResCardImage(card.image)
@@ -3097,357 +3108,324 @@ const CardRecognizer = {
     return { sx, sy, sw, sh };
   },
 
-  // Extract 64x64 visual fingerprint (Artwork Color-Histogram + 8x8 Spatial Grid + Normalized Luminance)
-  extractFingerprint(source, sx = 0, sy = 0, sw = 0, sh = 0) {
+  // Central artwork bounding box coords on card (excluding borders, name bar and bottom text)
+  getArtworkCropRect(cardW, cardH) {
+    const artX = Math.max(0, Math.round(cardW * 0.10));
+    const artY = Math.max(0, Math.round(cardH * 0.14));
+    const artW = Math.max(20, Math.min(cardW - artX, Math.round(cardW * 0.80)));
+    const artH = Math.max(20, Math.min(cardH - artY, Math.round(cardH * 0.40)));
+    return { artX, artY, artW, artH };
+  },
+
+  // Extract 128x128 artwork canvas from full card canvas
+  extractArtworkSignature(sourceCanvas) {
+    if (!sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return null;
+    const w = sourceCanvas.width;
+    const h = sourceCanvas.height;
+    const { artX, artY, artW, artH } = this.getArtworkCropRect(w, h);
+
+    const artCanvas = document.createElement('canvas');
+    artCanvas.width = 128;
+    artCanvas.height = 128;
+    const artCtx = artCanvas.getContext('2d', { willReadFrequently: true });
+    artCtx.drawImage(sourceCanvas, artX, artY, artW, artH, 0, 0, 128, 128);
+
+    return this.computeStructuralGrid(artCanvas);
+  },
+
+  // Extract 128x128 artwork canvas from Image element
+  extractArtworkSignatureFromImage(img) {
+    if (!img) return null;
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+
+    const { artX, artY, artW, artH } = this.getArtworkCropRect(w, h);
+    const artCanvas = document.createElement('canvas');
+    artCanvas.width = 128;
+    artCanvas.height = 128;
+    const artCtx = artCanvas.getContext('2d', { willReadFrequently: true });
+    artCtx.drawImage(img, artX, artY, artW, artH, 0, 0, 128, 128);
+
+    return this.computeStructuralGrid(artCanvas);
+  },
+
+  // Strict 4x4 Grid (16 blocks) calculation:
+  // Converts to high-contrast grayscale, detects edges, computes 16-point geometric signature vector
+  computeStructuralGrid(artCanvas) {
     try {
-      const c = document.createElement('canvas');
-      c.width = 64;
-      c.height = 64;
-      const ctx = c.getContext('2d', { willReadFrequently: true });
-      if (sw > 0 && sh > 0) {
-        ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 64, 64);
-      } else {
-        ctx.drawImage(source, 0, 0, 64, 64);
-      }
-      const imgData = ctx.getImageData(0, 0, 64, 64).data;
+      const ctx = artCanvas.getContext('2d', { willReadFrequently: true });
+      const imgData = ctx.getImageData(0, 0, 128, 128).data;
 
-      // 1. Overall quality / darkness / contrast analysis
-      let sumL = 0;
-      let sumLSq = 0;
-      const numPixels = 64 * 64;
-      for (let i = 0; i < imgData.length; i += 4) {
-        const r = imgData[i] / 255;
-        const g = imgData[i + 1] / 255;
-        const b = imgData[i + 2] / 255;
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        sumL += lum;
-        sumLSq += lum * lum;
-      }
-      const meanL = sumL / numPixels;
-      const varL = Math.max(0, (sumLSq / numPixels) - (meanL * meanL));
-      const stdL = Math.sqrt(varL);
+      // 1. Grayscale conversion + contrast range analysis
+      const gray = new Float32Array(128 * 128);
+      let minLum = 255;
+      let maxLum = 0;
+      let sumLum = 0;
 
-      // Honest rejection condition: too dark (< 0.085), blown-out white (> 0.95 with flat contrast), or uniform (< 0.035)
-      if (meanL < 0.085 || (meanL > 0.95 && stdL < 0.04) || stdL < 0.035) {
+      for (let i = 0, p = 0; i < 128 * 128; i++, p += 4) {
+        const lum = 0.299 * imgData[p] + 0.587 * imgData[p + 1] + 0.114 * imgData[p + 2];
+        gray[i] = lum;
+        if (lum < minLum) minLum = lum;
+        if (lum > maxLum) maxLum = lum;
+        sumLum += lum;
+      }
+
+      const range = maxLum - minLum;
+      const meanL = sumLum / (128 * 128);
+
+      // Rejection condition: completely dark, blown out, or uniform
+      if (range < 18 || meanL < 15 || meanL > 245) {
         return {
           isPoorQuality: true,
-          qualityReason: meanL < 0.085 ? 'too_dark' : 'no_contrast',
-          score: Math.max(5, Math.min(25, Math.round(stdL * 300)))
+          qualityReason: meanL < 15 ? 'too_dark' : (meanL > 245 ? 'blown_out' : 'no_contrast'),
+          score: Math.max(5, Math.min(25, Math.round(range * 0.8)))
         };
       }
 
-      // 2. Central Artwork Box Color Histogram (32 bins: 8 grayscale + 24 Hue sectors)
-      // Illustration box spans x in [7..56], y in [10..40] on 64x64 card
-      const hist = new Float32Array(32);
-      let artPixels = 0;
-      for (let y = 10; y <= 40; y++) {
-        for (let x = 7; x <= 56; x++) {
-          const p = (y * 64 + x) * 4;
-          const r = imgData[p] / 255;
-          const g = imgData[p + 1] / 255;
-          const b = imgData[p + 2] / 255;
-          const max = Math.max(r, g, b);
-          const min = Math.min(r, g, b);
-          const delta = max - min;
-          const sat = max > 0 ? delta / max : 0;
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      // 2. High-contrast normalization: auto-level [minLum..maxLum] into [0.0 .. 1.0]
+      for (let i = 0; i < 128 * 128; i++) {
+        gray[i] = (gray[i] - minLum) / range;
+      }
 
-          artPixels++;
-          if (sat < 0.16) {
-            // Neutral / Grayscale bin [0..7]
-            const grayBin = Math.min(7, Math.floor(lum * 8));
-            hist[grayBin]++;
-          } else {
-            // Chromatic Hue bin [8..31]
-            let hue = 0;
-            if (delta > 0) {
-              if (max === r) hue = 60 * (((g - b) / delta) % 6);
-              else if (max === g) hue = 60 * (((b - r) / delta) + 2);
-              else hue = 60 * (((r - g) / delta) + 4);
-              if (hue < 0) hue += 360;
-            }
-            const hueBin = Math.min(23, Math.floor(hue / 15));
-            hist[8 + hueBin]++;
-          }
+      // 3. Edge detection: Sobel-like gradient magnitude
+      const edges = new Float32Array(128 * 128);
+      for (let y = 1; y < 127; y++) {
+        const row = y * 128;
+        for (let x = 1; x < 127; x++) {
+          const idx = row + x;
+          const gx = Math.abs(gray[idx + 1] - gray[idx - 1]);
+          const gy = Math.abs(gray[idx + 128] - gray[idx - 128]);
+          const g = (gx + gy) * 0.5;
+          edges[idx] = g > 0.08 ? g : 0;
         }
       }
-      if (artPixels > 0) {
-        for (let i = 0; i < 32; i++) hist[i] /= artPixels;
-      }
 
-      // 3. 8x8 Spatial Color & Luminance Grid (64 cells)
-      const rgb = new Float32Array(64 * 3);
-      const lum = new Float32Array(64);
-      const weights = new Float32Array(64);
+      // 4. Divide artwork into 4x4 grid (16 blocks, 32x32 pixels each)
+      const lumVec = new Float32Array(16);
+      const edgeVec = new Float32Array(16);
+      const signatureVec = new Float32Array(16);
 
-      let gridLumSum = 0;
-      for (let cy = 0; cy < 8; cy++) {
-        for (let cx = 0; cx < 8; cx++) {
-          const idx = cy * 8 + cx;
-          let rSum = 0, gSum = 0, bSum = 0;
-          for (let py = cy * 8; py < (cy + 1) * 8; py++) {
-            for (let px = cx * 8; px < (cx + 1) * 8; px++) {
-              const p = (py * 64 + px) * 4;
-              rSum += imgData[p] / 255;
-              gSum += imgData[p + 1] / 255;
-              bSum += imgData[p + 2] / 255;
+      let lumSum16 = 0;
+      for (let by = 0; by < 4; by++) {
+        for (let bx = 0; bx < 4; bx++) {
+          const bIdx = by * 4 + bx;
+          let bLum = 0;
+          let bEdge = 0;
+
+          for (let y = by * 32; y < (by + 1) * 32; y++) {
+            const row = y * 128;
+            for (let x = bx * 32; x < (bx + 1) * 32; x++) {
+              const pIdx = row + x;
+              bLum += gray[pIdx];
+              bEdge += edges[pIdx];
             }
           }
-          const rCell = rSum / 64;
-          const gCell = gSum / 64;
-          const bCell = bSum / 64;
-          const lCell = 0.299 * rCell + 0.587 * gCell + 0.114 * bCell;
 
-          rgb[idx * 3] = rCell;
-          rgb[idx * 3 + 1] = gCell;
-          rgb[idx * 3 + 2] = bCell;
-          lum[idx] = lCell;
-          gridLumSum += lCell;
+          const avgLum = bLum / 1024;
+          const avgEdge = Math.min(1.0, (bEdge / 1024) * 4.5);
 
-          // Weighting: Heavy focus on the central artwork box
-          if (cy >= 1 && cy <= 4 && cx >= 1 && cx <= 6) {
-            weights[idx] = 2.5; // Central Pokémon artwork
-          } else if (cx === 0 || cx === 7 || cy === 0 || cy === 7) {
-            weights[idx] = 1.3; // Card border (silver / yellow)
-          } else {
-            weights[idx] = 0.8; // Text and rule box
-          }
+          lumVec[bIdx] = avgLum;
+          edgeVec[bIdx] = avgEdge;
+          // 16-point geometric signature vector: 55% luminance shape + 45% edge structure
+          signatureVec[bIdx] = 0.55 * avgLum + 0.45 * avgEdge;
+          lumSum16 += avgLum;
         }
       }
 
-      // 4. Contrast-Normalized Zero-Mean Luminance Grid
-      const gridMeanL = gridLumSum / 64;
-      let gridVarL = 0;
-      for (let i = 0; i < 64; i++) {
-        gridVarL += (lum[i] - gridMeanL) * (lum[i] - gridMeanL);
+      // Mean & standard deviation for Pearson Zero-Mean correlation
+      const meanBlockL = lumSum16 / 16;
+      let varBlockL = 0;
+      for (let i = 0; i < 16; i++) {
+        const diff = lumVec[i] - meanBlockL;
+        varBlockL += diff * diff;
       }
-      const gridStdL = Math.sqrt(gridVarL / 64);
-      const lumNorm = new Float32Array(64);
-      for (let i = 0; i < 64; i++) {
-        lumNorm[i] = (lum[i] - gridMeanL) / (gridStdL + 1e-4);
-      }
-
-      // 5. Border Cue Extraction
-      let borderSatSum = 0, borderLumSum = 0, borderCells = 0;
-      for (let i = 0; i < 64; i++) {
-        const cy = Math.floor(i / 8);
-        const cx = i % 8;
-        if (cx === 0 || cx === 7 || cy === 0 || cy === 7) {
-          const r = rgb[i * 3], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-          const max = Math.max(r, g, b), min = Math.min(r, g, b);
-          const sat = max > 0 ? (max - min) / max : 0;
-          borderSatSum += sat;
-          borderLumSum += lum[i];
-          borderCells++;
-        }
-      }
-      const avgBorderSat = borderSatSum / (borderCells || 1);
-      const avgBorderLum = borderLumSum / (borderCells || 1);
-      let border = 'silver';
-      if (avgBorderSat > 0.35) border = 'yellow';
-      else if (avgBorderLum < 0.25) border = 'dark';
+      const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
 
       return {
         isPoorQuality: false,
-        hist,
-        rgb,
-        lum,
-        lumNorm,
-        weights,
-        border,
-        meanL,
-        stdL
+        lumVec,
+        edgeVec,
+        signatureVec,
+        meanLum: meanBlockL,
+        stdLum: stdBlockL
       };
     } catch (e) {
+      console.warn('Error computing structural grid:', e);
       return null;
     }
   },
 
-  // Visual Fingerprint Similarity: Histogram + Spatial RGB + Normalized Luminance + Language Edition
-  computeVisualSimilarity(fpA, fpB, options = {}) {
-    if (!fpA || !fpB || fpA.isPoorQuality || fpB.isPoorQuality) return 15;
-
-    // 1. Central Artwork Box Histogram Intersection (0.0 to 1.0)
-    let histIntersection = 0;
-    const hA = fpA.hist;
-    const hB = fpB.hist;
-    for (let i = 0; i < 32; i++) {
-      histIntersection += Math.min(hA[i], hB[i]);
+  // Compare 16-point geometric signature vectors using Euclidean distance + Pearson structural similarity
+  computeStructuralSimilarity(sigA, sigB, options = {}) {
+    if (!sigA || !sigB || sigA.isPoorQuality || sigB.isPoorQuality) {
+      return 10;
     }
 
-    // 2. Spatial RGB Grid Similarity (Weighted Euclidean Distance)
-    const rgbA = fpA.rgb;
-    const rgbB = fpB.rgb;
-    const w = fpA.weights;
-    let distSqSum = 0;
-    let totalWeight = 0;
-    for (let i = 0; i < 64; i++) {
-      const weight = w[i];
-      totalWeight += weight;
-      const dr = rgbA[i * 3] - rgbB[i * 3];
-      const dg = rgbA[i * 3 + 1] - rgbB[i * 3 + 1];
-      const db = rgbA[i * 3 + 2] - rgbB[i * 3 + 2];
-      distSqSum += weight * (dr * dr + dg * dg + db * db);
-    }
-    const euclDist = Math.sqrt(distSqSum / (totalWeight * 3));
-    const spatialSim = Math.max(0, 1.0 - euclDist * 1.35);
-
-    // 3. Contrast-Normalized Structural Luminance Correlation
-    const lNormA = fpA.lumNorm;
-    const lNormB = fpB.lumNorm;
+    // 1. Zero-Mean Pearson Correlation of 16-block Luminance (Lighting-invariant)
     let dotProd = 0;
-    let normSqA = 0;
-    let normSqB = 0;
-    for (let i = 0; i < 64; i++) {
-      const weight = w[i];
-      dotProd += weight * lNormA[i] * lNormB[i];
-      normSqA += weight * lNormA[i] * lNormA[i];
-      normSqB += weight * lNormB[i] * lNormB[i];
+    for (let i = 0; i < 16; i++) {
+      const devA = sigA.lumVec[i] - sigA.meanLum;
+      const devB = sigB.lumVec[i] - sigB.meanLum;
+      dotProd += devA * devB;
     }
-    const denom = Math.sqrt(normSqA * normSqB);
-    const lumCorrelation = denom > 1e-6 ? Math.max(0, dotProd / denom) : 0;
+    const denom = 16 * sigA.stdLum * sigB.stdLum;
+    const pearson = denom > 1e-6 ? dotProd / denom : 0;
+    const normCorr = Math.max(0, pearson); // [0.0 .. 1.0]
 
-    // Blended Visual Closeness
-    const blendedVisual = (0.45 * histIntersection) + (0.35 * spatialSim) + (0.20 * lumCorrelation);
-    let visualScore = blendedVisual * 100;
+    // 2. Normalized Euclidean Distance on 16-point Geometric Signature Vector
+    let distSq = 0;
+    for (let i = 0; i < 16; i++) {
+      const diff = sigA.signatureVec[i] - sigB.signatureVec[i];
+      distSq += diff * diff;
+    }
+    const euclDist = Math.sqrt(distSq / 16);
+    // Strict scaling: distance > 0.30 (random vectors) maps to 0%
+    const distScore = Math.max(0, 1.0 - (euclDist / 0.30));
 
-    // 4. Language Edition & Border Awareness
+    // 3. Edge Density Structural Alignment
+    let edgeDistSq = 0;
+    for (let i = 0; i < 16; i++) {
+      const diff = sigA.edgeVec[i] - sigB.edgeVec[i];
+      edgeDistSq += diff * diff;
+    }
+    const edgeDist = Math.sqrt(edgeDistSq / 16);
+    const edgeScore = Math.max(0, 1.0 - (edgeDist / 0.32));
+
+    // 4. Combined Structural Score (40% Correlation + 35% Euclidean Vector + 25% Edge Density)
+    const rawScore = (0.40 * normCorr) + (0.35 * distScore) + (0.25 * edgeScore);
+
+    // Optional subtle edition bonus (+2% if matching active language filter, -4% if another edition)
     let editionBonus = 0;
     const activeCountries = options.activeCountries || [];
     const card = options.card;
-    if (card && card.edition) {
-      if (activeCountries.length > 0) {
-        if (activeCountries.includes(card.edition)) {
-          editionBonus += 10; // Match active language filter
-        } else {
-          editionBonus -= 12; // De-prioritize cards from other unselected editions
-        }
-      }
-      // Border cue bonus (silver for modern SV/JP, yellow for SWSH)
-      if (fpA.border === 'silver' && (card.edition === 'JP' || (card.ref && card.ref.includes('sv')))) {
-        editionBonus += 3;
-      } else if (fpA.border === 'yellow' && (card.ref && card.ref.includes('swsh'))) {
-        editionBonus += 3;
+    if (card && card.edition && activeCountries.length > 0) {
+      if (activeCountries.includes(card.edition)) {
+        editionBonus = 2;
+      } else {
+        editionBonus = -4;
       }
     }
 
-    const finalScore = Math.min(99, Math.max(0, Math.round(visualScore + editionBonus)));
+    const finalScore = Math.min(99, Math.max(0, Math.round(rawScore * 100 + editionBonus)));
     return finalScore;
   },
 
-  // Generate synthetic visual fingerprint for instant matching before high-res image finishes loading
-  generateSyntheticFingerprint(card) {
+  // Fallback synthetic 16-point structural signature for cards without high-res images yet
+  generateSyntheticSignature(card) {
     if (!card) return null;
     const nameLower = ((card.name || '') + ' ' + (card.subName || '')).toLowerCase();
 
-    // Default neutral palette
-    let primaryR = 0.5, primaryG = 0.5, primaryB = 0.5;
-    let borderHue = 'silver';
-    let domHueBin = 0;
+    const lumVec = new Float32Array(16);
+    const edgeVec = new Float32Array(16);
+    const signatureVec = new Float32Array(16);
 
-    if (/pikachu|electhor|zapdos|lightning|raichu/.test(nameLower)) {
-      primaryR = 0.95; primaryG = 0.85; primaryB = 0.15; // Yellow
-      domHueBin = 11;
-    } else if (nameLower.includes('shiny') && /charizard|dracaufeu/.test(nameLower)) {
-      primaryR = 0.20; primaryG = 0.20; primaryB = 0.25; // Charcoal Shiny
-      domHueBin = 1;
-    } else if (/charizard|dracaufeu|salameche|reptincel|glurak|feu/.test(nameLower)) {
-      primaryR = 0.92; primaryG = 0.42; primaryB = 0.12; // Fiery Orange
-      domHueBin = 9;
-    } else if (/tortank|blastoise|carapuce|amphinobi|greninja|eau/.test(nameLower)) {
-      primaryR = 0.15; primaryG = 0.45; primaryB = 0.85; // Water Blue
-      domHueBin = 22;
-    } else if (/florizarre|venusaur|bulbizarre|plante/.test(nameLower)) {
-      primaryR = 0.22; primaryG = 0.68; primaryB = 0.35; // Plant Green
-      domHueBin = 17;
+    let baseLum = 0.5;
+    let centerBonus = 0.15;
+    let edgePattern = [
+      0.15, 0.20, 0.20, 0.15,
+      0.25, 0.40, 0.40, 0.25,
+      0.25, 0.45, 0.45, 0.25,
+      0.20, 0.30, 0.30, 0.20
+    ];
+
+    if (/charizard|dracaufeu|salameche|reptincel|glurak/.test(nameLower)) {
+      baseLum = 0.45;
+      edgePattern = [
+        0.55, 0.30, 0.30, 0.60,
+        0.35, 0.65, 0.70, 0.45,
+        0.30, 0.55, 0.60, 0.35,
+        0.25, 0.40, 0.40, 0.30
+      ];
+    } else if (/pikachu|raichu|electhor|zapdos/.test(nameLower)) {
+      baseLum = 0.75;
+      centerBonus = 0.20;
+      edgePattern = [
+        0.60, 0.20, 0.20, 0.60,
+        0.35, 0.50, 0.50, 0.35,
+        0.30, 0.45, 0.45, 0.30,
+        0.20, 0.25, 0.25, 0.20
+      ];
     } else if (/mew|psy/.test(nameLower)) {
-      primaryR = 0.92; primaryG = 0.60; primaryB = 0.80; // Psychic Pink
-      domHueBin = 29;
-    } else if (/umbreon|noctali|obscurite/.test(nameLower)) {
-      primaryR = 0.10; primaryG = 0.12; primaryB = 0.20; // Dark Navy
-      domHueBin = 0;
+      baseLum = 0.65;
+      centerBonus = 0.25;
+      edgePattern = [
+        0.10, 0.15, 0.15, 0.10,
+        0.20, 0.45, 0.45, 0.20,
+        0.20, 0.40, 0.40, 0.20,
+        0.15, 0.20, 0.20, 0.15
+      ];
+    } else if (/tortank|blastoise|carapuce|amphinobi|greninja/.test(nameLower)) {
+      baseLum = 0.40;
+      edgePattern = [
+        0.25, 0.55, 0.50, 0.20,
+        0.60, 0.45, 0.40, 0.55,
+        0.55, 0.40, 0.45, 0.50,
+        0.35, 0.60, 0.60, 0.35
+      ];
+    } else if (/florizarre|venusaur|bulbizarre/.test(nameLower)) {
+      baseLum = 0.48;
+      edgePattern = [
+        0.30, 0.65, 0.65, 0.30,
+        0.50, 0.55, 0.55, 0.50,
+        0.45, 0.50, 0.50, 0.45,
+        0.30, 0.35, 0.35, 0.30
+      ];
+    } else if (/umbreon|noctali/.test(nameLower)) {
+      baseLum = 0.20;
+      centerBonus = 0.40;
+      edgePattern = [
+        0.20, 0.35, 0.35, 0.20,
+        0.30, 0.70, 0.65, 0.30,
+        0.25, 0.60, 0.60, 0.25,
+        0.15, 0.20, 0.20, 0.15
+      ];
     } else if (/rayquaza/.test(nameLower)) {
-      primaryR = 0.15; primaryG = 0.55; primaryB = 0.35; // Emerald Dragon
-      domHueBin = 17;
-    } else if (/gardevoir/.test(nameLower)) {
-      primaryR = 0.45; primaryG = 0.82; primaryB = 0.72; // Fairy Teal
-      domHueBin = 19;
+      baseLum = 0.45;
+      edgePattern = [
+        0.20, 0.30, 0.60, 0.70,
+        0.30, 0.65, 0.60, 0.30,
+        0.60, 0.65, 0.30, 0.20,
+        0.70, 0.30, 0.20, 0.15
+      ];
     }
 
-    if (card.ref && card.ref.toLowerCase().includes('swsh')) {
-      borderHue = 'yellow';
+    let lumSum16 = 0;
+    for (let i = 0; i < 16; i++) {
+      const isCenter = (i === 5 || i === 6 || i === 9 || i === 10);
+      const lum = Math.min(1.0, Math.max(0.05, baseLum + (isCenter ? centerBonus : -0.08)));
+      const edge = edgePattern[i];
+      lumVec[i] = lum;
+      edgeVec[i] = edge;
+      signatureVec[i] = 0.55 * lum + 0.45 * edge;
+      lumSum16 += lum;
     }
 
-    // 32-bin synthetic histogram
-    const hist = new Float32Array(32);
-    if (domHueBin > 0) {
-      hist[domHueBin] = 0.50;
-      hist[Math.min(31, domHueBin + 1)] = 0.20;
-      hist[Math.max(0, domHueBin - 1)] = 0.15;
-      hist[7] = 0.15; // white highlights
-    } else {
-      hist[0] = 0.40;
-      hist[1] = 0.30;
-      hist[7] = 0.30;
+    const meanBlockL = lumSum16 / 16;
+    let varBlockL = 0;
+    for (let i = 0; i < 16; i++) {
+      const diff = lumVec[i] - meanBlockL;
+      varBlockL += diff * diff;
     }
-
-    // 8x8 synthetic grid
-    const rgb = new Float32Array(64 * 3);
-    const lum = new Float32Array(64);
-    const weights = new Float32Array(64);
-    let lumSum = 0;
-
-    for (let cy = 0; cy < 8; cy++) {
-      for (let cx = 0; cx < 8; cx++) {
-        const idx = cy * 8 + cx;
-        const isBorder = (cx === 0 || cx === 7 || cy === 0 || cy === 7);
-        const isArtwork = (cy >= 1 && cy <= 4 && cx >= 1 && cx <= 6);
-
-        let cellR = isBorder ? (borderHue === 'yellow' ? 0.92 : 0.82) : (isArtwork ? primaryR : primaryR * 0.7 + 0.15);
-        let cellG = isBorder ? (borderHue === 'yellow' ? 0.82 : 0.82) : (isArtwork ? primaryG : primaryG * 0.7 + 0.15);
-        let cellB = isBorder ? (borderHue === 'yellow' ? 0.20 : 0.85) : (isArtwork ? primaryB : primaryB * 0.7 + 0.15);
-        let cellL = 0.299 * cellR + 0.587 * cellG + 0.114 * cellB;
-
-        rgb[idx * 3] = cellR;
-        rgb[idx * 3 + 1] = cellG;
-        rgb[idx * 3 + 2] = cellB;
-        lum[idx] = cellL;
-        lumSum += cellL;
-
-        weights[idx] = isArtwork ? 2.5 : (isBorder ? 1.3 : 0.8);
-      }
-    }
-
-    const meanL = lumSum / 64;
-    let varL = 0;
-    for (let i = 0; i < 64; i++) {
-      varL += (lum[i] - meanL) * (lum[i] - meanL);
-    }
-    const stdL = Math.sqrt(varL / 64);
-    const lumNorm = new Float32Array(64);
-    for (let i = 0; i < 64; i++) {
-      lumNorm[i] = (lum[i] - meanL) / (stdL + 1e-4);
-    }
+    const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
 
     return {
       isPoorQuality: false,
-      hist,
-      rgb,
-      lum,
-      lumNorm,
-      weights,
-      border: borderHue,
-      meanL,
-      stdL
+      lumVec,
+      edgeVec,
+      signatureVec,
+      meanLum: meanBlockL,
+      stdLum: stdBlockL,
+      isSynthetic: true
     };
   },
 
-  getCardFingerprint(card) {
+  getCardSignature(card) {
     if (!card) return null;
     if (this.fingerprintCache.has(card.id)) {
       return this.fingerprintCache.get(card.id);
     }
-    const synthetic = this.generateSyntheticFingerprint(card);
+    const synthetic = this.generateSyntheticSignature(card);
     if (synthetic) {
       this.fingerprintCache.set(card.id, synthetic);
       return synthetic;
@@ -3455,19 +3433,16 @@ const CardRecognizer = {
     return null;
   },
 
-  // Pure Visual Card Ranking against catalog
-  rankCards(cropCanvas, catalog, options = {}) {
+  // Async ranking against catalog using 16-point geometric signature vector
+  async rankCardsFromSignature(scanSignature, catalog, options = {}) {
     if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return [];
-
-    const scanFp = this.extractFingerprint(cropCanvas);
-    if (!scanFp || scanFp.isPoorQuality) {
-      const rejectScore = scanFp && scanFp.score !== undefined ? scanFp.score : 15;
+    if (!scanSignature || scanSignature.isPoorQuality) {
+      const rejectScore = scanSignature && scanSignature.score !== undefined ? scanSignature.score : 10;
       return catalog.map(c => ({
         card: c,
         score: rejectScore,
         scoreVisual: rejectScore,
-        isPoorQuality: true,
-        reason: scanFp ? scanFp.qualityReason : 'too_dark_or_blurry'
+        isPoorQuality: true
       }));
     }
 
@@ -3476,10 +3451,10 @@ const CardRecognizer = {
       : [];
 
     const scored = catalog.map(card => {
-      const cardFp = this.getCardFingerprint(card);
-      const score = cardFp
-        ? this.computeVisualSimilarity(scanFp, cardFp, { card, activeCountries })
-        : 20;
+      const cardSig = this.getCardSignature(card);
+      const score = cardSig
+        ? this.computeStructuralSimilarity(scanSignature, cardSig, { card, activeCountries })
+        : 15;
 
       return {
         card,
@@ -3489,7 +3464,42 @@ const CardRecognizer = {
       };
     });
 
-    // Rank highest visual score first
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
+  },
+
+  // Synchronous convenience ranking (extracts signature from cropCanvas and ranks)
+  rankCards(cropCanvas, catalog, options = {}) {
+    if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return [];
+    const scanSig = this.extractArtworkSignature(cropCanvas);
+    if (!scanSig || scanSig.isPoorQuality) {
+      const rejectScore = scanSig && scanSig.score !== undefined ? scanSig.score : 10;
+      return catalog.map(c => ({
+        card: c,
+        score: rejectScore,
+        scoreVisual: rejectScore,
+        isPoorQuality: true
+      }));
+    }
+
+    const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
+      ? state.filters.countries
+      : [];
+
+    const scored = catalog.map(card => {
+      const cardSig = this.getCardSignature(card);
+      const score = cardSig
+        ? this.computeStructuralSimilarity(scanSig, cardSig, { card, activeCountries })
+        : 15;
+
+      return {
+        card,
+        score,
+        scoreVisual: score,
+        isPoorQuality: false
+      };
+    });
+
     scored.sort((a, b) => b.score - a.score);
     return scored;
   }
@@ -3775,23 +3785,45 @@ async function captureAndScan() {
   const resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
 
+  if (!video || !video.srcObject || video.videoWidth === 0) {
+    resultsEl.innerHTML = `
+      <div class="bg-slate-900/90 border border-amber-500/40 rounded-xl p-3 text-amber-300 text-xs text-center">
+        Caméra non active. Importez une photo ou saisissez la référence manuellement ci-dessous.
+      </div>
+    `;
+    return;
+  }
+
+  // Smooth loading card with animated spinner and multi-step progress bar (~1.8s budget)
   resultsEl.innerHTML = `
-    <div class="inline-flex items-center gap-2 bg-black/70 backdrop-blur px-4 py-2.5 rounded-full text-emerald-300 text-xs border border-emerald-500/30 shadow-lg">
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-      <span class="font-medium">Analyse visuelle de l'illustration en cours...</span>
+    <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
+      <div class="flex items-center gap-3">
+        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+        <div class="text-left flex-1 min-w-0">
+          <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate">Cadrage de l'illustration...</div>
+          <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Extraction de la zone centrale de la carte</div>
+        </div>
+        <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">25%</span>
+      </div>
+      <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+        <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 25%;"></div>
+      </div>
     </div>
   `;
 
-  try {
-    if (!video || !video.srcObject || video.videoWidth === 0) {
-      resultsEl.innerHTML = `
-        <div class="bg-slate-900/90 border border-amber-500/40 rounded-xl p-3 text-amber-300 text-xs text-center">
-          Caméra non active. Importez une photo ou saisissez la référence manuellement ci-dessous.
-        </div>
-      `;
-      return;
-    }
+  const stepTitle = document.getElementById('scanner-step-title');
+  const stepDesc = document.getElementById('scanner-step-desc');
+  const stepPct = document.getElementById('scanner-step-pct');
+  const stepProgress = document.getElementById('scanner-step-progress');
 
+  const updateProgress = (title, desc, pct) => {
+    if (stepTitle) stepTitle.textContent = title;
+    if (stepDesc) stepDesc.textContent = desc;
+    if (stepPct) stepPct.textContent = `${pct}%`;
+    if (stepProgress) stepProgress.style.width = `${pct}%`;
+  };
+
+  try {
     // 1. Crop captured video frame strictly to 4-corner viewfinder box (object-cover mapped)
     const viewfinder = document.getElementById('scanner-viewfinder');
     const crop = CardRecognizer.getCropRect(video, viewfinder);
@@ -3801,11 +3833,40 @@ async function captureAndScan() {
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
     cropCtx.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
 
-    // 2. Trigger quick software sharpening & contrast boost on canvas snapshot before running visual matcher
+    // Apply software sharpening & contrast boost on canvas snapshot
     enhanceCanvasSnapshot(cropCanvas);
 
-    // 3. Pure Visual Matching against loaded catalog
-    const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
+    // Stage 1 delay (~450ms) to ensure smooth 60fps UI on mobile
+    await new Promise(r => setTimeout(r, 450));
+
+    // 2. Stage 2: 4x4 Grayscale Grid & Edge Analysis
+    updateProgress(
+      "Analyse des contrastes de l'artwork...",
+      "Calcul de la grille structurelle 4x4 & densité des contours",
+      65
+    );
+
+    const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
+    if (!scanSignature || scanSignature.isPoorQuality) {
+      showNoMatchResult(scanSignature?.score || 10, resultsEl);
+      return;
+    }
+
+    // Stage 2 delay (~650ms)
+    await new Promise(r => setTimeout(r, 650));
+
+    // 3. Stage 3: Structural comparison with loaded catalog
+    updateProgress(
+      "Comparaison structurelle avec le catalogue...",
+      "Recherche de correspondances géométriques sans faux positifs",
+      90
+    );
+
+    const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
+
+    // Stage 3 delay (~550ms) -> total elapsed ~1.7s cleanly within budget
+    await new Promise(r => setTimeout(r, 550));
+
     if (!ranked || ranked.length === 0) {
       showNoMatchResult(0, resultsEl);
       return;
@@ -3813,8 +3874,11 @@ async function captureAndScan() {
 
     const bestMatch = ranked[0];
 
-    // 4. HONEST CONFIDENCE THRESHOLD & ZERO FALSE POSITIVES (< 40% vs >= 40%)
-    if (bestMatch.score < 40) {
+    // 4. Honest Confidence Scoring & Strict Thresholds:
+    // - Score >= 75%: Valid primary match
+    // - 50% <= Score < 75%: "⚠️ Correspondance probable mais incertaine (Vérifiez)"
+    // - Score < 50%: Complete rejection -> "Carte non reconnue — Rapprochez ou centrez la carte dans le cadre"
+    if (bestMatch.score < 50) {
       showNoMatchResult(bestMatch.score, resultsEl);
     } else {
       const runnerUps = ranked.slice(1, 4);
@@ -3826,7 +3890,7 @@ async function captureAndScan() {
   }
 }
 
-// Honest threshold display when confidence is below 40%
+// Honest threshold display when confidence is below 50% (Stop guessing wrong cards)
 function showNoMatchResult(score = 0, resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
@@ -3837,8 +3901,8 @@ function showNoMatchResult(score = 0, resultsEl = null) {
         <i data-lucide="scan" style="width:24px;height:24px;"></i>
       </div>
       <div class="space-y-1">
-        <div class="text-sm font-bold text-amber-300">Carte non reconnue clairement — Rapprochez ou stabilisez</div>
-        <p class="text-xs text-white/60">Image floue, reflet ou carte hors du viseur (${Math.round(score)}% de correspondance visuelle).</p>
+        <div class="text-sm font-bold text-amber-300">Carte non reconnue — Rapprochez ou centrez la carte dans le cadre</div>
+        <p class="text-xs text-white/60">Aucune correspondance structurelle suffisante dans le catalogue (${Math.round(score)}% &lt; 50%). Évitez les reflets et vérifiez le cadrage.</p>
       </div>
 
       <div class="flex gap-2">
@@ -3881,13 +3945,14 @@ function showNoMatchResult(score = 0, resultsEl = null) {
   }
 }
 
-// Display recognized card with confidence score >= 40%
+// Display recognized card with confidence score >= 50%
 function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl || !matchedResult) return;
 
   const card = matchedResult.card || matchedResult;
   const score = matchedResult.score !== undefined ? Math.round(matchedResult.score) : 100;
+  const isHighConfidence = score >= 75;
 
   const margin = (typeof netMargin === 'function') ? netMargin(card) : 0;
   const roi = (typeof netROI === 'function') ? netROI(card) : 0;
@@ -3896,16 +3961,53 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card) : 0;
   const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card) : 0;
 
-  const scoreBadgeBg = score >= 70 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                       score >= 50 ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' :
-                       'bg-amber-500/20 text-amber-300 border-amber-500/40';
-
   const cardCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === card.edition) : null;
   const editionFlag = cardCountry ? cardCountry.flag : '🌐';
 
   const highResImg = (typeof formatHighResCardImage === 'function')
     ? formatHighResCardImage(card.image)
     : card.image;
+
+  // Header status styling based on strict thresholds
+  const statusColor = isHighConfidence ? 'text-emerald-400' : 'text-amber-400';
+  const statusIcon = isHighConfidence ? 'check-circle' : 'alert-triangle';
+  const statusTitle = isHighConfidence ? 'Carte identifiée avec certitude' : 'Correspondance probable';
+  const scoreBadgeBg = isHighConfidence
+    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+
+  // Explicit banner for 50-74% uncertain matches
+  const uncertainBannerHtml = !isHighConfidence ? `
+    <div class="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 text-amber-200 text-xs flex items-center gap-2.5 text-left">
+      <span class="text-base flex-shrink-0">⚠️</span>
+      <div class="min-w-0 flex-1">
+        <div class="font-bold text-amber-300">⚠️ Correspondance probable mais incertaine (Vérifiez)</div>
+        <div class="text-[10px] text-white/60 mt-0.5">Score structurel de ${score}% (&lt; 75%). Vérifiez l'illustration ou tapez la référence ci-dessous.</div>
+      </div>
+    </div>
+  ` : '';
+
+  const validationPillsHtml = isHighConfidence ? `
+    <div class="flex items-center justify-center gap-2">
+      <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+        <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
+        <span>Grille structurelle 4x4 validée (≥ 75%)</span>
+      </span>
+      <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
+        <span>${editionFlag} ${card.edition || 'JP'}</span>
+      </span>
+    </div>
+  ` : `
+    <div class="flex items-center justify-center gap-2">
+      <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-950/70 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
+        <i data-lucide="help-circle" style="width:12px;height:12px;"></i>
+        <span>Similarité structurelle modérée (${score}%)</span>
+      </span>
+      <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
+        <span>${editionFlag} ${card.edition || 'JP'}</span>
+      </span>
+    </div>
+  `;
 
   const runnerUpsHtml = (runnerUps && runnerUps.length > 0) ? `
     <div class="border-t border-white/10 pt-2.5 mt-2">
@@ -3949,29 +4051,36 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </div>
   ` : '';
 
+  // Manual fallback input if match is uncertain (50-74%)
+  const manualBoxHtml = !isHighConfidence ? `
+    <div class="border-t border-white/10 pt-2 text-left">
+      <label class="text-[10px] text-white/60 block mb-1">Ou tapez directement la référence :</label>
+      <div class="flex gap-2">
+        <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou sv2a 201"
+               class="flex-1 px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
+      </div>
+    </div>
+  ` : '';
+
   resultsEl.innerHTML = `
-    <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-3.5 text-white max-w-sm mx-auto shadow-2xl space-y-3">
+    <div class="bg-slate-900/95 border ${isHighConfidence ? 'border-emerald-500/40' : 'border-amber-500/40'} backdrop-blur-md rounded-2xl p-3.5 text-white max-w-sm mx-auto shadow-2xl space-y-3">
       <!-- Status bar -->
       <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
-        <div class="flex items-center gap-1.5 text-emerald-400 font-bold text-xs uppercase tracking-wide">
-          <i data-lucide="scan-line" style="width:14px;height:14px;"></i>
-          <span>Carte identifiée</span>
+        <div class="flex items-center gap-1.5 ${statusColor} font-bold text-xs uppercase tracking-wide">
+          <i data-lucide="${statusIcon}" style="width:14px;height:14px;"></i>
+          <span>${statusTitle}</span>
         </div>
         <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${scoreBadgeBg}">
-          ${score}% correspondance visuelle
+          ${score}% structure valide
         </span>
       </div>
 
+      <!-- Uncertain Banner (if score 50-74%) -->
+      ${uncertainBannerHtml}
+
       <!-- Match Validation Pills -->
-      <div class="flex items-center justify-center gap-2">
-        <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
-          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
-          <span>Artwork & couleurs validées</span>
-        </span>
-        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
-          <span>${editionFlag} ${card.edition || 'JP'}</span>
-        </span>
-      </div>
+      ${validationPillsHtml}
 
       <!-- Primary Card Info -->
       <div class="flex gap-3 items-center bg-white/5 border border-white/10 rounded-xl p-2.5">
@@ -3999,6 +4108,9 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
       <!-- Runner-ups -->
       ${runnerUpsHtml}
+
+      <!-- Inline manual input if uncertain -->
+      ${manualBoxHtml}
     </div>
   `;
 
@@ -4012,6 +4124,19 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   document.getElementById('scanner-rescan-btn')?.addEventListener('click', () => {
     resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
   });
+
+  // Inline manual reference lookup if rendered
+  const inlineInput = document.getElementById('scanner-inline-manual-ref');
+  const inlineBtn = document.getElementById('scanner-inline-manual-btn');
+  if (inlineInput && inlineBtn) {
+    const handleInlineLookup = () => {
+      runScannerManualLookup(inlineInput.value, resultsEl);
+    };
+    inlineBtn.addEventListener('click', handleInlineLookup);
+    inlineInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleInlineLookup();
+    });
+  }
 
   resultsEl.querySelectorAll('.scanner-runner-card').forEach(elem => {
     elem.addEventListener('click', (e) => {
@@ -4037,9 +4162,14 @@ function handleScannerFileUpload(file) {
   if (!resultsEl) return;
 
   resultsEl.innerHTML = `
-    <div class="inline-flex items-center gap-2 bg-black/70 backdrop-blur px-4 py-2.5 rounded-full text-emerald-300 text-xs border border-emerald-500/30 shadow-lg">
-      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-      <span class="font-medium">Analyse visuelle de la photo...</span>
+    <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
+      <div class="flex items-center gap-3">
+        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="text-xs font-bold text-emerald-300 truncate">Analyse de la photo...</div>
+          <div class="text-[11px] text-white/50 truncate">Extraction des contrastes de l'artwork (grille 4x4)</div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -4057,6 +4187,8 @@ function handleScannerFileUpload(file) {
       // Clean up soft/blurry photo snapshot with software sharpening & contrast boost
       enhanceCanvasSnapshot(cropCanvas);
 
+      await new Promise(r => setTimeout(r, 600));
+
       const ranked = CardRecognizer.rankCards(cropCanvas, CARDS);
       if (!ranked || ranked.length === 0) {
         showNoMatchResult(0, resultsEl);
@@ -4064,7 +4196,7 @@ function handleScannerFileUpload(file) {
       }
 
       const bestMatch = ranked[0];
-      if (bestMatch.score < 40) {
+      if (bestMatch.score < 50) {
         showNoMatchResult(bestMatch.score, resultsEl);
       } else {
         const runnerUps = ranked.slice(1, 4);
