@@ -585,7 +585,7 @@ const PriceService = {
   pricesJsonData: null,
   pricesJsonLoaded: false,
 
-  // Load prices.json with storage caching & official Pokémon TCG API fallback
+  // Load real sold-item prices from prices.json or 24h storage cache
   async loadPricesJson() {
     const badge = document.getElementById('prices-source-badge');
     try {
@@ -599,11 +599,12 @@ const PriceService = {
           await StorageService.set(StorageService.PRICES_STORE, 'market_prices', data);
           if (badge) {
             badge.className = 'prices-source-badge prices-source-scraped';
-            badge.textContent = '🟢 Scraped live';
+            const count = data._meta?.priced_cards || Object.keys(data.prices).length;
+            badge.textContent = `🟢 Ventes réelles (${count})`;
             const genTime = data._meta?.generated_at
               ? new Date(data._meta.generated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
               : 'Live';
-            badge.title = `Données réelles scrapées GitHub Actions (${genTime})`;
+            badge.title = `Ventes finalisées eBay FR & Mercari JP (${genTime})`;
           }
           this.repriceAllCards();
           renderAllColumns();
@@ -623,6 +624,7 @@ const PriceService = {
       if (badge) {
         badge.className = 'prices-source-badge prices-source-scraped';
         badge.textContent = '🟢 Cache 24h';
+        badge.title = 'Ventes finalisées enregistrées en cache local 24h';
       }
       this.repriceAllCards();
       renderAllColumns();
@@ -630,57 +632,21 @@ const PriceService = {
       return true;
     }
 
-    // Fallback to official Pokémon TCG API for real Cardmarket trends
-    await this.fallbackToPokemonTcgApi();
+    // No verified sold sales available: strict safeguard mode (no fabricated prices)
+    this.pricesJsonData = null;
+    this.pricesJsonLoaded = false;
+    if (badge) {
+      badge.className = 'prices-source-badge prices-source-api';
+      badge.textContent = '⚪ En attente de ventes';
+      badge.title = 'Aucune vente finalisée enregistrée — scan ou actualisation requise';
+    }
+    this.repriceAllCards();
+    renderAllColumns();
+    updateColumnCounters();
     return false;
   },
 
-  // Official Pokémon TCG API fallback for real market metrics (no fake numbers)
-  async fallbackToPokemonTcgApi() {
-    const badge = document.getElementById('prices-source-badge');
-    if (badge) {
-      badge.className = 'prices-source-badge prices-source-api';
-      badge.textContent = '🔵 TCG API';
-      badge.title = 'Fallback officiel Pokémon TCG API (Cardmarket trendPrice)';
-    }
-
-    try {
-      const sample = (CARDS || []).slice(0, 15);
-      for (const card of sample) {
-        try {
-          const query = encodeURIComponent(card.name.replace(/-ex.*/i, '').trim());
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3500);
-          const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"${query}"&pageSize=1`, { signal: controller.signal });
-          clearTimeout(timer);
-          if (res.ok) {
-            const data = await res.json();
-            const cm = data?.data?.[0]?.cardmarket?.prices;
-            if (cm) {
-              const trend = cm.trendPrice || cm.avg30 || cm.avg7;
-              if (trend && trend > 0) {
-                card.frPrice = Math.round(trend * 10) / 10;
-                card.jpPrice = Math.round(trend * state.rate * 0.74);
-                card.hasPrice = true;
-                card.platforms = {
-                  ebay: cm.avg7 ? Math.round(cm.avg7 * 1.02 * 10) / 10 : card.frPrice,
-                  vinted: cm.lowPrice ? Math.round(cm.lowPrice * 1.05 * 10) / 10 : card.frPrice,
-                  lbc: cm.avg30 ? Math.round(cm.avg30 * 0.96 * 10) / 10 : card.frPrice,
-                  cardmarket: trend
-                };
-              }
-            }
-          }
-        } catch (e) {}
-      }
-      renderAllColumns();
-      updateColumnCounters();
-    } catch (err) {
-      console.warn('[PriceService] Fallback to Pokémon TCG API failed:', err.message);
-    }
-  },
-
-  // Match pricing record by ref or localId from prices.json
+  // Match pricing record by ref or localId from real sold-item database
   findPriceEntry(card) {
     if (!this.pricesJsonData?.prices) return null;
     const p = this.pricesJsonData.prices;
@@ -695,41 +661,44 @@ const PriceService = {
 
   // Reprice all loaded cards with verified market data
   repriceAllCards() {
-    if (!this.pricesJsonLoaded || !this.pricesJsonData) return;
     for (const card of CARDS) {
       this.enrichCardWithRealPrices(card);
     }
   },
 
+  // STRICT SAFEGUARD: ZERO FAKE PRICES
+  // If a card lacks real verified market sales, prices are set strictly to null
   enrichCardWithRealPrices(card) {
     if (!card) return card;
     const entry = this.findPriceEntry(card);
     if (entry) {
       const frSmooth = entry.fr?.smoothed_avg;
       const jpSmooth = entry.jp?.smoothed_avg;
-      if (frSmooth != null) card.frPrice = frSmooth;
-      if (jpSmooth != null) card.jpPrice = jpSmooth;
-
+      card.frPrice = frSmooth != null ? frSmooth : null;
+      card.jpPrice = jpSmooth != null ? jpSmooth : null;
       card.hasPrice = (card.frPrice != null && card.jpPrice != null);
+
       if (entry.fr) {
         card.platforms = {
-          ebay: entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || card.frPrice,
-          vinted: entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || card.frPrice,
-          lbc: entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || card.frPrice,
-          cardmarket: card.frPrice
+          ebay: entry.fr.ebay_fr?.sold_prices?.[0] || entry.fr.smoothed_avg || null,
+          vinted: null,
+          lbc: null,
+          cardmarket: entry.fr.cardmarket_trend || null
         };
+      } else {
+        card.platforms = null;
       }
     } else {
-      // STRICT SAFEGUARD: ZERO FAKE PRICES
-      // If card lacks real verified market price, set to null
-      if (card.frPrice === undefined) card.frPrice = null;
-      if (card.jpPrice === undefined) card.jpPrice = null;
-      card.hasPrice = (card.frPrice != null && card.jpPrice != null);
+      card.frPrice = null;
+      card.jpPrice = null;
+      card.hasPrice = false;
+      card.platforms = null;
     }
     return card;
   },
 
   // Multi-platform price breakdown tables data with condition/slab multiplier support
+  // Returns genuine finalized sales only — zero fake multipliers
   getMultiPlatformPrices(card, mode = 'raw', conditionOrGrade = 'NM') {
     let custom = null;
     if (mode === 'raw') {
@@ -746,70 +715,42 @@ const PriceService = {
     const { frMult, jpMult } = resolveConditionMultiplier(custom);
 
     const entry = this.findPriceEntry(card);
-    if (entry && entry.fr && entry.jp) {
+    if (entry && entry.fr && entry.jp && card.hasPrice) {
       return {
         fr: {
           ebay: {
-            last: Math.round((entry.fr.ebay_fr?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg7: Math.round((entry.fr.ebay_fr?.avg7 || entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg30: Math.round((entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg90: Math.round((entry.fr.ebay_fr?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
+            last: entry.fr.ebay_fr?.sold_prices?.[0] ? Math.round(entry.fr.ebay_fr.sold_prices[0] * frMult * 10) / 10 : null,
+            avg7: null,
+            avg30: entry.fr.smoothed_avg ? Math.round(entry.fr.smoothed_avg * frMult * 10) / 10 : null,
+            avg90: null
           },
-          vinted: {
-            last: Math.round((entry.fr.vinted?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg7: Math.round((entry.fr.vinted?.avg7 || entry.fr.vinted?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg30: Math.round((entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg90: Math.round((entry.fr.vinted?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
-          },
-          lbc: {
-            last: Math.round((entry.fr.lbc?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg7: Math.round((entry.fr.lbc?.avg7 || entry.fr.lbc?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg30: Math.round((entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
-            avg90: Math.round((entry.fr.lbc?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
-          }
+          vinted: { last: null, avg7: null, avg30: null, avg90: null },
+          lbc: { last: null, avg7: null, avg30: null, avg90: null }
         },
         jp: {
           mercari: {
-            last: Math.round((entry.jp.mercari?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
-            avg7: Math.round((entry.jp.mercari?.avg7 || entry.jp.mercari?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg30: Math.round((entry.jp.mercari?.avg30 || entry.jp.mercari?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg90: Math.round((entry.jp.mercari?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+            last: entry.jp.mercari?.sold_prices?.[0] ? Math.round(entry.jp.mercari.sold_prices[0] * jpMult) : null,
+            avg7: null,
+            avg30: entry.jp.smoothed_avg ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg90: null
           },
           yahoo: {
-            last: Math.round((entry.jp.yahoo_auctions?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
-            avg7: Math.round((entry.jp.yahoo_auctions?.avg7 || entry.jp.yahoo_auctions?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg30: Math.round((entry.jp.yahoo_auctions?.avg30 || entry.jp.yahoo_auctions?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg90: Math.round((entry.jp.yahoo_auctions?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+            last: entry.jp.yahoo_auctions?.sold_prices?.[0] ? Math.round(entry.jp.yahoo_auctions.sold_prices[0] * jpMult) : null,
+            avg7: null,
+            avg30: entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg90: null
           },
           cardrush: {
-            last: Math.round((entry.jp.card_rush?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
-            avg7: Math.round((entry.jp.card_rush?.avg7 || entry.jp.card_rush?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg30: Math.round((entry.jp.card_rush?.avg30 || entry.jp.card_rush?.avg || entry.jp.smoothed_avg || 0) * jpMult),
-            avg90: Math.round((entry.jp.card_rush?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+            last: entry.jp.card_rush?.sold_prices?.[0] ? Math.round(entry.jp.card_rush.sold_prices[0] * jpMult) : null,
+            avg7: null,
+            avg30: entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg90: null
           }
         }
       };
     }
 
-    // If card has verified frPrice and jpPrice
-    if (card.frPrice != null && card.jpPrice != null) {
-      const fr = card.frPrice * frMult;
-      const jp = card.jpPrice * jpMult;
-      return {
-        fr: {
-          ebay: { last: Math.round(fr * 0.98 * 10) / 10, avg7: Math.round(fr * 1.01 * 10) / 10, avg30: Math.round(fr * 10) / 10, avg90: Math.round(fr * 0.97 * 10) / 10 },
-          vinted: { last: Math.round(fr * 0.94 * 10) / 10, avg7: Math.round(fr * 0.96 * 10) / 10, avg30: Math.round(fr * 0.94 * 10) / 10, avg90: Math.round(fr * 0.92 * 10) / 10 },
-          lbc: { last: Math.round(fr * 0.92 * 10) / 10, avg7: Math.round(fr * 0.93 * 10) / 10, avg30: Math.round(fr * 0.92 * 10) / 10, avg90: Math.round(fr * 0.90 * 10) / 10 }
-        },
-        jp: {
-          mercari: { last: Math.round(jp), avg7: Math.round(jp * 0.99), avg30: Math.round(jp), avg90: Math.round(jp * 1.03) },
-          yahoo: { last: Math.round(jp * 0.98), avg7: Math.round(jp * 0.97), avg30: Math.round(jp * 0.98), avg90: Math.round(jp * 1.02) },
-          cardrush: { last: Math.round(jp * 1.05), avg7: Math.round(jp * 1.06), avg30: Math.round(jp * 1.05), avg90: Math.round(jp * 1.09) }
-        }
-      };
-    }
-
-    // Price not available
+    // Price not available: zero fabricated numbers
     return { fr: null, jp: null };
   },
 
@@ -1219,7 +1160,7 @@ function renderCardTile(card, rank) {
     <div class="mt-1 flex items-center">
       <span class="price-pending-badge">
         <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
+        Prix non disponible (Pas de ventes récentes)
       </span>
     </div>
   `;
@@ -2549,11 +2490,11 @@ function renderCardDetailModal() {
     <div class="my-2">
       <span class="price-pending-badge text-xs py-1 px-3">
         <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
+        Prix non disponible (Pas de ventes récentes)
       </span>
     </div>
     <div class="text-xs text-slate-500 mb-3">
-      Les cours du marché pour cette carte sont en attente de collecte. Consultez les plateformes ci-dessous pour les ventes en direct.
+      Aucune vente finalisée enregistrée pour cette référence. Consultez les plateformes ci-dessous pour les ventes en direct.
     </div>
   `;
 
@@ -4296,7 +4237,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     <div class="mt-1 flex items-center">
       <span class="price-pending-badge">
         <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
+        Prix non disponible (Pas de ventes récentes)
       </span>
     </div>
   `;
@@ -5165,7 +5106,7 @@ function initApp() {
     console.error('[PokéSpread] Init error in condition trigger labels/popovers:', err);
   }
 
-  // Step 4: Core recommendation rendering & counters (Always renders bootstrap cards immediately)
+  // Step 4: Core recommendation rendering & counters (Renders dynamic cards)
   try {
     renderAllColumns();
   } catch (err) {
