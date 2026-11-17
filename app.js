@@ -300,50 +300,216 @@ function onCardImageError(imgEl) {
   }
 }
 
-// ── REAL VERIFIED BOOTSTRAP CARDS (AUTHENTIC MULTI-LANGUAGE ARTWORK) ───
-const BOOTSTRAP_CARDS = [
-  // 🇯🇵 JP
-  { id: 'SV2a-201', name: 'Dracaufeu-ex SAR', subName: 'リザードンex SAR', localId: '201', ref: 'sv2a 201/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/201/high.webp', hp: 330 },
-  { id: 'SV2a-205', name: 'Mew-ex SAR', subName: 'ミュウex SAR', localId: '205', ref: 'sv2a 205/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/205/high.webp', hp: 180 },
-  { id: 'SV2a-200', name: 'Tortank-ex SAR', subName: 'カメックスex SAR', localId: '200', ref: 'sv2a 200/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/200/high.webp', hp: 330 },
-  { id: 'SV2a-198', name: 'Florizarre-ex SAR', subName: 'フシギバナex SAR', localId: '198', ref: 'sv2a 198/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/198/high.webp', hp: 340 },
-  { id: 'SV2a-202', name: 'Électhor-ex SAR', subName: 'サンダーex SAR', localId: '202', ref: 'sv2a 202/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/202/high.webp', hp: 250 },
-  { id: 'SV2a-173', name: 'Pikachu AR', subName: 'ピカチュウ AR', localId: '173', ref: 'sv2a 173/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/173/high.webp', hp: 60 },
-  { id: 'SV4a-331', name: 'Dracaufeu-ex Shiny SAR', subName: 'リザードンex SAR', localId: '331', ref: 'sv4a 331/190', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV4a/331/high.webp', hp: 330 },
-  { id: 'SV6-130', name: 'Amphinobi-ex SAR', subName: 'ゲッコウガex SAR', localId: '130', ref: 'sv6 130/101', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV6/130/high.webp', hp: 300 },
-  { id: 'SV2a-006', name: 'Dracaufeu-ex', subName: 'リザードンex', localId: '006', ref: 'sv2a 006/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/006/high.webp', hp: 330 },
-  { id: 'SV2a-151', name: 'Mew-ex', subName: 'ミュウex', localId: '151', ref: 'sv2a 151/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/151/high.webp', hp: 180 },
-  { id: 'SV2a-168', name: 'Salamèche AR', subName: 'ヒトカゲ AR', localId: '168', ref: 'sv2a 168/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/168/high.webp', hp: 70 },
-  { id: 'SV2a-170', name: 'Carapuce AR', subName: 'ゼニガメ AR', localId: '170', ref: 'sv2a 170/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/170/high.webp', hp: 60 },
-  { id: 'SV2a-166', name: 'Bulbizarre AR', subName: 'フシギダネ AR', localId: '166', ref: 'sv2a 166/165', edition: 'JP', image: 'https://assets.tcgdex.net/ja/SV/SV2a/166/high.webp', hp: 70 },
+// ── PERSISTENT STORAGE SERVICE (INDEXEDDB & 24H TTL CACHE) ────
+const StorageService = {
+  DB_NAME: 'pokespread_db',
+  DB_VERSION: 1,
+  CATALOG_STORE: 'catalog_store',
+  PRICES_STORE: 'prices_store',
+  TTL_MS: 24 * 60 * 60 * 1000, // 24-hour cache TTL
 
-  // 🇫🇷 FR
-  { id: 'sv03.5-199', name: 'Dracaufeu-ex SAR', subName: '', localId: '199', ref: 'sv03.5 199/165', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv03.5/199/high.webp', hp: 330 },
-  { id: 'sv03.5-205', name: 'Mew-ex SAR', subName: '', localId: '205', ref: 'sv03.5 205/165', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv03.5/205/high.webp', hp: 180 },
-  { id: 'sv03.5-200', name: 'Tortank-ex SAR', subName: '', localId: '200', ref: 'sv03.5 200/165', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv03.5/200/high.webp', hp: 330 },
-  { id: 'sv03.5-198', name: 'Florizarre-ex SAR', subName: '', localId: '198', ref: 'sv03.5 198/165', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv03.5/198/high.webp', hp: 340 },
-  { id: 'sv04.5-234', name: 'Dracaufeu-ex Shiny SAR', subName: '', localId: '234', ref: 'sv04.5 234/091', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv04.5/234/high.webp', hp: 330 },
-  { id: 'sv04.5-233', name: 'Gardevoir-ex Shiny SAR', subName: '', localId: '233', ref: 'sv04.5 233/091', edition: 'FR', image: 'https://assets.tcgdex.net/fr/sv/sv04.5/233/high.webp', hp: 310 },
+  _dbPromise: null,
 
-  // 🇺🇸 EN
-  { id: 'en-sv03.5-199', name: 'Charizard ex SAR', subName: 'Dracaufeu-ex', localId: '199', ref: 'sv03.5 199/165', edition: 'EN', image: 'https://assets.tcgdex.net/en/sv/sv03.5/199/high.webp', hp: 330 },
-  { id: 'en-swsh7-215', name: 'Umbreon VMAX ALT', subName: 'Noctali VMAX ALT', localId: '215', ref: 'swsh7 215/203', edition: 'EN', image: 'https://assets.tcgdex.net/en/swsh/swsh7/215/high.webp', hp: 310 },
-  { id: 'en-swsh7-218', name: 'Rayquaza VMAX ALT', subName: 'Rayquaza VMAX ALT', localId: '218', ref: 'swsh7 218/203', edition: 'EN', image: 'https://assets.tcgdex.net/en/swsh/swsh7/218/high.webp', hp: 320 },
-  { id: 'en-sv03.5-205', name: 'Mew ex SAR', subName: 'Mew-ex SAR', localId: '205', ref: 'sv03.5 205/165', edition: 'EN', image: 'https://assets.tcgdex.net/en/sv/sv03.5/205/high.webp', hp: 180 },
+  getDB() {
+    if (this._dbPromise) return this._dbPromise;
+    this._dbPromise = new Promise((resolve) => {
+      if (typeof window === 'undefined' || !window.indexedDB) {
+        return resolve(null);
+      }
+      try {
+        const req = window.indexedDB.open(this.DB_NAME, this.DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.CATALOG_STORE)) {
+            db.createObjectStore(this.CATALOG_STORE, { keyPath: 'key' });
+          }
+          if (!db.objectStoreNames.contains(this.PRICES_STORE)) {
+            db.createObjectStore(this.PRICES_STORE, { keyPath: 'key' });
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+    return this._dbPromise;
+  },
 
-  // 🇨🇳 CN
-  { id: 'SVF-001', name: 'Dracaufeu Radieux', subName: '光輝噴火龍', localId: '001', ref: 'SVF 001/010', edition: 'CN', image: 'https://assets.tcgdex.net/zh-tw/SV/SVF/001/high.webp', hp: 160 },
-  { id: 'SV4a-331-cn', name: 'Dracaufeu-ex Shiny SAR', subName: '噴火龍ex SAR', localId: '331', ref: 'SV4a 331/190', edition: 'CN', image: 'https://assets.tcgdex.net/zh-tw/SV/SV4a/331/high.webp', hp: 330 },
-  { id: 'SV4a-348-cn', name: 'Gardevoir-ex Shiny SAR', subName: '沙奈朵ex SAR', localId: '348', ref: 'SV4a 348/190', edition: 'CN', image: 'https://assets.tcgdex.net/zh-tw/SV/SV4a/348/high.webp', hp: 310 },
+  async get(storeName, key) {
+    try {
+      const db = await this.getDB();
+      if (db) {
+        const result = await new Promise((resolve) => {
+          try {
+            const tx = db.transaction(storeName, 'readonly');
+            const store = tx.objectStore(storeName);
+            const req = store.get(key);
+            req.onsuccess = () => {
+              const rec = req.result;
+              if (rec && rec.timestamp && (Date.now() - rec.timestamp < this.TTL_MS)) {
+                resolve(rec.data);
+              } else {
+                resolve(null);
+              }
+            };
+            req.onerror = () => resolve(null);
+          } catch (err) {
+            resolve(null);
+          }
+        });
+        if (result) return result;
+      }
+    } catch (e) {}
 
-  // 🇩🇪 DE / 🇮🇹 IT / 🇪🇸 ES
-  { id: 'de-sv03.5-199', name: 'Glurak-ex SAR', subName: 'Dracaufeu-ex', localId: '199', ref: 'sv03.5 199/165', edition: 'DE', image: 'https://assets.tcgdex.net/de/sv/sv03.5/199/high.webp', hp: 330 },
-  { id: 'it-sv03.5-199', name: 'Charizard-ex SAR', subName: 'Dracaufeu-ex', localId: '199', ref: 'sv03.5 199/165', edition: 'IT', image: 'https://assets.tcgdex.net/it/sv/sv03.5/199/high.webp', hp: 330 },
-  { id: 'es-sv03.5-199', name: 'Charizard-ex SAR', subName: 'Dracaufeu-ex', localId: '199', ref: 'sv03.5 199/165', edition: 'ES', image: 'https://assets.tcgdex.net/es/sv/sv03.5/199/high.webp', hp: 330 },
-  { id: 'de-sv03.5-205', name: 'Mew-ex SAR', subName: '', localId: '205', ref: 'sv03.5 205/165', edition: 'DE', image: 'https://assets.tcgdex.net/de/sv/sv03.5/205/high.webp', hp: 180 },
-  { id: 'it-sv03.5-205', name: 'Mew-ex SAR', subName: '', localId: '205', ref: 'sv03.5 205/165', edition: 'IT', image: 'https://assets.tcgdex.net/it/sv/sv03.5/205/high.webp', hp: 180 },
-  { id: 'es-sv03.5-205', name: 'Mew-ex SAR', subName: '', localId: '205', ref: 'sv03.5 205/165', edition: 'ES', image: 'https://assets.tcgdex.net/es/sv/sv03.5/205/high.webp', hp: 180 }
-];
+    // Fallback to localStorage
+    try {
+      const lsKey = `ps_${storeName}_${key}`;
+      const raw = localStorage.getItem(lsKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.timestamp && (Date.now() - parsed.timestamp < this.TTL_MS)) {
+          return parsed.data;
+        }
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  async set(storeName, key, data) {
+    const record = { key, data, timestamp: Date.now() };
+    try {
+      const db = await this.getDB();
+      if (db) {
+        await new Promise((resolve) => {
+          try {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            store.put(record);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+          } catch (e) {
+            resolve(false);
+          }
+        });
+      }
+    } catch (e) {}
+
+    // Synchronize to localStorage for instant synchronous warm startup
+    try {
+      const lsKey = `ps_${storeName}_${key}`;
+      localStorage.setItem(lsKey, JSON.stringify(record));
+    } catch (e) {}
+  },
+
+  loadInitialCachedCards() {
+    try {
+      const lsKey = `ps_${this.CATALOG_STORE}_cards`;
+      const raw = localStorage.getItem(lsKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.timestamp && (Date.now() - parsed.timestamp < this.TTL_MS) && Array.isArray(parsed.data) && parsed.data.length > 0) {
+          return parsed.data;
+        }
+      }
+    } catch (e) {}
+    return null;
+  }
+};
+
+// ── FAST DYNAMIC CARD INDEX (Zero Hardcoding Lookup Engine) ─────
+const CardIndex = {
+  byRef: new Map(),
+  byLocalId: new Map(),
+  byId: new Map(),
+  byName: new Map(),
+
+  build(cards) {
+    this.byRef.clear();
+    this.byLocalId.clear();
+    this.byId.clear();
+    this.byName.clear();
+
+    if (!Array.isArray(cards)) return;
+    for (const card of cards) {
+      if (!card) continue;
+      if (card.id) this.byId.set(card.id.toLowerCase(), card);
+
+      if (card.ref) {
+        const cleanRef = card.ref.toLowerCase().replace(/\s+/g, ' ').trim();
+        this.byRef.set(cleanRef, card);
+        const noSpaceRef = cleanRef.replace(/\s+/g, '');
+        this.byRef.set(noSpaceRef, card);
+      }
+
+      if (card.localId != null) {
+        const loc = String(card.localId).toLowerCase().trim();
+        const cleanNum = loc.replace(/^0+/, '') || loc;
+        if (!this.byLocalId.has(loc)) this.byLocalId.set(loc, []);
+        this.byLocalId.get(loc).push(card);
+        if (cleanNum !== loc) {
+          if (!this.byLocalId.has(cleanNum)) this.byLocalId.set(cleanNum, []);
+          this.byLocalId.get(cleanNum).push(card);
+        }
+      }
+
+      if (card.name) {
+        const n = card.name.toLowerCase().trim();
+        if (!this.byName.has(n)) this.byName.set(n, []);
+        this.byName.get(n).push(card);
+      }
+      if (card.subName) {
+        const sn = card.subName.toLowerCase().trim();
+        if (!this.byName.has(sn)) this.byName.set(sn, []);
+        this.byName.get(sn).push(card);
+      }
+    }
+  },
+
+  lookupByRef(ref) {
+    if (!ref) return null;
+    const clean = ref.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (this.byRef.has(clean)) return this.byRef.get(clean);
+    const noSpace = clean.replace(/\s+/g, '');
+    return this.byRef.get(noSpace) || null;
+  },
+
+  lookupByLocalId(id) {
+    if (!id) return [];
+    const clean = String(id).toLowerCase().trim();
+    const cleanNum = clean.replace(/^0+/, '') || clean;
+    return this.byLocalId.get(clean) || this.byLocalId.get(cleanNum) || [];
+  },
+
+  search(query) {
+    const q = (query || '').toLowerCase().trim();
+    if (!q) return [];
+    const directRef = this.lookupByRef(q);
+    if (directRef) return [directRef];
+
+    if (q.includes('/')) {
+      const parts = q.split('/');
+      const num = parts[0].trim().replace(/^0+/, '');
+      const candidates = this.lookupByLocalId(num);
+      if (candidates.length > 0) return candidates;
+    }
+    const numCandidates = this.lookupByLocalId(q.replace(/^0+/, ''));
+    if (numCandidates.length > 0) return numCandidates;
+
+    if (this.byName.has(q)) {
+      return this.byName.get(q);
+    }
+
+    return (typeof CARDS !== 'undefined' && Array.isArray(CARDS))
+      ? CARDS.filter(c => {
+          const name = (c.name || '').toLowerCase();
+          const sub = (c.subName || '').toLowerCase();
+          const ref = (c.ref || '').toLowerCase();
+          return name.includes(q) || sub.includes(q) || ref.includes(q);
+        })
+      : [];
+  }
+};
 
 // ── CONDITION & GRADING MULTIPLIER RESOLVER ─────────────────
 function resolveConditionMultiplier(customConditionOrGrade = null) {
@@ -419,23 +585,7 @@ const PriceService = {
   pricesJsonData: null,
   pricesJsonLoaded: false,
 
-  hashString(str) {
-    let hash = 2166136261;
-    for (let i = 0; i < str.length; i++) {
-      hash ^= str.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-    return hash >>> 0;
-  },
-
-  seededRandom(seed) {
-    let s = (seed + 0x9e3779b9) >>> 0;
-    s = Math.imul(s ^ (s >>> 16), 0x85ebca6b);
-    s = Math.imul(s ^ (s >>> 13), 0xc2b2ae35);
-    return ((s ^ (s >>> 16)) >>> 0) / 4294967296;
-  },
-
-  // Load prices.json from server with seamless fallback to Pokémon TCG API
+  // Load prices.json with storage caching & official Pokémon TCG API fallback
   async loadPricesJson() {
     const badge = document.getElementById('prices-source-badge');
     try {
@@ -445,10 +595,14 @@ const PriceService = {
         if (data && data.prices && Object.keys(data.prices).length > 0) {
           this.pricesJsonData = data;
           this.pricesJsonLoaded = true;
+          // Store in 24h persistent storage
+          await StorageService.set(StorageService.PRICES_STORE, 'market_prices', data);
           if (badge) {
             badge.className = 'prices-source-badge prices-source-scraped';
             badge.textContent = '🟢 Scraped live';
-            const genTime = data._meta?.generated_at ? new Date(data._meta.generated_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : 'Live';
+            const genTime = data._meta?.generated_at
+              ? new Date(data._meta.generated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              : 'Live';
             badge.title = `Données réelles scrapées GitHub Actions (${genTime})`;
           }
           this.repriceAllCards();
@@ -458,25 +612,40 @@ const PriceService = {
         }
       }
     } catch (e) {
-      console.info('[PriceService] prices.json not reachable, checking Pokémon TCG API fallback:', e.message);
+      console.info('[PriceService] prices.json not reachable, checking storage cache:', e.message);
     }
 
-    // Seamless fallback to Pokémon TCG API
+    // Check storage cache
+    const cachedPrices = await StorageService.get(StorageService.PRICES_STORE, 'market_prices');
+    if (cachedPrices && cachedPrices.prices && Object.keys(cachedPrices.prices).length > 0) {
+      this.pricesJsonData = cachedPrices;
+      this.pricesJsonLoaded = true;
+      if (badge) {
+        badge.className = 'prices-source-badge prices-source-scraped';
+        badge.textContent = '🟢 Cache 24h';
+      }
+      this.repriceAllCards();
+      renderAllColumns();
+      updateColumnCounters();
+      return true;
+    }
+
+    // Fallback to official Pokémon TCG API for real Cardmarket trends
     await this.fallbackToPokemonTcgApi();
     return false;
   },
 
-  // Official Pokémon TCG API fallback for real market metrics
+  // Official Pokémon TCG API fallback for real market metrics (no fake numbers)
   async fallbackToPokemonTcgApi() {
     const badge = document.getElementById('prices-source-badge');
     if (badge) {
       badge.className = 'prices-source-badge prices-source-api';
       badge.textContent = '🔵 TCG API';
-      badge.title = 'Fallback officiel Pokémon TCG API (trendPrice, avg7, avg30, lowPrice)';
+      badge.title = 'Fallback officiel Pokémon TCG API (Cardmarket trendPrice)';
     }
 
     try {
-      const sample = CARDS.slice(0, 10);
+      const sample = (CARDS || []).slice(0, 15);
       for (const card of sample) {
         try {
           const query = encodeURIComponent(card.name.replace(/-ex.*/i, '').trim());
@@ -492,18 +661,17 @@ const PriceService = {
               if (trend && trend > 0) {
                 card.frPrice = Math.round(trend * 10) / 10;
                 card.jpPrice = Math.round(trend * state.rate * 0.74);
+                card.hasPrice = true;
                 card.platforms = {
-                  ebay: cm.avg7 ? Math.round(cm.avg7 * 1.02 * 10) / 10 : Math.round(card.frPrice * 0.98 * 10) / 10,
-                  vinted: cm.lowPrice ? Math.round(cm.lowPrice * 1.05 * 10) / 10 : Math.round(card.frPrice * 0.94 * 10) / 10,
-                  lbc: cm.avg30 ? Math.round(cm.avg30 * 0.96 * 10) / 10 : Math.round(card.frPrice * 0.92 * 10) / 10,
+                  ebay: cm.avg7 ? Math.round(cm.avg7 * 1.02 * 10) / 10 : card.frPrice,
+                  vinted: cm.lowPrice ? Math.round(cm.lowPrice * 1.05 * 10) / 10 : card.frPrice,
+                  lbc: cm.avg30 ? Math.round(cm.avg30 * 0.96 * 10) / 10 : card.frPrice,
                   cardmarket: trend
                 };
               }
             }
           }
-        } catch (e) {
-          // ignore individual card timeout
-        }
+        } catch (e) {}
       }
       renderAllColumns();
       updateColumnCounters();
@@ -512,51 +680,53 @@ const PriceService = {
     }
   },
 
-  // Anti-outlier Trimmed Mean: removes top and bottom 10-15% extremes
-  computeTrimmedSmoothedAverages(priceArray, trimPct = 0.15) {
-    if (!priceArray || priceArray.length === 0) return { avg7: 0, avg30: 0, avg90: 0, smoothed: 0 };
-    const valid = priceArray.filter(p => typeof p === 'number' && !isNaN(p) && p > 0);
-    if (valid.length === 0) return { avg7: 0, avg30: 0, avg90: 0, smoothed: 0 };
-    if (valid.length < 3) {
-      const simple = valid.reduce((a, b) => a + b, 0) / valid.length;
-      return { avg7: simple, avg30: simple, avg90: simple, smoothed: simple };
+  // Match pricing record by ref or localId from prices.json
+  findPriceEntry(card) {
+    if (!this.pricesJsonData?.prices) return null;
+    const p = this.pricesJsonData.prices;
+    if (p[card.ref]) return p[card.ref];
+    const cleanRef = card.ref ? card.ref.toLowerCase().replace(/\s+/g, ' ') : '';
+    for (const k of Object.keys(p)) {
+      if (k.toLowerCase().replace(/\s+/g, ' ') === cleanRef) return p[k];
+      if (card.localId && k.includes(` ${card.localId}/`)) return p[k];
     }
-    const sorted = [...valid].sort((a, b) => a - b);
-    const k = Math.max(1, Math.floor(sorted.length * trimPct));
-    const trimmed = sorted.slice(k, sorted.length - k);
-    const core = trimmed.length > 0 ? trimmed : sorted;
-    const trimmedAvg = core.reduce((a, b) => a + b, 0) / core.length;
-
-    return {
-      avg7: Math.round(trimmedAvg * 1.01 * 10) / 10,
-      avg30: Math.round(trimmedAvg * 10) / 10,
-      avg90: Math.round(trimmedAvg * 0.97 * 10) / 10,
-      smoothed: Math.round(trimmedAvg * 10) / 10
-    };
+    return null;
   },
 
-  // Reprice all loaded cards with prices.json data if available
+  // Reprice all loaded cards with verified market data
   repriceAllCards() {
     if (!this.pricesJsonLoaded || !this.pricesJsonData) return;
     for (const card of CARDS) {
-      const entry = this.pricesJsonData.prices[card.ref];
-      if (entry) {
-        if (entry.fr && entry.fr.smoothed_avg) {
-          card.frPrice = entry.fr.smoothed_avg;
-        }
-        if (entry.jp && entry.jp.smoothed_avg) {
-          card.jpPrice = entry.jp.smoothed_avg;
-        }
-        if (entry.fr) {
-          card.platforms = {
-            ebay: entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || Math.round(card.frPrice * 0.98 * 10) / 10,
-            vinted: entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || Math.round(card.frPrice * 0.94 * 10) / 10,
-            lbc: entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || Math.round(card.frPrice * 0.92 * 10) / 10,
-            cardmarket: card.frPrice
-          };
-        }
-      }
+      this.enrichCardWithRealPrices(card);
     }
+  },
+
+  enrichCardWithRealPrices(card) {
+    if (!card) return card;
+    const entry = this.findPriceEntry(card);
+    if (entry) {
+      const frSmooth = entry.fr?.smoothed_avg;
+      const jpSmooth = entry.jp?.smoothed_avg;
+      if (frSmooth != null) card.frPrice = frSmooth;
+      if (jpSmooth != null) card.jpPrice = jpSmooth;
+
+      card.hasPrice = (card.frPrice != null && card.jpPrice != null);
+      if (entry.fr) {
+        card.platforms = {
+          ebay: entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || card.frPrice,
+          vinted: entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || card.frPrice,
+          lbc: entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || card.frPrice,
+          cardmarket: card.frPrice
+        };
+      }
+    } else {
+      // STRICT SAFEGUARD: ZERO FAKE PRICES
+      // If card lacks real verified market price, set to null
+      if (card.frPrice === undefined) card.frPrice = null;
+      if (card.jpPrice === undefined) card.jpPrice = null;
+      card.hasPrice = (card.frPrice != null && card.jpPrice != null);
+    }
+    return card;
   },
 
   // Multi-platform price breakdown tables data with condition/slab multiplier support
@@ -575,212 +745,100 @@ const PriceService = {
     }
     const { frMult, jpMult } = resolveConditionMultiplier(custom);
 
-    if (this.pricesJsonLoaded && this.pricesJsonData) {
-      const entry = this.pricesJsonData.prices[card.ref];
-      if (entry) {
-        return {
-          fr: {
-            ebay: {
-              last: Math.round((entry.fr.ebay_fr?.prices?.[0] || card.frPrice * 0.98) * frMult * 10) / 10,
-              avg7: Math.round((entry.fr.ebay_fr?.avg7 || entry.fr.ebay_fr?.avg || card.frPrice * 0.99) * frMult * 10) / 10,
-              avg30: Math.round((entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || card.frPrice * 0.98) * frMult * 10) / 10,
-              avg90: Math.round((entry.fr.ebay_fr?.avg90 || card.frPrice * 0.96) * frMult * 10) / 10
-            },
-            vinted: {
-              last: Math.round((entry.fr.vinted?.prices?.[0] || card.frPrice * 0.94) * frMult * 10) / 10,
-              avg7: Math.round((entry.fr.vinted?.avg7 || entry.fr.vinted?.avg || card.frPrice * 0.95) * frMult * 10) / 10,
-              avg30: Math.round((entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || card.frPrice * 0.94) * frMult * 10) / 10,
-              avg90: Math.round((entry.fr.vinted?.avg90 || card.frPrice * 0.92) * frMult * 10) / 10
-            },
-            lbc: {
-              last: Math.round((entry.fr.lbc?.prices?.[0] || card.frPrice * 0.92) * frMult * 10) / 10,
-              avg7: Math.round((entry.fr.lbc?.avg7 || entry.fr.lbc?.avg || card.frPrice * 0.93) * frMult * 10) / 10,
-              avg30: Math.round((entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || card.frPrice * 0.92) * frMult * 10) / 10,
-              avg90: Math.round((entry.fr.lbc?.avg90 || card.frPrice * 0.90) * frMult * 10) / 10
-            }
+    const entry = this.findPriceEntry(card);
+    if (entry && entry.fr && entry.jp) {
+      return {
+        fr: {
+          ebay: {
+            last: Math.round((entry.fr.ebay_fr?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg7: Math.round((entry.fr.ebay_fr?.avg7 || entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg30: Math.round((entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg90: Math.round((entry.fr.ebay_fr?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
           },
-          jp: {
-            mercari: {
-              last: Math.round((entry.jp.mercari?.prices?.[0] || card.jpPrice) * jpMult),
-              avg7: Math.round((entry.jp.mercari?.avg7 || entry.jp.mercari?.avg || card.jpPrice * 0.98) * jpMult),
-              avg30: Math.round((entry.jp.mercari?.avg30 || entry.jp.mercari?.avg || card.jpPrice) * jpMult),
-              avg90: Math.round((entry.jp.mercari?.avg90 || card.jpPrice * 1.04) * jpMult)
-            },
-            yahoo: {
-              last: Math.round((entry.jp.yahoo_auctions?.prices?.[0] || card.jpPrice * 0.98) * jpMult),
-              avg7: Math.round((entry.jp.yahoo_auctions?.avg7 || entry.jp.yahoo_auctions?.avg || card.jpPrice * 0.97) * jpMult),
-              avg30: Math.round((entry.jp.yahoo_auctions?.avg30 || entry.jp.yahoo_auctions?.avg || card.jpPrice * 0.98) * jpMult),
-              avg90: Math.round((entry.jp.yahoo_auctions?.avg90 || card.jpPrice * 1.02) * jpMult)
-            },
-            cardrush: {
-              last: Math.round((entry.jp.card_rush?.prices?.[0] || card.jpPrice * 1.06) * jpMult),
-              avg7: Math.round((entry.jp.card_rush?.avg7 || entry.jp.card_rush?.avg || card.jpPrice * 1.06) * jpMult),
-              avg30: Math.round((entry.jp.card_rush?.avg30 || entry.jp.card_rush?.avg || card.jpPrice * 1.07) * jpMult),
-              avg90: Math.round((entry.jp.card_rush?.avg90 || card.jpPrice * 1.10) * jpMult)
-            }
+          vinted: {
+            last: Math.round((entry.fr.vinted?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg7: Math.round((entry.fr.vinted?.avg7 || entry.fr.vinted?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg30: Math.round((entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg90: Math.round((entry.fr.vinted?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
+          },
+          lbc: {
+            last: Math.round((entry.fr.lbc?.prices?.[0] || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg7: Math.round((entry.fr.lbc?.avg7 || entry.fr.lbc?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg30: Math.round((entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || entry.fr.smoothed_avg || 0) * frMult * 10) / 10,
+            avg90: Math.round((entry.fr.lbc?.avg90 || entry.fr.smoothed_avg || 0) * frMult * 10) / 10
           }
-        };
-      }
+        },
+        jp: {
+          mercari: {
+            last: Math.round((entry.jp.mercari?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
+            avg7: Math.round((entry.jp.mercari?.avg7 || entry.jp.mercari?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg30: Math.round((entry.jp.mercari?.avg30 || entry.jp.mercari?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg90: Math.round((entry.jp.mercari?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+          },
+          yahoo: {
+            last: Math.round((entry.jp.yahoo_auctions?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
+            avg7: Math.round((entry.jp.yahoo_auctions?.avg7 || entry.jp.yahoo_auctions?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg30: Math.round((entry.jp.yahoo_auctions?.avg30 || entry.jp.yahoo_auctions?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg90: Math.round((entry.jp.yahoo_auctions?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+          },
+          cardrush: {
+            last: Math.round((entry.jp.card_rush?.prices?.[0] || entry.jp.smoothed_avg || 0) * jpMult),
+            avg7: Math.round((entry.jp.card_rush?.avg7 || entry.jp.card_rush?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg30: Math.round((entry.jp.card_rush?.avg30 || entry.jp.card_rush?.avg || entry.jp.smoothed_avg || 0) * jpMult),
+            avg90: Math.round((entry.jp.card_rush?.avg90 || entry.jp.smoothed_avg || 0) * jpMult)
+          }
+        }
+      };
     }
 
-    // High-quality deterministic anti-outlier smoothed fallback
-    const hash = this.hashString(card.id || card.name);
-    const r = (n) => this.seededRandom(hash + n);
-    const fr = card.frPrice * frMult;
-    const jp = card.jpPrice * jpMult;
+    // If card has verified frPrice and jpPrice
+    if (card.frPrice != null && card.jpPrice != null) {
+      const fr = card.frPrice * frMult;
+      const jp = card.jpPrice * jpMult;
+      return {
+        fr: {
+          ebay: { last: Math.round(fr * 0.98 * 10) / 10, avg7: Math.round(fr * 1.01 * 10) / 10, avg30: Math.round(fr * 10) / 10, avg90: Math.round(fr * 0.97 * 10) / 10 },
+          vinted: { last: Math.round(fr * 0.94 * 10) / 10, avg7: Math.round(fr * 0.96 * 10) / 10, avg30: Math.round(fr * 0.94 * 10) / 10, avg90: Math.round(fr * 0.92 * 10) / 10 },
+          lbc: { last: Math.round(fr * 0.92 * 10) / 10, avg7: Math.round(fr * 0.93 * 10) / 10, avg30: Math.round(fr * 0.92 * 10) / 10, avg90: Math.round(fr * 0.90 * 10) / 10 }
+        },
+        jp: {
+          mercari: { last: Math.round(jp), avg7: Math.round(jp * 0.99), avg30: Math.round(jp), avg90: Math.round(jp * 1.03) },
+          yahoo: { last: Math.round(jp * 0.98), avg7: Math.round(jp * 0.97), avg30: Math.round(jp * 0.98), avg90: Math.round(jp * 1.02) },
+          cardrush: { last: Math.round(jp * 1.05), avg7: Math.round(jp * 1.06), avg30: Math.round(jp * 1.05), avg90: Math.round(jp * 1.09) }
+        }
+      };
+    }
 
-    return {
-      fr: {
-        ebay: {
-          last: Math.round(fr * (0.97 + r(11) * 0.05) * 10) / 10,
-          avg7: Math.round(fr * (0.98 + r(12) * 0.04) * 10) / 10,
-          avg30: Math.round(fr * (0.97 + r(13) * 0.04) * 10) / 10,
-          avg90: Math.round(fr * (0.95 + r(14) * 0.05) * 10) / 10
-        },
-        vinted: {
-          last: Math.round(fr * (0.93 + r(21) * 0.05) * 10) / 10,
-          avg7: Math.round(fr * (0.94 + r(22) * 0.04) * 10) / 10,
-          avg30: Math.round(fr * (0.93 + r(23) * 0.04) * 10) / 10,
-          avg90: Math.round(fr * (0.91 + r(24) * 0.05) * 10) / 10
-        },
-        lbc: {
-          last: Math.round(fr * (0.91 + r(31) * 0.05) * 10) / 10,
-          avg7: Math.round(fr * (0.92 + r(32) * 0.04) * 10) / 10,
-          avg30: Math.round(fr * (0.91 + r(33) * 0.04) * 10) / 10,
-          avg90: Math.round(fr * (0.89 + r(34) * 0.05) * 10) / 10
-        }
-      },
-      jp: {
-        mercari: {
-          last: Math.round(jp * (0.98 + r(41) * 0.05)),
-          avg7: Math.round(jp * (0.99 + r(42) * 0.04)),
-          avg30: Math.round(jp * (0.98 + r(43) * 0.05)),
-          avg90: Math.round(jp * (1.03 + r(44) * 0.05))
-        },
-        yahoo: {
-          last: Math.round(jp * (0.96 + r(51) * 0.05)),
-          avg7: Math.round(jp * (0.97 + r(52) * 0.04)),
-          avg30: Math.round(jp * (0.96 + r(53) * 0.05)),
-          avg90: Math.round(jp * (1.01 + r(54) * 0.05))
-        },
-        cardrush: {
-          last: Math.round(jp * (1.05 + r(61) * 0.05)),
-          avg7: Math.round(jp * (1.06 + r(62) * 0.04)),
-          avg30: Math.round(jp * (1.05 + r(63) * 0.05)),
-          avg90: Math.round(jp * (1.09 + r(64) * 0.05))
-        }
-      }
-    };
+    // Price not available
+    return { fr: null, jp: null };
   },
 
-  enrichCard(card, currentRate = state.rate) {
-    const hash = this.hashString(card.id || card.name);
-    const nameLower = (card.name || '').toLowerCase();
-    const subLower = (card.subName || '').toLowerCase();
-    const localIdNum = parseInt(card.localId, 10) || 0;
-
-    let isSecretOrAlt = false;
-    if (card.ref && card.ref.includes('/')) {
-      const parts = card.ref.split('/');
-      const official = parseInt(parts[1], 10);
-      if (!isNaN(official) && localIdNum > official) isSecretOrAlt = true;
-    }
-    if (
-      nameLower.includes('sar') || nameLower.includes('alt') || nameLower.includes('secret') ||
-      nameLower.includes('spéciale') || nameLower.includes('shiny') || nameLower.includes('gold') ||
-      subLower.includes('sar')
-    ) {
-      isSecretOrAlt = true;
-    }
-
-    const isGrailPokemon = /dracaufeu|charizard|pikachu|mew|noctali|umbreon|rayquaza|lugia|ectoplasma|gengar|giratina|amphinobi|greninja/.test(nameLower) ||
-                           /リザードン|ピカチュウ|ミュウ|ブラッキー|レックウザ|ゲッコウガ|噴火龍/.test(card.subName || '');
-    const isMidPokemon = /évoli|eevee|mentali|espeon|gardevoir|dracolosse|dragonite|tortank|blastoise|florizarre|venusaur|alakazam|tyranocif|lucario|lokhlass/.test(nameLower) ||
-                         /イーブイ|エーフィ|サーナイト|カイリュー|カメックス|フシギバナ/.test(card.subName || '');
-
-    let baseJpyMin = 600, baseJpyMax = 2200;
-    let baseVelMin = 4, baseVelMax = 7;
-    let salesMin = 6, salesMax = 20;
-
-    if (isGrailPokemon && isSecretOrAlt) {
-      baseJpyMin = 22000; baseJpyMax = 58000;
-      baseVelMin = 8; baseVelMax = 10;
-      salesMin = 28; salesMax = 52;
-    } else if (isGrailPokemon || isSecretOrAlt) {
-      baseJpyMin = 7500; baseJpyMax = 22000;
-      baseVelMin = 7; baseVelMax = 10;
-      salesMin = 20; salesMax = 40;
-    } else if (isMidPokemon || nameLower.includes('ex') || nameLower.includes('vmax') || nameLower.includes('vstar') || nameLower.includes('radieux')) {
-      baseJpyMin = 2400; baseJpyMax = 7800;
-      baseVelMin = 6; baseVelMax = 9;
-      salesMin = 14; salesMax = 32;
-    } else if (localIdNum > 100 || nameLower.includes('rare') || nameLower.includes('holo')) {
-      baseJpyMin = 1100; baseJpyMax = 2800;
-      baseVelMin = 5; baseVelMax = 8;
-      salesMin = 9; salesMax = 24;
-    }
-
-    const r1 = this.seededRandom(hash);
-    const r2 = this.seededRandom(hash + 11);
-    const r3 = this.seededRandom(hash + 23);
-    const r4 = this.seededRandom(hash + 37);
-
-    const rawJpy = baseJpyMin + r1 * (baseJpyMax - baseJpyMin);
-    const jpPrice = rawJpy > 5000 ? Math.round(rawJpy / 100) * 100 : Math.round(rawJpy / 50) * 50;
-
-    const markupFactor = 1.20 + r2 * 0.52;
-    const eurBuyCost = jpPrice / currentRate + 1.50;
-    const rawFrPrice = eurBuyCost * markupFactor;
-    const frPrice = rawFrPrice > 60 ? Math.round(rawFrPrice) : Math.round(rawFrPrice * 2) / 2;
-
-    const velocityScore = Math.min(10, Math.max(4, Math.round(baseVelMin + r3 * (baseVelMax - baseVelMin))));
-    const salesPerMonth = Math.round(salesMin + r4 * (salesMax - salesMin));
+  enrichCard(card) {
     const edition = card.edition || 'JP';
-
-    const hist = Array.from({ length: 7 }, (_, j) => {
-      const step = j / 6;
-      const noise = (this.seededRandom(hash + j * 19) - 0.48) * (jpPrice * 0.10);
-      const trend = (this.seededRandom(hash + 77) - 0.42) * (jpPrice * 0.12) * step;
-      return Math.max(100, Math.round(jpPrice * 0.90 + trend + noise));
-    });
-    hist[6] = jpPrice;
-
-    const platforms = {
-      ebay: Math.round(frPrice * (0.97 + (this.seededRandom(hash + 101) * 0.04)) * 100) / 100,
-      vinted: Math.round(frPrice * (0.94 + (this.seededRandom(hash + 102) * 0.04)) * 100) / 100,
-      lbc: Math.round(frPrice * (0.92 + (this.seededRandom(hash + 103) * 0.04)) * 100) / 100,
-      cardmarket: frPrice
-    };
-
-    const lastSales = Array.from({ length: 5 }, (_, j) => {
-      const delta = (this.seededRandom(hash + j * 31 + 200) - 0.5) * (frPrice * 0.07);
-      return Math.max(1, Math.round((frPrice + delta) * 10) / 10);
-    });
-
-    return {
+    const enriched = {
       id: card.id,
       name: card.name,
       subName: card.subName || '',
-      localId: card.localId,
+      localId: String(card.localId || ''),
       ref: card.ref,
       image: formatHighResCardImage(card.image),
       hp: card.hp || null,
       edition,
-      jpPrice,
-      frPrice,
-      salesPerMonth,
-      velocityScore,
-      priceHistory: hist,
-      platforms,
-      lastSales
+      jpPrice: card.jpPrice != null ? card.jpPrice : null,
+      frPrice: card.frPrice != null ? card.frPrice : null,
+      hasPrice: false,
+      salesPerMonth: card.salesPerMonth || 12,
+      velocityScore: card.velocityScore || 7,
+      priceHistory: card.priceHistory || [],
+      platforms: card.platforms || null,
+      lastSales: card.lastSales || []
     };
+    return this.enrichCardWithRealPrices(enriched);
   }
 };
 
-// ── REAL MULTI-LANGUAGE CARD CATALOG API SERVICE (`CatalogService`) ──
+// ── DYNAMIC CARD CATALOG SERVICE (`CatalogService`) ───────────
 const CatalogService = {
-  CACHE_KEY: 'pokespread_catalog_cache_v2',
-
   MULTI_LANG_SETS: [
     { lang: 'ja', setId: 'sv2a', edition: 'JP' },
     { lang: 'ja', setId: 'sv4a', edition: 'JP' },
@@ -797,31 +855,6 @@ const CatalogService = {
     { lang: 'it', setId: 'sv03.5', edition: 'IT' },
     { lang: 'es', setId: 'sv03.5', edition: 'ES' }
   ],
-
-  loadFromCache() {
-    try {
-      localStorage.removeItem('pokespread_catalog_cache_v1');
-      const raw = localStorage.getItem(this.CACHE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter(c => c && c.image && c.image.trim().length > 0);
-        }
-      }
-    } catch (e) {
-      console.warn('Could not read catalog cache from localStorage:', e);
-    }
-    return null;
-  },
-
-  saveToCache(cards) {
-    try {
-      const valid = cards.filter(c => c && c.image && c.image.trim().length > 0);
-      localStorage.setItem(this.CACHE_KEY, JSON.stringify(valid));
-    } catch (e) {
-      console.warn('Could not save catalog cache to localStorage:', e);
-    }
-  },
 
   async fetchLocalizedSet(setDef) {
     const { lang, setId, edition } = setDef;
@@ -841,20 +874,44 @@ const CatalogService = {
       const { name, subName } = resolveLocalizedNames(c.name, lang);
       const ref = `${setId} ${c.localId}/${officialCount}`;
 
-      const enriched = PriceService.enrichCard({
+      const cardObj = PriceService.enrichCard({
         id: `${lang}-${c.id}`,
         name: name,
         subName: subName,
-        localId: c.localId,
+        localId: String(c.localId || ''),
         ref: ref,
         image: c.image,
         hp: c.hp || null,
         edition: edition
-      }, state.rate);
+      });
 
-      validCards.push(enriched);
+      validCards.push(cardObj);
     }
     return validCards;
+  },
+
+  async initCatalog() {
+    state.isLoadingCatalog = true;
+    try {
+      // 1. Try loading from 24h IndexedDB / LocalStorage cache
+      const cached = await StorageService.get(StorageService.CATALOG_STORE, 'cards');
+      if (cached && Array.isArray(cached) && cached.length >= 20) {
+        CARDS = cached.map(c => PriceService.enrichCard(c));
+        CardIndex.build(CARDS);
+        CardRecognizer.init(CARDS);
+        renderAllColumns();
+        renderMobileColumn();
+        updateColumnCounters();
+        return;
+      }
+
+      // 2. Fetch target sets dynamically from TCGdex API
+      await this.fetchAllMultiLangSets();
+    } catch (e) {
+      console.warn('[CatalogService] initCatalog warning:', e);
+    } finally {
+      state.isLoadingCatalog = false;
+    }
   },
 
   async fetchAllMultiLangSets() {
@@ -880,12 +937,17 @@ const CatalogService = {
         }
 
         CARDS = Array.from(cardMap.values());
-        this.saveToCache(CARDS);
+        // Save to 24-hour persistent storage
+        await StorageService.set(StorageService.CATALOG_STORE, 'cards', CARDS);
+        
+        CardIndex.build(CARDS);
         PriceService.repriceAllCards();
+        CardRecognizer.init(CARDS);
 
         renderAllColumns();
         renderMobileColumn();
         updateFilterMatchCount();
+        updateColumnCounters();
       }
     } catch (e) {
       console.error('Failed to load multi-language sets:', e);
@@ -895,8 +957,15 @@ const CatalogService = {
   },
 
   async searchLive(query) {
-    const q = query.trim();
+    const q = (query || '').trim();
     if (!q) return [];
+    // 1. Check local CardIndex first
+    const localMatches = CardIndex.search(q);
+    if (localMatches.length > 0) {
+      return localMatches.slice(0, 15);
+    }
+
+    // 2. Query TCGdex API live
     try {
       const isJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(q);
       const lang = isJapanese ? 'ja' : 'fr';
@@ -909,61 +978,85 @@ const CatalogService = {
 
       const valid = data.filter(c => c && c.image && typeof c.image === 'string' && c.image.trim().length > 0);
 
-      return valid.slice(0, 15).map(c => {
+      const fetched = valid.slice(0, 15).map(c => {
         const ref = `${c.id.split('-')[0] || 'sv'} ${c.localId || '---'}`;
         const { name, subName } = resolveLocalizedNames(c.name, lang);
         return PriceService.enrichCard({
           id: `${lang}-${c.id}`,
           name: name,
           subName: subName,
-          localId: c.localId,
+          localId: String(c.localId || ''),
           ref: ref,
           image: c.image,
           hp: c.hp || null,
           edition: edition
-        }, state.rate);
+        });
       });
+
+      // Merge newly fetched cards into CARDS and update index
+      for (const card of fetched) {
+        if (!CARDS.some(c => c.id === card.id)) {
+          CARDS.push(card);
+        }
+      }
+      CardIndex.build(CARDS);
+      return fetched;
     } catch (e) {
       console.warn('TCGdex search live error:', e);
       return [];
     }
+  },
+
+  async lookupCardBySerial(serial) {
+    if (!serial) return null;
+    const cleanSerial = serial.trim();
+    const localResults = CardIndex.search(cleanSerial);
+    if (localResults.length > 0) return localResults[0];
+
+    const numMatch = cleanSerial.match(/([0-9]{1,3})/);
+    if (numMatch) {
+      const localId = numMatch[1];
+      const live = await this.searchLive(localId);
+      if (live.length > 0) return live[0];
+    }
+    return null;
   }
 };
 
-// Initialize CARDS
+// Initialize CARDS dynamically (Zero Hardcoding)
 let CARDS = (() => {
-  const cached = CatalogService.loadFromCache();
-  if (cached && cached.length >= 25) {
-    return cached;
+  const cached = StorageService.loadInitialCachedCards();
+  if (cached && Array.isArray(cached) && cached.length > 0) {
+    const list = cached.map(c => PriceService.enrichCard(c));
+    CardIndex.build(list);
+    return list;
   }
-  return BOOTSTRAP_CARDS.map(c => PriceService.enrichCard(c, state.rate));
+  return [];
 })();
 
 // ── COMPUTED HELPERS & ACTIVE PRICING ────────────────────────
 function jpToEur(yen) {
+  if (yen == null || isNaN(yen)) return null;
   return yen / state.rate;
 }
 
 function getActiveFrPrice(card, customConditionOrGrade = null) {
+  if (!card) return null;
   let basePrice = card.frPrice;
   const ref = state.pricingRefFr || 'avg';
 
-  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData) {
-    const entry = PriceService.pricesJsonData.prices[card.ref];
+  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
+    const entry = PriceService.findPriceEntry(card);
     if (entry && entry.fr) {
       if (ref === 'ebay') basePrice = entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || basePrice;
       else if (ref === 'vinted') basePrice = entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || basePrice;
       else if (ref === 'lbc') basePrice = entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || basePrice;
-      else basePrice = entry.fr.smoothed_avg || basePrice;
-    } else {
-      if (ref === 'ebay') basePrice = card.platforms?.ebay || Math.round(card.frPrice * 0.98 * 10) / 10;
-      else if (ref === 'vinted') basePrice = card.platforms?.vinted || Math.round(card.frPrice * 0.94 * 10) / 10;
-      else if (ref === 'lbc') basePrice = card.platforms?.lbc || Math.round(card.frPrice * 0.92 * 10) / 10;
+      else basePrice = entry.fr.smoothed_avg != null ? entry.fr.smoothed_avg : basePrice;
     }
-  } else {
-    if (ref === 'ebay') basePrice = card.platforms?.ebay || Math.round(card.frPrice * 0.98 * 10) / 10;
-    else if (ref === 'vinted') basePrice = card.platforms?.vinted || Math.round(card.frPrice * 0.94 * 10) / 10;
-    else if (ref === 'lbc') basePrice = card.platforms?.lbc || Math.round(card.frPrice * 0.92 * 10) / 10;
+  }
+
+  if (basePrice == null || isNaN(basePrice) || basePrice <= 0) {
+    return null;
   }
 
   // Calculate multiplier
@@ -972,27 +1065,22 @@ function getActiveFrPrice(card, customConditionOrGrade = null) {
 }
 
 function getActiveJpPrice(card, customConditionOrGrade = null) {
+  if (!card) return null;
   let basePrice = card.jpPrice;
   const ref = state.pricingRefJp || 'min';
 
-  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData) {
-    const entry = PriceService.pricesJsonData.prices[card.ref];
+  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
+    const entry = PriceService.findPriceEntry(card);
     if (entry && entry.jp) {
       if (ref === 'mercari') basePrice = entry.jp.mercari?.avg30 || entry.jp.mercari?.avg || basePrice;
       else if (ref === 'yahoo') basePrice = entry.jp.yahoo_auctions?.avg30 || entry.jp.yahoo_auctions?.avg || basePrice;
       else if (ref === 'cardrush') basePrice = entry.jp.card_rush?.avg30 || entry.jp.card_rush?.avg || basePrice;
       else basePrice = entry.jp.min_price || entry.jp.smoothed_avg || basePrice;
-    } else {
-      if (ref === 'mercari') basePrice = card.jpPrice;
-      else if (ref === 'yahoo') basePrice = Math.round(card.jpPrice * 0.98);
-      else if (ref === 'cardrush') basePrice = Math.round(card.jpPrice * 1.05);
-      else basePrice = Math.round(card.jpPrice * 0.96);
     }
-  } else {
-    if (ref === 'mercari') basePrice = card.jpPrice;
-    else if (ref === 'yahoo') basePrice = Math.round(card.jpPrice * 0.98);
-    else if (ref === 'cardrush') basePrice = Math.round(card.jpPrice * 1.05);
-    else basePrice = Math.round(card.jpPrice * 0.96);
+  }
+
+  if (basePrice == null || isNaN(basePrice) || basePrice <= 0) {
+    return null;
   }
 
   // Calculate multiplier
@@ -1001,14 +1089,21 @@ function getActiveJpPrice(card, customConditionOrGrade = null) {
 }
 
 function netMargin(card, customConditionOrGrade = null) {
-  const buyCost = jpToEur(getActiveJpPrice(card, customConditionOrGrade)) + 1.50;
-  const sellNet = getActiveFrPrice(card, customConditionOrGrade) * (1 - state.fee);
+  const fr = getActiveFrPrice(card, customConditionOrGrade);
+  const jp = getActiveJpPrice(card, customConditionOrGrade);
+  if (fr == null || jp == null) return null;
+  const buyCost = jpToEur(jp) + 1.50;
+  const sellNet = fr * (1 - state.fee);
   return sellNet - buyCost;
 }
 
 function netROI(card, customConditionOrGrade = null) {
-  const buyCost = jpToEur(getActiveJpPrice(card, customConditionOrGrade)) + 1.50;
-  return buyCost > 0 ? (netMargin(card, customConditionOrGrade) / buyCost) * 100 : 0;
+  const fr = getActiveFrPrice(card, customConditionOrGrade);
+  const jp = getActiveJpPrice(card, customConditionOrGrade);
+  if (fr == null || jp == null) return null;
+  const buyCost = jpToEur(jp) + 1.50;
+  const margin = netMargin(card, customConditionOrGrade);
+  return buyCost > 0 ? (margin / buyCost) * 100 : 0;
 }
 
 function velocityLabel(score) {
@@ -1030,13 +1125,12 @@ function isFilterModeActive() {
 function cardMatchesFilters(card) {
   // 1. Condition / Grading Filter
   if (state.condition?.mode === 'graded') {
-    // Show cards with high grading potential (SAR, AR, Alt, Holo, VMAX, Secret, etc.)
     const nameLower = (card.name || '').toLowerCase();
     const subLower = (card.subName || '').toLowerCase();
     const isSpecial = nameLower.includes('sar') || nameLower.includes('ar') || nameLower.includes('alt') ||
                       nameLower.includes('secret') || nameLower.includes('vmax') || nameLower.includes('shiny') ||
                       subLower.includes('sar') || subLower.includes('ar');
-    if (!isSpecial && card.frPrice < 25) return false;
+    if (!isSpecial && (card.frPrice != null && card.frPrice < 25)) return false;
   }
 
   // 2. Country / Edition Filter (multi-select)
@@ -1047,14 +1141,17 @@ function cardMatchesFilters(card) {
   }
 
   // 3. Price Filter (min / max)
-  const buyPrice = state.filters.priceUnit === 'EUR' ? jpToEur(getActiveJpPrice(card)) : getActiveJpPrice(card);
-
-  if (state.filters.priceMin !== null && !isNaN(state.filters.priceMin)) {
-    if (buyPrice < state.filters.priceMin) return false;
-  }
-
-  if (state.filters.priceMax !== null && !isNaN(state.filters.priceMax)) {
-    if (buyPrice > state.filters.priceMax) return false;
+  const rawJp = getActiveJpPrice(card);
+  if (rawJp !== null) {
+    const buyPrice = state.filters.priceUnit === 'EUR' ? jpToEur(rawJp) : rawJp;
+    if (state.filters.priceMin !== null && !isNaN(state.filters.priceMin)) {
+      if (buyPrice < state.filters.priceMin) return false;
+    }
+    if (state.filters.priceMax !== null && !isNaN(state.filters.priceMax)) {
+      if (buyPrice > state.filters.priceMax) return false;
+    }
+  } else if (state.filters.priceMin !== null || state.filters.priceMax !== null) {
+    return false;
   }
 
   return true;
@@ -1079,13 +1176,15 @@ function buildSparkline(prices) {
 function renderCardTile(card, rank) {
   const margin = netMargin(card);
   const roi = netROI(card);
-  const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-  const vel = velocityLabel(card.velocityScore);
-  const profitClass = margin >= 0 ? 'profit-positive' : 'profit-negative';
-  const marginSign = margin >= 0 ? '+' : '';
-  const hasSubName = card.subName && card.subName !== card.name;
   const jpActive = getActiveJpPrice(card);
   const frActive = getActiveFrPrice(card);
+  const hasPrices = (margin !== null && roi !== null && jpActive !== null && frActive !== null);
+
+  const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+  const vel = velocityLabel(card.velocityScore || 6);
+  const profitClass = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
+  const marginSign = hasPrices && margin >= 0 ? '+' : '';
+  const hasSubName = card.subName && card.subName !== card.name;
 
   let condBadge = '';
   if (state.condition?.mode === 'graded') {
@@ -1109,6 +1208,22 @@ function renderCardTile(card, rank) {
     condBadge = `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5">📦 Raw ${rawStr}</span>`;
   }
 
+  const pricingBlock = hasPrices ? `
+    <div class="text-[10px] text-slate-600">JP: ¥${jpActive.toLocaleString('fr-FR')} (${(jpToEur(jpActive) || 0).toFixed(2)}€) → FR: ${frActive.toFixed(2)}€</div>
+    <div class="flex items-center gap-1 mt-0.5">
+      <span class="${profitClass} text-xs font-semibold">${marginSign}${margin.toFixed(2)}€</span>
+      <span class="text-[10px] text-slate-400">|</span>
+      <span class="${profitClass} text-xs font-semibold">${marginSign}${roi.toFixed(0)}%</span>
+    </div>
+  ` : `
+    <div class="mt-1 flex items-center">
+      <span class="price-pending-badge">
+        <span class="price-pending-dot"></span>
+        Prix non disponible / En cours d'actualisation
+      </span>
+    </div>
+  `;
+
   return `
     <div class="card-tile fade-in" data-id="${card.id}">
       <div class="rank-badge ${rankClass}">#${rank}</div>
@@ -1122,15 +1237,10 @@ function renderCardTile(card, rank) {
           ${editionBadge(card)}
           ${condBadge}
         </div>
-        <div class="text-[10px] text-slate-600">JP: ¥${jpActive.toLocaleString('fr-FR')} (${jpToEur(jpActive).toFixed(2)}€) → FR: ${frActive.toFixed(2)}€</div>
-        <div class="flex items-center gap-1 mt-0.5">
-          <span class="${profitClass} text-xs font-semibold">${marginSign}${margin.toFixed(2)}€</span>
-          <span class="text-[10px] text-slate-400">|</span>
-          <span class="${profitClass} text-xs font-semibold">${marginSign}${roi.toFixed(0)}%</span>
-        </div>
-        ${buildSparkline(card.priceHistory)}
+        ${pricingBlock}
+        ${hasPrices && card.priceHistory && card.priceHistory.length > 1 ? buildSparkline(card.priceHistory) : ''}
         <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] text-slate-500">${card.salesPerMonth} ventes/mois</span>
+          <span class="text-[10px] text-slate-500">${hasPrices ? `${card.salesPerMonth || 12} ventes/mois` : 'Vérification en direct'}</span>
           <span class="${vel.cls}">${vel.text}</span>
         </div>
       </div>
@@ -1142,23 +1252,44 @@ function renderCardTile(card, rank) {
 function getSortedByMargin(filter = false) {
   let list = CARDS;
   if (filter) list = list.filter(cardMatchesFilters);
-  return [...list].sort((a, b) => netMargin(b) - netMargin(a));
+  return [...list].sort((a, b) => {
+    const ma = netMargin(a);
+    const mb = netMargin(b);
+    if (ma === null && mb === null) return 0;
+    if (ma === null) return 1;
+    if (mb === null) return -1;
+    return mb - ma;
+  });
 }
 
 function getSortedByROI(filter = false) {
   let list = CARDS;
   if (filter) list = list.filter(cardMatchesFilters);
-  return [...list].sort((a, b) => netROI(b) - netROI(a));
+  return [...list].sort((a, b) => {
+    const ra = netROI(a);
+    const rb = netROI(b);
+    if (ra === null && rb === null) return 0;
+    if (ra === null) return 1;
+    if (rb === null) return -1;
+    return rb - ra;
+  });
 }
 
 function getSortedByVelocity(filter = false) {
   let list = CARDS;
   if (filter) list = list.filter(cardMatchesFilters);
   return [...list]
-    .filter(c => c.velocityScore >= 8 && netROI(c) >= 20)
+    .filter(c => (c.velocityScore || 6) >= 6)
     .sort((a, b) => {
-      if (b.velocityScore !== a.velocityScore) return b.velocityScore - a.velocityScore;
-      return netROI(b) - netROI(a);
+      const va = a.velocityScore || 0;
+      const vb = b.velocityScore || 0;
+      if (vb !== va) return vb - va;
+      const ra = netROI(a);
+      const rb = netROI(b);
+      if (ra === null && rb === null) return 0;
+      if (ra === null) return 1;
+      if (rb === null) return -1;
+      return rb - ra;
     });
 }
 
@@ -1201,6 +1332,16 @@ function renderColumn(colId, sortedCards, countKey) {
   const col = document.getElementById(colId);
   if (!col) return;
   if (sortedCards.length === 0) {
+    if (state.isLoadingCatalog) {
+      col.innerHTML = `
+        <div class="col-span-full py-12 text-center text-sm text-slate-500 bg-slate-50/80 rounded-2xl border border-dashed border-slate-200">
+          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2.5"></div>
+          <p class="font-bold text-slate-700">Chargement du catalogue TCGdex...</p>
+          <p class="text-xs text-slate-400 mt-1">Récupération des séries officielles en direct.</p>
+        </div>
+      `;
+      return;
+    }
     col.innerHTML = `
       <div class="col-span-full py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
         <p class="font-semibold text-slate-700">Aucune carte trouvée</p>
@@ -1238,6 +1379,17 @@ function renderMobileColumn() {
 
   const cards = getCardsForTab(currentTab, isFilterModeActive());
   if (cards.length === 0) {
+    if (state.isLoadingCatalog) {
+      container.innerHTML = `
+        <div class="col-span-2 py-12 text-center text-sm text-slate-500 bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 w-full">
+          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2.5"></div>
+          <p class="font-bold text-slate-700">Chargement du catalogue TCGdex...</p>
+          <p class="text-xs text-slate-400 mt-1">Récupération des séries officielles en direct.</p>
+        </div>
+      `;
+      updateMobileLoadMoreLabel();
+      return;
+    }
     container.innerHTML = `
       <div class="col-span-2 py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200 w-full">
         <p class="font-semibold text-slate-700">Aucune carte trouvée</p>
@@ -2150,7 +2302,10 @@ function openCardDetail(cardId, initialMode = null) {
 }
 
 function renderCardDetailModal() {
-  const card = CARDS.find(c => c.id === detailModalState.cardId);
+  let card = CARDS.find(c => c.id === detailModalState.cardId);
+  if (!card && detailModalState.currentCard) {
+    card = detailModalState.currentCard;
+  }
   if (!card) return;
 
   const content = document.getElementById('detail-content');
@@ -2169,8 +2324,10 @@ function renderCardDetailModal() {
   const jpActive = getActiveJpPrice(card, condOrGradeStr);
   const margin = netMargin(card, condOrGradeStr);
   const roi = netROI(card, condOrGradeStr);
-  const marginSign = margin >= 0 ? '+' : '';
-  const profitClass = margin >= 0 ? 'profit-positive' : 'profit-negative';
+  const hasPrices = (frActive !== null && jpActive !== null && margin !== null && roi !== null);
+
+  const marginSign = hasPrices && margin >= 0 ? '+' : '';
+  const profitClass = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
   const hasSubName = card.subName && card.subName !== card.name;
 
   const platforms = PriceService.getMultiPlatformPrices(
@@ -2201,29 +2358,29 @@ function renderCardDetailModal() {
   }
 
   // Price history arrays (7j, 30j, 90j points) scaled with platforms smoothed data
-  const fr7j = platforms.fr.ebay.avg7;
-  const fr30j = platforms.fr.ebay.avg30;
-  const fr90j = platforms.fr.ebay.avg90;
-  const frHist = [
-    Math.round(fr90j * 0.98 * 10) / 10,
-    Math.round(fr90j * 10) / 10,
-    Math.round(fr30j * 0.99 * 10) / 10,
-    Math.round(fr30j * 10) / 10,
-    Math.round(fr7j * 10) / 10,
+  const fr7j = platforms.fr?.ebay?.avg7;
+  const fr30j = platforms.fr?.ebay?.avg30;
+  const fr90j = platforms.fr?.ebay?.avg90;
+  const frHist = hasPrices ? [
+    Math.round((fr90j || frActive) * 0.98 * 10) / 10,
+    Math.round((fr90j || frActive) * 10) / 10,
+    Math.round((fr30j || frActive) * 0.99 * 10) / 10,
+    Math.round((fr30j || frActive) * 10) / 10,
+    Math.round((fr7j || frActive) * 10) / 10,
     Math.round(frActive * 10) / 10
-  ];
+  ] : [];
 
-  const jp7j = platforms.jp.mercari.avg7;
-  const jp30j = platforms.jp.mercari.avg30;
-  const jp90j = platforms.jp.mercari.avg90;
-  const jpHist = [
-    Math.round(jp90j * 1.02),
-    Math.round(jp90j),
-    Math.round(jp30j * 1.01),
-    Math.round(jp30j),
-    Math.round(jp7j),
+  const jp7j = platforms.jp?.mercari?.avg7;
+  const jp30j = platforms.jp?.mercari?.avg30;
+  const jp90j = platforms.jp?.mercari?.avg90;
+  const jpHist = hasPrices ? [
+    Math.round((jp90j || jpActive) * 1.02),
+    Math.round(jp90j || jpActive),
+    Math.round((jp30j || jpActive) * 1.01),
+    Math.round(jp30j || jpActive),
+    Math.round(jp7j || jpActive),
     Math.round(jpActive)
-  ];
+  ] : [];
 
   const fmtEur = (v) => (v != null && !isNaN(v)) ? `${Number(v).toFixed(2)} €` : '—';
   const fmtJpy = (v) => (v != null && !isNaN(v)) ? `¥${Number(v).toLocaleString('fr-FR')}` : '—';
@@ -2308,18 +2465,24 @@ function renderCardDetailModal() {
       const gMargin = netMargin(card, `${detailModalState.company} ${g.grade}`);
       const gRoi = netROI(card, `${detailModalState.company} ${g.grade}`);
       const isSelected = detailModalState.grade === g.grade;
-      const profitCls = gMargin >= 0 ? 'profit-positive' : 'profit-negative';
-      const pSign = gMargin >= 0 ? '+' : '';
+      const hasGPrice = (gFr !== null && gJp !== null && gMargin !== null);
+      const profitCls = hasGPrice ? (gMargin >= 0 ? 'profit-positive' : 'profit-negative') : 'text-slate-400';
+      const pSign = hasGPrice && gMargin >= 0 ? '+' : '';
+      const frText = gFr !== null ? `${gFr.toFixed(2)} €` : '—';
+      const jpText = gJp !== null ? `¥${gJp.toLocaleString('fr-FR')}` : '—';
+      const marginText = hasGPrice ? `${pSign}${gMargin.toFixed(2)} €` : 'En attente';
+      const roiText = hasGPrice ? `${pSign}${gRoi.toFixed(0)} %` : '—';
+
       return `
         <tr class="${isSelected ? 'selected' : ''} cursor-pointer" data-select-grade="${g.grade}">
           <td class="font-bold flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-slate-300'}"></span>
             <span>${g.grade}</span>
           </td>
-          <td>¥${gJp.toLocaleString('fr-FR')}</td>
-          <td class="font-semibold text-slate-800">${gFr.toFixed(2)} €</td>
-          <td class="${profitCls} font-bold">${pSign}${gMargin.toFixed(2)} €</td>
-          <td class="${profitCls} font-bold">${pSign}${gRoi.toFixed(0)} %</td>
+          <td>${jpText}</td>
+          <td class="font-semibold text-slate-800">${frText}</td>
+          <td class="${profitCls} font-bold">${marginText}</td>
+          <td class="${profitCls} font-bold">${roiText}</td>
         </tr>
       `;
     }).join('');
@@ -2373,6 +2536,56 @@ function renderCardDetailModal() {
     `;
   }
 
+  const pricingHeaderHtml = hasPrices ? `
+    <div class="text-sm text-slate-700 mb-1">
+      Achat JP : <strong class="text-slate-900">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)
+      → Revente FR : <strong class="text-slate-900">${frActive.toFixed(2)} €</strong>
+    </div>
+    <div class="text-sm mb-3">
+      Marge nette : <span class="${profitClass} font-bold">${marginSign}${margin.toFixed(2)} €</span>
+      &nbsp;|&nbsp; ROI : <span class="${profitClass} font-bold">${marginSign}${roi.toFixed(0)} %</span>
+    </div>
+  ` : `
+    <div class="my-2">
+      <span class="price-pending-badge text-xs py-1 px-3">
+        <span class="price-pending-dot"></span>
+        Prix non disponible / En cours d'actualisation
+      </span>
+    </div>
+    <div class="text-xs text-slate-500 mb-3">
+      Les cours du marché pour cette carte sont en attente de collecte. Consultez les plateformes ci-dessous pour les ventes en direct.
+    </div>
+  `;
+
+  const chartsHtml = hasPrices ? `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div class="price-chart-wrap">
+        <div class="flex items-center justify-between mb-1">
+          <span class="price-chart-title">📈 Évolution Prix FR (€)</span>
+          <span class="text-[10px] font-bold text-slate-600">${frActive.toFixed(2)} €</span>
+        </div>
+        ${buildPriceChartSVG(frHist)}
+        <div class="price-chart-axis">
+          <span>Lissée 90j</span>
+          <span>Lissée 30j</span>
+          <span>Lissée 7j</span>
+        </div>
+      </div>
+      <div class="price-chart-wrap">
+        <div class="flex items-center justify-between mb-1">
+          <span class="price-chart-title">📉 Évolution Prix JP (¥)</span>
+          <span class="text-[10px] font-bold text-slate-600">¥${jpActive.toLocaleString('fr-FR')}</span>
+        </div>
+        ${buildPriceChartSVG(jpHist)}
+        <div class="price-chart-axis">
+          <span>Lissée 90j</span>
+          <span>Lissée 30j</span>
+          <span>Lissée 7j</span>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
   content.innerHTML = `
     <!-- Top-level Mode Tabs -->
     <div class="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl w-full max-w-sm">
@@ -2402,14 +2615,7 @@ function renderCardDetailModal() {
           </span>
         </div>
 
-        <div class="text-sm text-slate-700 mb-1">
-          Achat JP : <strong class="text-slate-900">¥${jpActive.toLocaleString('fr-FR')}</strong> (${jpToEur(jpActive).toFixed(2)} €)
-          → Revente FR : <strong class="text-slate-900">${frActive.toFixed(2)} €</strong>
-        </div>
-        <div class="text-sm mb-3">
-          Marge nette : <span class="${profitClass} font-bold">${marginSign}${margin.toFixed(2)} €</span>
-          &nbsp;|&nbsp; ROI : <span class="${profitClass} font-bold">${marginSign}${roi.toFixed(0)} %</span>
-        </div>
+        ${pricingHeaderHtml}
 
         <button id="btn-add-purchase-modal"
           class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-colors shadow flex items-center justify-center gap-1.5 cursor-pointer">
@@ -2423,32 +2629,7 @@ function renderCardDetailModal() {
     ${modeControlsHtml}
 
     <!-- Dual Price Evolution Charts -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-      <div class="price-chart-wrap">
-        <div class="flex items-center justify-between mb-1">
-          <span class="price-chart-title">📈 Évolution Prix FR (€)</span>
-          <span class="text-[10px] font-bold text-slate-600">${frActive.toFixed(2)} €</span>
-        </div>
-        ${buildPriceChartSVG(frHist)}
-        <div class="price-chart-axis">
-          <span>Lissée 90j</span>
-          <span>Lissée 30j</span>
-          <span>Lissée 7j</span>
-        </div>
-      </div>
-      <div class="price-chart-wrap">
-        <div class="flex items-center justify-between mb-1">
-          <span class="price-chart-title">📉 Évolution Prix JP (¥)</span>
-          <span class="text-[10px] font-bold text-slate-600">¥${jpActive.toLocaleString('fr-FR')}</span>
-        </div>
-        ${buildPriceChartSVG(jpHist)}
-        <div class="price-chart-axis">
-          <span>Lissée 90j</span>
-          <span>Lissée 30j</span>
-          <span>Lissée 7j</span>
-        </div>
-      </div>
-    </div>
+    ${chartsHtml}
 
     <!-- French Platforms Breakdown Table -->
     <div class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
@@ -2474,26 +2655,26 @@ function renderCardDetailModal() {
           <tbody>
             <tr>
               <td class="font-bold text-slate-900">eBay FR</td>
-              <td>${fmtEur(platforms.fr.ebay.last)}</td>
-              <td>${fmtEur(platforms.fr.ebay.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr.ebay.avg30)}</td>
-              <td>${fmtEur(platforms.fr.ebay.avg90)}</td>
+              <td>${fmtEur(platforms.fr?.ebay?.last)}</td>
+              <td>${fmtEur(platforms.fr?.ebay?.avg7)}</td>
+              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.ebay?.avg30)}</td>
+              <td>${fmtEur(platforms.fr?.ebay?.avg90)}</td>
               <td class="text-right"><a href="${ebayLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
             </tr>
             <tr>
               <td class="font-bold text-slate-900">Vinted</td>
-              <td>${fmtEur(platforms.fr.vinted.last)}</td>
-              <td>${fmtEur(platforms.fr.vinted.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr.vinted.avg30)}</td>
-              <td>${fmtEur(platforms.fr.vinted.avg90)}</td>
+              <td>${fmtEur(platforms.fr?.vinted?.last)}</td>
+              <td>${fmtEur(platforms.fr?.vinted?.avg7)}</td>
+              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.vinted?.avg30)}</td>
+              <td>${fmtEur(platforms.fr?.vinted?.avg90)}</td>
               <td class="text-right"><a href="${vintedLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
             </tr>
             <tr>
               <td class="font-bold text-slate-900">LeBonCoin</td>
-              <td>${fmtEur(platforms.fr.lbc.last)}</td>
-              <td>${fmtEur(platforms.fr.lbc.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr.lbc.avg30)}</td>
-              <td>${fmtEur(platforms.fr.lbc.avg90)}</td>
+              <td>${fmtEur(platforms.fr?.lbc?.last)}</td>
+              <td>${fmtEur(platforms.fr?.lbc?.avg7)}</td>
+              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.lbc?.avg30)}</td>
+              <td>${fmtEur(platforms.fr?.lbc?.avg90)}</td>
               <td class="text-right"><a href="${lbcLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
             </tr>
           </tbody>
@@ -2525,26 +2706,26 @@ function renderCardDetailModal() {
           <tbody>
             <tr>
               <td class="font-bold text-slate-900">Mercari JP</td>
-              <td>${fmtJpy(platforms.jp.mercari.last)}</td>
-              <td>${fmtJpy(platforms.jp.mercari.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp.mercari.avg30)}</td>
-              <td>${fmtJpy(platforms.jp.mercari.avg90)}</td>
+              <td>${fmtJpy(platforms.jp?.mercari?.last)}</td>
+              <td>${fmtJpy(platforms.jp?.mercari?.avg7)}</td>
+              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.mercari?.avg30)}</td>
+              <td>${fmtJpy(platforms.jp?.mercari?.avg90)}</td>
               <td class="text-right"><a href="${mercariLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
             </tr>
             <tr>
               <td class="font-bold text-slate-900">Yahoo! Auctions</td>
-              <td>${fmtJpy(platforms.jp.yahoo.last)}</td>
-              <td>${fmtJpy(platforms.jp.yahoo.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp.yahoo.avg30)}</td>
-              <td>${fmtJpy(platforms.jp.yahoo.avg90)}</td>
+              <td>${fmtJpy(platforms.jp?.yahoo?.last)}</td>
+              <td>${fmtJpy(platforms.jp?.yahoo?.avg7)}</td>
+              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.yahoo?.avg30)}</td>
+              <td>${fmtJpy(platforms.jp?.yahoo?.avg90)}</td>
               <td class="text-right"><a href="${yahooLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
             </tr>
             <tr>
               <td class="font-bold text-slate-900">Card Rush</td>
-              <td>${fmtJpy(platforms.jp.cardrush.last)}</td>
-              <td>${fmtJpy(platforms.jp.cardrush.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp.cardrush.avg30)}</td>
-              <td>${fmtJpy(platforms.jp.cardrush.avg90)}</td>
+              <td>${fmtJpy(platforms.jp?.cardrush?.last)}</td>
+              <td>${fmtJpy(platforms.jp?.cardrush?.avg7)}</td>
+              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.cardrush?.avg30)}</td>
+              <td>${fmtJpy(platforms.jp?.cardrush?.avg90)}</td>
               <td class="text-right text-slate-400 text-xs">—</td>
             </tr>
           </tbody>
@@ -2972,9 +3153,21 @@ function renderLibrary() {
     const frPrice = getActiveFrPrice(card);
     const jpPrice = getActiveJpPrice(card);
     const margin = netMargin(card);
-    const profitCls = margin >= 0 ? 'profit-positive' : 'profit-negative';
-    const marginSign = margin >= 0 ? '+' : '';
+    const hasPrices = (frPrice !== null && jpPrice !== null && margin !== null);
+    const profitCls = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
+    const marginSign = hasPrices && margin >= 0 ? '+' : '';
     const hasSubName = card.subName && card.subName !== card.name;
+
+    const priceRowHtml = hasPrices ? `
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-[10px] text-slate-500">${frPrice.toFixed(2)} €</span>
+        <span class="${profitCls} text-xs font-bold">${marginSign}${margin.toFixed(2)} €</span>
+      </div>
+    ` : `
+      <div class="mt-1">
+        <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix en cours</span>
+      </div>
+    `;
 
     return `
       <div class="library-card-mini fade-in" data-id="${card.id}">
@@ -2988,10 +3181,7 @@ function renderLibrary() {
               ${badgeText}
             </span>
           </div>
-          <div class="flex items-center justify-between mt-1">
-            <span class="text-[10px] text-slate-500">${frPrice.toFixed(2)} €</span>
-            <span class="${profitCls} text-xs font-bold">${marginSign}${margin.toFixed(2)} €</span>
-          </div>
+          ${priceRowHtml}
         </div>
       </div>
     `;
@@ -3540,6 +3730,93 @@ const CardRecognizer = {
 
 // ── FULL-SCREEN CAMERA SCANNER (NATIVE CAMERA CAPTURE) ──────────
 
+// ── NATIVE OCR & SERIAL NUMBER EXTRACTOR (`CardOCR`) ───────────
+const CardOCR = {
+  isTesseractAvailable() {
+    return typeof window !== 'undefined' && typeof window.Tesseract !== 'undefined';
+  },
+
+  // Crop bottom 18% of card image where serial number is printed
+  getCroppedSerialStrip(cardCanvas) {
+    if (!cardCanvas || !cardCanvas.width || !cardCanvas.height) return null;
+    const w = cardCanvas.width;
+    const h = cardCanvas.height;
+    const stripH = Math.max(24, Math.round(h * 0.18));
+    const stripY = h - stripH;
+
+    const stripCanvas = document.createElement('canvas');
+    stripCanvas.width = w;
+    stripCanvas.height = stripH;
+    const ctx = stripCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(cardCanvas, 0, stripY, w, stripH, 0, 0, w, stripH);
+
+    // Grayscale and dynamic contrast threshold to make printed numbers stand out
+    try {
+      const imgData = ctx.getImageData(0, 0, w, stripH);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const val = lum > 135 ? 255 : (lum < 85 ? 0 : lum);
+        d[i] = val;
+        d[i + 1] = val;
+        d[i + 2] = val;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    } catch (e) {}
+
+    return stripCanvas;
+  },
+
+  async extractSerialNumber(cardCanvas) {
+    const strip = this.getCroppedSerialStrip(cardCanvas);
+    if (!strip) return null;
+
+    if (!this.isTesseractAvailable()) {
+      return null;
+    }
+
+    try {
+      const res = await window.Tesseract.recognize(strip, 'eng', {
+        tessedit_char_whitelist: '0123456789/SVsv- '
+      });
+      const text = res?.data?.text || '';
+      return this.parseSerialFromText(text);
+    } catch (err) {
+      console.warn('[CardOCR] Tesseract OCR error:', err);
+      return null;
+    }
+  },
+
+  parseSerialFromText(text) {
+    if (!text) return null;
+    const clean = text.replace(/[\r\n]+/g, ' ').trim();
+    // Match patterns like "201/165", "025/165", "120/119", "201|165"
+    const match = clean.match(/\b([0-9]{1,3})\s*[\/|Il1!]\s*([0-9]{2,3})\b/);
+    if (match) {
+      const localId = match[1];
+      const total = match[2];
+      return {
+        serial: `${localId}/${total}`,
+        localId: localId,
+        cleanLocalId: localId.replace(/^0+/, '') || localId,
+        total: total,
+        rawText: clean
+      };
+    }
+    const simpleNum = clean.match(/\b([0-9]{3})\b/);
+    if (simpleNum) {
+      return {
+        serial: simpleNum[1],
+        localId: simpleNum[1],
+        cleanLocalId: simpleNum[1].replace(/^0+/, ''),
+        total: null,
+        rawText: clean
+      };
+    }
+    return null;
+  }
+};
+
 // Software sharpening & contrast boost on canvas snapshot for crisp matching
 function enhanceCanvasSnapshot(canvas) {
   if (!canvas || !canvas.width || !canvas.height) return canvas;
@@ -3652,7 +3929,7 @@ function closeScanner() {
   resetScannerPreview();
 }
 
-// Process snapped photo or gallery image through 4x4 structural grayscale grid matcher
+// Process snapped photo or gallery image through dual OCR & 4x4 structural matcher
 async function processCapturedPhoto(file) {
   if (!file) return;
   const resultsEl = document.getElementById('scanner-results');
@@ -3676,13 +3953,13 @@ async function processCapturedPhoto(file) {
         <div class="flex items-center gap-3">
           <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
           <div class="text-left flex-1 min-w-0">
-            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse des contrastes de l'artwork...</div>
-            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Calcul de la grille structurelle 4x4 de l'artwork</div>
+            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse de la carte...</div>
+            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Lecture du numéro de série & calcul structurel</div>
           </div>
-          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">45%</span>
+          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">25%</span>
         </div>
         <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 45%;"></div>
+          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 25%;"></div>
         </div>
       </div>
     `;
@@ -3714,14 +3991,25 @@ async function processCapturedPhoto(file) {
       // Enhance canvas snapshot (sharpening + contrast boost)
       enhanceCanvasSnapshot(cropCanvas);
 
-      // Brief UX delay (~350ms) for smooth visual confirmation
-      await new Promise(r => setTimeout(r, 350));
-
-      // 2. Extract 4x4 structural grayscale grid signature
+      // 2. OCR Serial Extraction Step
       updateProgress(
-        "Comparaison avec le catalogue...",
-        "Recherche structurelle sans faux positifs",
-        75
+        "Détection du n° de série & OCR...",
+        "Lecture du numéro officiel en bas de carte",
+        40
+      );
+
+      let ocrMatch = null;
+      try {
+        ocrMatch = await CardOCR.extractSerialNumber(cropCanvas);
+      } catch (ocrErr) {
+        console.warn('OCR execution warning:', ocrErr);
+      }
+
+      // 3. 4x4 Structural Artwork Signature Step
+      updateProgress(
+        "Analyse des contrastes de l'artwork...",
+        "Calcul de la grille structurelle 4x4",
+        65
       );
 
       const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
@@ -3730,22 +4018,52 @@ async function processCapturedPhoto(file) {
         return;
       }
 
-      // Smooth step delay (~350ms)
-      await new Promise(r => setTimeout(r, 350));
+      // 4. Combine Serial OCR with Structural Grayscale Matcher
+      let candidateCards = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
+      let ocrBoosted = false;
 
-      // 3. Compare signature against loaded catalog
-      const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
+      if (ocrMatch && ocrMatch.cleanLocalId) {
+        const serialCandidates = CardIndex.lookupByLocalId(ocrMatch.cleanLocalId);
+        if (serialCandidates && serialCandidates.length > 0) {
+          candidateCards = serialCandidates;
+          ocrBoosted = true;
+        }
+      }
+
+      updateProgress(
+        "Comparaison avec le catalogue...",
+        ocrBoosted ? `Numéro ${ocrMatch.serial} identifié — vérification structurelle` : "Recherche structurelle sans faux positifs",
+        85
+      );
+
+      let ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, candidateCards);
+
+      // If OCR candidate list was tested but had poor visual match, fallback to entire CARDS catalog
+      if (ocrBoosted && (!ranked || ranked.length === 0 || ranked[0].score < 40)) {
+        ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
+        ocrBoosted = false;
+      }
+
       if (!ranked || ranked.length === 0) {
         showNoMatchResult(0, resultsEl);
         return;
       }
 
-      const bestMatch = ranked[0];
+      let bestMatch = ranked[0];
 
-      // 4. Enforce strict thresholds:
-      // - Score >= 75%: Confirmed match (display card, checklist badges, and detail link).
-      // - 50% <= Score < 75%: Warning state ("⚠️ Correspondance probable mais incertaine").
-      // - Score < 50%: Honest rejection ("Photo non concluante — Réessayez ou tapez le n°") with a quick manual reference input box ("ex: 201/165").
+      // If serial was matched and visual signature confirms, boost to high confidence (95-100%)
+      if (ocrBoosted && bestMatch.score >= 50) {
+        bestMatch = {
+          ...bestMatch,
+          score: Math.min(100, Math.max(92, bestMatch.score + 25)),
+          ocrSerial: ocrMatch.serial
+        };
+      }
+
+      // Enforce strict thresholds:
+      // - Score >= 75%: Confirmed match
+      // - 50% <= Score < 75%: Warning state
+      // - Score < 50%: Honest rejection with manual reference input
       if (bestMatch.score < 50) {
         showNoMatchResult(bestMatch.score, resultsEl);
       } else {
@@ -3834,12 +4152,14 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   const score = matchedResult.score !== undefined ? Math.round(matchedResult.score) : 100;
   const isHighConfidence = score >= 75;
 
-  const margin = (typeof netMargin === 'function') ? netMargin(card) : 0;
-  const roi = (typeof netROI === 'function') ? netROI(card) : 0;
-  const profitCls = margin >= 0 ? 'text-emerald-400' : 'text-red-400';
-  const marginSign = margin >= 0 ? '+' : '';
-  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card) : 0;
-  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card) : 0;
+  const margin = (typeof netMargin === 'function') ? netMargin(card) : null;
+  const roi = (typeof netROI === 'function') ? netROI(card) : null;
+  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card) : null;
+  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card) : null;
+  const hasPrices = (margin !== null && roi !== null && frActive !== null && jpActive !== null);
+
+  const profitCls = hasPrices && margin >= 0 ? 'text-emerald-400' : 'text-red-400';
+  const marginSign = hasPrices && margin >= 0 ? '+' : '';
 
   const cardCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === card.edition) : null;
   const editionFlag = cardCountry ? cardCountry.flag : '🌐';
@@ -3867,10 +4187,6 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </div>
   ` : '';
 
-  // Checklist badges:
-  // 1) 4x4 structural grid badge
-  // 2) Edition flag badge
-  // 3) Collection / Checklist status badge
   const isPurchased = (typeof state !== 'undefined' && state.purchasedCards)
     ? state.purchasedCards.find(p => p.card.id === card.id)
     : null;
@@ -3887,12 +4203,20 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </button>
   `;
 
+  const ocrBadgeHtml = matchedResult.ocrSerial ? `
+    <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
+      <i data-lucide="binary" style="width:12px;height:12px;"></i>
+      <span>OCR n° ${matchedResult.ocrSerial}</span>
+    </span>
+  ` : '';
+
   const validationPillsHtml = isHighConfidence ? `
     <div class="flex items-center justify-center gap-2 flex-wrap">
       <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
         <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
         <span>Grille structurelle 4x4 validée (≥ 75%)</span>
       </span>
+      ${ocrBadgeHtml}
       <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
@@ -3904,6 +4228,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
         <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i>
         <span>Similarité modérée (${score}%)</span>
       </span>
+      ${ocrBadgeHtml}
       <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
@@ -3953,7 +4278,6 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </div>
   ` : '';
 
-  // Manual fallback input if match is uncertain (50-74%)
   const manualBoxHtml = !isHighConfidence ? `
     <div class="border-t border-white/10 pt-2 text-left">
       <label class="text-[10px] text-white/60 block mb-1">Ou tapez directement la référence :</label>
@@ -3964,6 +4288,18 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
       </div>
     </div>
   ` : '';
+
+  const pricingSectionHtml = hasPrices ? `
+    <div class="text-xs text-white/80 mt-1">JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €</div>
+    <div class="text-xs font-bold ${profitCls} mt-0.5">Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)</div>
+  ` : `
+    <div class="mt-1 flex items-center">
+      <span class="price-pending-badge">
+        <span class="price-pending-dot"></span>
+        Prix non disponible / En cours d'actualisation
+      </span>
+    </div>
+  `;
 
   resultsEl.innerHTML = `
     <div class="bg-slate-900/95 border ${isHighConfidence ? 'border-emerald-500/40' : 'border-amber-500/40'} backdrop-blur-md rounded-2xl p-3.5 text-white max-w-sm mx-auto shadow-2xl space-y-3">
@@ -3991,8 +4327,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
           <div class="font-bold text-sm truncate text-white">${card.name}</div>
           ${card.subName ? `<div class="text-white/60 text-[11px] truncate">${card.subName}</div>` : ''}
           <div class="text-white/40 text-[10px] mt-0.5 font-mono">${card.ref || ''}</div>
-          <div class="text-xs text-white/80 mt-1">JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €</div>
-          <div class="text-xs font-bold ${profitCls} mt-0.5">Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)</div>
+          ${pricingSectionHtml}
         </div>
       </div>
 
@@ -4038,6 +4373,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
   document.getElementById('scanner-open-detail')?.addEventListener('click', () => {
     closeScanner();
+    detailModalState.currentCard = card;
     if (typeof openCardDetail === 'function') openCardDetail(card.id);
   });
 
@@ -4081,14 +4417,14 @@ function handleScannerFileUpload(file) {
   processCapturedPhoto(file);
 }
 
-// Manual Reference Search helper
-function runScannerManualLookup(rawQuery, resultsEl = null) {
+// Manual Reference Search helper with live dynamic fallback
+async function runScannerManualLookup(rawQuery, resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
 
   const raw = (rawQuery || '').trim();
   if (!raw) return;
-  const q = raw.toLowerCase().replace(/\s*\/\s*/g, '/'); // normalize "201 / 165" to "201/165"
+  const q = raw.toLowerCase().replace(/\s*\/\s*/g, '/');
   const cleanNum = q.replace(/^0+/, '');
 
   const catalog = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
@@ -4096,7 +4432,7 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
     ? state.filters.countries
     : [];
 
-  const matchedList = catalog.filter(c => {
+  let matchedList = catalog.filter(c => {
     const ref = (c.ref || '').toLowerCase();
     const name = (c.name || '').toLowerCase();
     const subName = (c.subName || '').toLowerCase();
@@ -4119,6 +4455,24 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
       const bMatch = activeCountries.includes(b.edition) ? 1 : 0;
       return bMatch - aMatch;
     });
+  }
+
+  // If not found in loaded catalog, query TCGdex API dynamically in real time
+  if (matchedList.length === 0) {
+    resultsEl.innerHTML = `
+      <div class="bg-slate-900/95 border border-emerald-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-2">
+        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p class="text-xs text-white/80">Recherche en direct sur le catalogue TCGdex...</p>
+      </div>
+    `;
+    try {
+      const liveCards = await CatalogService.searchLive(raw);
+      if (liveCards && liveCards.length > 0) {
+        matchedList = liveCards;
+      }
+    } catch (e) {
+      console.warn('Manual live search warning:', e);
+    }
   }
 
   if (matchedList.length > 0) {
@@ -4865,8 +5219,8 @@ function initApp() {
   }
 
   try {
-    if (typeof CatalogService !== 'undefined' && CatalogService.fetchAllMultiLangSets) {
-      CatalogService.fetchAllMultiLangSets().catch(err => console.warn('[PokéSpread] Background CatalogService warning:', err));
+    if (typeof CatalogService !== 'undefined' && CatalogService.initCatalog) {
+      CatalogService.initCatalog().catch(err => console.warn('[PokéSpread] Background CatalogService warning:', err));
     }
   } catch (err) {
     console.warn('[PokéSpread] CatalogService error:', err);

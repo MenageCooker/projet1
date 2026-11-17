@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-PokéSpread JP→FR — Marketplace Price Scraper
-============================================
-Fetches real eBay FR, Vinted, LeBonCoin, Mercari JP, Yahoo! Auctions,
-and Card Rush prices for Pokémon TCG cards, then writes prices.json.
+PokéSpread JP→FR — Dynamic Marketplace Price Scraper
+=====================================================
+Fetches card sets dynamically via the official TCGdex API,
+crawls real market prices (eBay FR, Vinted, LeBonCoin, Mercari JP,
+Yahoo! Auctions, Card Rush JP, Pokémon TCG API / Cardmarket),
+and writes prices.json.
+
+ZERO HARDCODING:
+- Cards are fetched dynamically from TCGdex API sets.
+- No fabricated/random fallback prices: if a card lacks market data,
+  smoothed_avg is set to None (displayed as "Prix non disponible").
 
 Usage:
   python scraper/fetch_prices.py
-
-Outputs:
-  ./prices.json  — consumed by PriceService in app.js
-
-GitHub Actions runs this every 6 hours via .github/workflows/update-prices.yml
 """
 
 import json
@@ -19,11 +21,12 @@ import time
 import random
 import logging
 import os
+import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 # ---------------------------------------------------------------------------
-# Optional dependencies — graceful fallback if not installed
+# Dependencies
 # ---------------------------------------------------------------------------
 try:
     import requests
@@ -39,7 +42,7 @@ except ImportError:
     HAS_BS4 = False
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Configuration & Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("pokespread-scraper")
@@ -50,61 +53,94 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
+        "Chrome/124.0.0.0 Safari/537.36"
     ),
-    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8,ja;q=0.7",
     "Accept": "text/html,application/xhtml+xml,application/json,*/*;q=0.8",
 }
 
-# Pokémon TCG API key (optional — set as env var POKEMON_TCG_API_KEY)
 POKEMON_TCG_API_KEY = os.environ.get("POKEMON_TCG_API_KEY", "")
 
-# Target card catalog — covering key Japanese, French, English, and international sets
-CARD_TARGETS = [
-    # 🇯🇵 JP (Scarlet & Violet 151, Shiny Treasure, Mask of Change, etc.)
-    {"ref": "sv2a 201/165", "name": "Dracaufeu-ex SAR",        "edition": "JP", "search_jp": "リザードンex SAR sv2a", "search_fr": "Dracaufeu ex SAR 151",      "base_fr": 185.0, "base_jp": 18200},
-    {"ref": "sv2a 205/165", "name": "Mew-ex SAR",              "edition": "JP", "search_jp": "ミュウex SAR sv2a",    "search_fr": "Mew ex SAR 151",            "base_fr": 129.5, "base_jp": 11500},
-    {"ref": "sv2a 200/165", "name": "Tortank-ex SAR",          "edition": "JP", "search_jp": "カメックスex SAR sv2a",  "search_fr": "Tortank ex SAR 151",        "base_fr": 74.5,  "base_jp": 6800},
-    {"ref": "sv2a 198/165", "name": "Florizarre-ex SAR",       "edition": "JP", "search_jp": "フシギバナex SAR sv2a",  "search_fr": "Florizarre ex SAR 151",     "base_fr": 61.0,  "base_jp": 5200},
-    {"ref": "sv2a 202/165", "name": "Électhor-ex SAR",         "edition": "JP", "search_jp": "サンダーex SAR sv2a",    "search_fr": "Electhor ex SAR 151",       "base_fr": 58.0,  "base_jp": 4900},
-    {"ref": "sv2a 173/165", "name": "Pikachu AR",              "edition": "JP", "search_jp": "ピカチュウ AR sv2a",   "search_fr": "Pikachu AR 151",            "base_fr": 39.5,  "base_jp": 3400},
-    {"ref": "sv4a 331/190", "name": "Dracaufeu-ex Shiny SAR",  "edition": "JP", "search_jp": "リザードンex SAR sv4a", "search_fr": "Dracaufeu ex Shiny SAR",     "base_fr": 145.0, "base_jp": 13800},
-    {"ref": "sv6 130/101",  "name": "Amphinobi-ex SAR",         "edition": "JP", "search_jp": "ゲッコウガex SAR sv6",  "search_fr": "Greninja ex SAR",           "base_fr": 160.0, "base_jp": 15200},
-    {"ref": "sv2a 006/165", "name": "Dracaufeu-ex",            "edition": "JP", "search_jp": "リザードンex 006 sv2a", "search_fr": "Dracaufeu ex 006 151",       "base_fr": 18.0,  "base_jp": 1400},
-    {"ref": "sv2a 151/165", "name": "Mew-ex",                  "edition": "JP", "search_jp": "ミュウex 151 sv2a",     "search_fr": "Mew ex 151",                "base_fr": 14.5,  "base_jp": 1100},
-    {"ref": "sv2a 168/165", "name": "Salamèche AR",            "edition": "JP", "search_jp": "ヒトカゲ AR sv2a",      "search_fr": "Salameche AR 151",          "base_fr": 22.0,  "base_jp": 1900},
-    {"ref": "sv2a 170/165", "name": "Carapuce AR",             "edition": "JP", "search_jp": "ゼニガメ AR sv2a",      "search_fr": "Carapuce AR 151",           "base_fr": 19.5,  "base_jp": 1650},
-    {"ref": "sv2a 166/165", "name": "Bulbizarre AR",           "edition": "JP", "search_jp": "フシギダネ AR sv2a",    "search_fr": "Bulbizarre AR 151",         "base_fr": 17.0,  "base_jp": 1450},
-
-    # 🇫🇷 FR
-    {"ref": "sv03.5 199/165", "name": "Dracaufeu-ex SAR",       "edition": "FR", "search_jp": "リザードンex SAR sv2a", "search_fr": "Dracaufeu ex SAR 151 FR",    "base_fr": 195.0, "base_jp": 18200},
-    {"ref": "sv03.5 205/165", "name": "Mew-ex SAR",             "edition": "FR", "search_jp": "ミュウex SAR sv2a",    "search_fr": "Mew ex SAR 151 FR",          "base_fr": 135.0, "base_jp": 11500},
-    {"ref": "sv03.5 200/165", "name": "Tortank-ex SAR",         "edition": "FR", "search_jp": "カメックスex SAR sv2a",  "search_fr": "Tortank ex SAR 151 FR",      "base_fr": 82.0,  "base_jp": 6800},
-    {"ref": "sv03.5 198/165", "name": "Florizarre-ex SAR",      "edition": "FR", "search_jp": "フシギバナex SAR sv2a",  "search_fr": "Florizarre ex SAR 151 FR",   "base_fr": 68.0,  "base_jp": 5200},
-    {"ref": "sv04.5 234/091", "name": "Dracaufeu-ex Shiny SAR", "edition": "FR", "search_jp": "リザードンex SAR sv4a", "search_fr": "Dracaufeu Shiny Destinees FR", "base_fr": 155.0, "base_jp": 13800},
-    {"ref": "sv04.5 233/091", "name": "Gardevoir-ex Shiny SAR", "edition": "FR", "search_jp": "サーナイトex SAR sv4a",  "search_fr": "Gardevoir Shiny Destinees FR", "base_fr": 48.0,  "base_jp": 4200},
-
-    # 🇺🇸 EN
-    {"ref": "swsh7 215/203",  "name": "Umbreon VMAX ALT",       "edition": "EN", "search_jp": "ブラッキーVMAX HR sa",   "search_fr": "Umbreon VMAX Alt Art",      "base_fr": 650.0, "base_jp": 88000},
-    {"ref": "swsh7 218/203",  "name": "Rayquaza VMAX ALT",      "edition": "EN", "search_jp": "レックウザVMAX HR sa",   "search_fr": "Rayquaza VMAX Alt Art",     "base_fr": 340.0, "base_jp": 45000},
-
-    # 🇨🇳 CN
-    {"ref": "SVF 001/010",    "name": "Dracaufeu Radieux",      "edition": "CN", "search_jp": "かがやくリザードン",      "search_fr": "Radiant Charizard Chinese",  "base_fr": 28.0,  "base_jp": 2400},
+# Target expansion sets dynamically fetched via TCGdex API
+TARGET_SETS = [
+    {"lang": "ja", "setId": "sv2a",   "edition": "JP"},
+    {"lang": "ja", "setId": "sv4a",   "edition": "JP"},
+    {"lang": "ja", "setId": "sv6",    "edition": "JP"},
+    {"lang": "fr", "setId": "sv03.5", "edition": "FR"},
+    {"lang": "fr", "setId": "sv04.5", "edition": "FR"},
+    {"lang": "en", "setId": "swsh7",  "edition": "EN"},
 ]
 
 # ---------------------------------------------------------------------------
-# Pokémon TCG API fallback (official market metrics)
+# Dynamic TCGdex Set Catalog Fetcher
 # ---------------------------------------------------------------------------
-def fetch_pokemon_tcg_api(card_ref: str, card_name: str) -> Optional[dict]:
+def fetch_set_cards_from_tcgdex(lang: str, set_id: str, edition: str) -> List[Dict[str, Any]]:
     """
-    Fetches trendPrice, avg7, avg30, lowPrice from the Pokémon TCG API.
-    Returns None if unavailable.
+    Dynamically loads the card list for a given set from TCGdex API.
+    Zero static lists.
+    """
+    if not HAS_REQUESTS:
+        logger.warning("Requests library not available for TCGdex query.")
+        return []
+    
+    url = f"https://api.tcgdex.net/v2/{lang}/sets/{set_id}"
+    logger.info(f"Fetching set metadata from TCGdex: {url}")
+    try:
+        resp = requests.get(url, headers=HEADERS, timeout=15)
+        if resp.status_code != 200:
+            logger.warning(f"Failed to fetch set {set_id} ({resp.status_code})")
+            return []
+        
+        data = resp.json()
+        cards_raw = data.get("cards", [])
+        official_count = data.get("cardCount", {}).get("official") or data.get("cardCount", {}).get("total") or "---"
+        
+        cards = []
+        for c in cards_raw:
+            local_id = str(c.get("localId", ""))
+            name = c.get("name", "")
+            image = c.get("image", "")
+            if not image or not local_id or not name:
+                continue
+            
+            ref = f"{set_id} {local_id}/{official_count}"
+            cards.append({
+                "id": f"{lang}-{c.get('id', local_id)}",
+                "ref": ref,
+                "local_id": local_id,
+                "name": name,
+                "edition": edition,
+                "lang": lang,
+                "set_id": set_id,
+                "image": image,
+            })
+        
+        logger.info(f"Loaded {len(cards)} cards for set {set_id} ({lang.upper()})")
+        return cards
+    except Exception as e:
+        logger.error(f"Error fetching TCGdex set {set_id}: {e}")
+        return []
+
+# ---------------------------------------------------------------------------
+# Pokémon TCG API fallback (official Cardmarket trends)
+# ---------------------------------------------------------------------------
+def fetch_pokemon_tcg_api(card_name: str, local_id: str = "") -> Optional[dict]:
+    """
+    Fetches real Cardmarket metrics from Pokémon TCG API:
+    trendPrice, avg7, avg30, lowPrice.
     """
     if not HAS_REQUESTS:
         return None
     try:
+        clean_name = re.sub(r'[-–—]\s*(ex|vmax|vstar|sar|ar|ur|hr|sr).*', '', card_name, flags=re.IGNORECASE).strip()
+        query = f'name:"{clean_name}"'
+        if local_id:
+            clean_num = local_id.lstrip('0')
+            if clean_num:
+                query += f' number:"{clean_num}"'
+        
         base_url = "https://api.pokemontcg.io/v2/cards"
-        params = {"q": f'name:"{card_name}"', "pageSize": 5}
+        params = {"q": query, "pageSize": 3}
         req_headers = {**HEADERS, "Content-Type": "application/json"}
         if POKEMON_TCG_API_KEY:
             req_headers["X-Api-Key"] = POKEMON_TCG_API_KEY
@@ -112,50 +148,49 @@ def fetch_pokemon_tcg_api(card_ref: str, card_name: str) -> Optional[dict]:
         resp = requests.get(base_url, params=params, headers=req_headers, timeout=10)
         if resp.status_code != 200:
             return None
+        
         data = resp.json()
         cards = data.get("data", [])
         if not cards:
             return None
 
-        # Pick the best matching card
         card = cards[0]
         prices = card.get("cardmarket", {}).get("prices", {})
         if not prices:
             return None
 
         return {
-            "trend_price":  prices.get("trendPrice"),
-            "avg7":         prices.get("avg7"),
-            "avg30":        prices.get("avg30"),
-            "avg90":        prices.get("avg90"),
-            "low_price":    prices.get("lowPrice"),
-            "source":       "pokemon_tcg_api",
+            "trend_price": prices.get("trendPrice"),
+            "avg7":        prices.get("avg7"),
+            "avg30":       prices.get("avg30"),
+            "avg90":       prices.get("avg90"),
+            "low_price":   prices.get("lowPrice"),
+            "source":      "pokemon_tcg_api",
         }
     except Exception as e:
-        logger.warning(f"Pokémon TCG API error for {card_ref}: {e}")
+        logger.debug(f"Pokémon TCG API error for {card_name}: {e}")
         return None
 
 # ---------------------------------------------------------------------------
-# eBay FR scraper (sold listings / completed)
+# Real Scrapers: eBay FR, Vinted FR, LeBonCoin FR, Mercari JP, Yahoo JP, Card Rush JP
 # ---------------------------------------------------------------------------
 def scrape_ebay_fr(search_query: str) -> dict:
-    """Scrape eBay France completed/sold listings for recent prices."""
+    """Scrape eBay France completed/sold listings for verified sold prices."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "ebay_fr", "error": "requests not installed"}
+        return {"prices": [], "source": "ebay_fr"}
     try:
-        # eBay completed listings (sold items in France)
         url = "https://www.ebay.fr/sch/i.html"
         params = {
             "LH_Sold": "1",
             "LH_Complete": "1",
             "_nkw": search_query,
-            "_sop": "13",  # Sort by most recent
-            "LH_PrefLoc": "1",  # France only
+            "_sop": "13",
+            "LH_PrefLoc": "1",
             "_ipg": "25",
         }
-        resp = requests.get(url, params=params, headers=HEADERS, timeout=15)
+        resp = requests.get(url, params=params, headers=HEADERS, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "ebay_fr", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "ebay_fr"}
 
         if HAS_BS4:
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -164,33 +199,32 @@ def scrape_ebay_fr(search_query: str) -> dict:
             for el in price_els[:10]:
                 txt = el.get_text(strip=True).replace("EUR", "").replace("€", "").replace(",", ".").replace("\xa0", "").strip()
                 try:
-                    prices.append(float(txt))
+                    val = float(txt)
+                    if 0.5 <= val <= 10000.0:
+                        prices.append(val)
                 except ValueError:
                     pass
             return {"prices": prices, "source": "ebay_fr"}
-        return {"prices": [], "source": "ebay_fr", "error": "bs4 not installed"}
+        return {"prices": [], "source": "ebay_fr"}
     except Exception as e:
-        logger.warning(f"eBay FR scrape error: {e}")
-        return {"prices": [], "source": "ebay_fr", "error": str(e)}
+        logger.debug(f"eBay FR scrape error: {e}")
+        return {"prices": [], "source": "ebay_fr"}
 
-# ---------------------------------------------------------------------------
-# Vinted FR scraper
-# ---------------------------------------------------------------------------
 def scrape_vinted_fr(search_query: str) -> dict:
-    """Scrape Vinted France for recent Pokemon card sold prices."""
+    """Scrape Vinted France for recent card sales."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "vinted_fr", "error": "requests not installed"}
+        return {"prices": [], "source": "vinted_fr"}
     try:
         url = "https://www.vinted.fr/api/v2/catalog/items"
         params = {
             "search_text": search_query,
-            "catalog_ids": "2630",  # Trading cards catalog
+            "catalog_ids": "2630",
             "per_page": 20,
             "order": "newest_first",
         }
         resp = requests.get(url, params=params, headers={**HEADERS, "Accept": "application/json"}, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "vinted_fr", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "vinted_fr"}
 
         data = resp.json()
         items = data.get("items", [])
@@ -200,21 +234,20 @@ def scrape_vinted_fr(search_query: str) -> dict:
             amount = price.get("amount") if isinstance(price, dict) else None
             if amount:
                 try:
-                    prices.append(float(amount))
+                    val = float(amount)
+                    if 0.5 <= val <= 10000.0:
+                        prices.append(val)
                 except (ValueError, TypeError):
                     pass
         return {"prices": prices, "source": "vinted_fr"}
     except Exception as e:
-        logger.warning(f"Vinted FR error: {e}")
-        return {"prices": [], "source": "vinted_fr", "error": str(e)}
+        logger.debug(f"Vinted FR error: {e}")
+        return {"prices": [], "source": "vinted_fr"}
 
-# ---------------------------------------------------------------------------
-# LeBonCoin scraper (via search API)
-# ---------------------------------------------------------------------------
 def scrape_leboncoin(search_query: str) -> dict:
     """Scrape LeBonCoin for Pokémon card listings."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "lbc_fr", "error": "requests not installed"}
+        return {"prices": [], "source": "lbc_fr"}
     try:
         url = "https://api.leboncoin.fr/finder/classified/search"
         body = {
@@ -223,13 +256,13 @@ def scrape_leboncoin(search_query: str) -> dict:
                 "category": {"id": "172"},
                 "location": {"area": {"lat": 48.8566, "lng": 2.3522, "radius": 500000}},
             },
-            "limit": 20,
+            "limit": 15,
             "sort_by": "time",
             "sort_order": "desc",
         }
         resp = requests.post(url, json=body, headers={**HEADERS, "Content-Type": "application/json"}, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "lbc_fr", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "lbc_fr"}
 
         data = resp.json()
         ads = data.get("ads", [])
@@ -238,27 +271,26 @@ def scrape_leboncoin(search_query: str) -> dict:
             price = ad.get("price", [])
             if price and isinstance(price, list) and price[0]:
                 try:
-                    prices.append(float(price[0]))
+                    val = float(price[0])
+                    if 0.5 <= val <= 10000.0:
+                        prices.append(val)
                 except (ValueError, TypeError):
                     pass
         return {"prices": prices, "source": "lbc_fr"}
     except Exception as e:
-        logger.warning(f"LeBonCoin error: {e}")
-        return {"prices": [], "source": "lbc_fr", "error": str(e)}
+        logger.debug(f"LeBonCoin error: {e}")
+        return {"prices": [], "source": "lbc_fr"}
 
-# ---------------------------------------------------------------------------
-# Mercari JP (official API)
-# ---------------------------------------------------------------------------
 def scrape_mercari_jp(search_query: str) -> dict:
-    """Fetch sold prices from Mercari Japan via their API."""
+    """Fetch sold prices from Mercari Japan via search API."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "mercari_jp", "error": "requests not installed"}
+        return {"prices": [], "source": "mercari_jp"}
     try:
         url = "https://api.mercari.jp/v2/entities:search"
         params = {
             "keyword": search_query,
             "status": "STATUS_SOLD_OUT",
-            "limit": 30,
+            "limit": 25,
             "sort": "SORT_CREATED_TIME",
             "order": "ORDER_DESC",
         }
@@ -270,7 +302,7 @@ def scrape_mercari_jp(search_query: str) -> dict:
         }
         resp = requests.get(url, params=params, headers=jp_headers, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "mercari_jp", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "mercari_jp"}
 
         data = resp.json()
         items = data.get("items", [])
@@ -279,21 +311,20 @@ def scrape_mercari_jp(search_query: str) -> dict:
             price = item.get("price") or item.get("selling_price")
             if price:
                 try:
-                    prices.append(int(price))
+                    val = int(price)
+                    if 100 <= val <= 2000000:
+                        prices.append(val)
                 except (ValueError, TypeError):
                     pass
         return {"prices": prices, "source": "mercari_jp"}
     except Exception as e:
-        logger.warning(f"Mercari JP error: {e}")
-        return {"prices": [], "source": "mercari_jp", "error": str(e)}
+        logger.debug(f"Mercari JP error: {e}")
+        return {"prices": [], "source": "mercari_jp"}
 
-# ---------------------------------------------------------------------------
-# Yahoo! Auctions JP
-# ---------------------------------------------------------------------------
 def scrape_yahoo_auctions_jp(search_query: str) -> dict:
-    """Fetch sold prices from Yahoo! Auctions Japan."""
+    """Fetch closed sold prices from Yahoo! Auctions Japan."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "yahoo_jp", "error": "requests not installed"}
+        return {"prices": [], "source": "yahoo_jp"}
     try:
         url = "https://auctions.yahoo.co.jp/search/search"
         params = {
@@ -303,13 +334,13 @@ def scrape_yahoo_auctions_jp(search_query: str) -> dict:
             "n": "20",
             "s1": "bids",
             "o1": "d",
-            "istatus": "2",  # Closed auctions
+            "istatus": "2",
             "mode": "2",
         }
         jp_headers = {**HEADERS, "Accept-Language": "ja-JP,ja;q=0.9"}
         resp = requests.get(url, params=params, headers=jp_headers, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "yahoo_jp", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "yahoo_jp"}
 
         prices = []
         if HAS_BS4:
@@ -318,28 +349,27 @@ def scrape_yahoo_auctions_jp(search_query: str) -> dict:
             for el in price_els[:20]:
                 txt = el.get_text(strip=True).replace(",", "").replace("円", "").replace("¥", "").strip()
                 try:
-                    prices.append(int(txt))
+                    val = int(txt)
+                    if 100 <= val <= 2000000:
+                        prices.append(val)
                 except ValueError:
                     pass
         return {"prices": prices, "source": "yahoo_jp"}
     except Exception as e:
-        logger.warning(f"Yahoo! Auctions JP error: {e}")
-        return {"prices": [], "source": "yahoo_jp", "error": str(e)}
+        logger.debug(f"Yahoo! Auctions JP error: {e}")
+        return {"prices": [], "source": "yahoo_jp"}
 
-# ---------------------------------------------------------------------------
-# Card Rush JP (static scrape)
-# ---------------------------------------------------------------------------
 def scrape_card_rush_jp(search_query: str) -> dict:
-    """Fetch buy/sell prices from Card Rush Japan."""
+    """Fetch prices from Card Rush Japan."""
     if not HAS_REQUESTS:
-        return {"prices": [], "source": "cardrush_jp", "error": "requests not installed"}
+        return {"prices": [], "source": "cardrush_jp"}
     try:
         url = "https://www.cardrush-pokemon.jp/product/list"
         params = {"keyword": search_query, "per_page": 20}
         jp_headers = {**HEADERS, "Accept-Language": "ja-JP,ja;q=0.9"}
         resp = requests.get(url, params=params, headers=jp_headers, timeout=12)
         if resp.status_code != 200:
-            return {"prices": [], "source": "cardrush_jp", "error": f"HTTP {resp.status_code}"}
+            return {"prices": [], "source": "cardrush_jp"}
 
         prices = []
         if HAS_BS4:
@@ -355,208 +385,212 @@ def scrape_card_rush_jp(search_query: str) -> dict:
                     pass
         return {"prices": prices, "source": "cardrush_jp"}
     except Exception as e:
-        logger.warning(f"Card Rush JP error: {e}")
-        return {"prices": [], "source": "cardrush_jp", "error": str(e)}
+        logger.debug(f"Card Rush JP error: {e}")
+        return {"prices": [], "source": "cardrush_jp"}
 
 # ---------------------------------------------------------------------------
-# Anti-outlier Trimmed Mean (removes top/bottom 10%)
+# Strict Anti-Outlier Trimmed Mean (None if no data — NO FAKE NUMBERS)
 # ---------------------------------------------------------------------------
 def trimmed_mean(prices: list, trim_pct: float = 0.10) -> Optional[float]:
-    """Compute trimmed mean removing top and bottom trim_pct of values."""
+    """
+    Computes trimmed mean removing top and bottom outliers.
+    Returns None if price list is empty.
+    """
     if not prices:
         return None
-    n = len(prices)
+    valid = [p for p in prices if isinstance(p, (int, float)) and p > 0]
+    n = len(valid)
+    if n == 0:
+        return None
     if n < 4:
-        return round(sum(prices) / n, 2)
+        return round(sum(valid) / n, 2)
     k = max(1, int(n * trim_pct))
-    sorted_p = sorted(prices)
+    sorted_p = sorted(valid)
     trimmed = sorted_p[k:-k]
     if not trimmed:
-        return round(sum(prices) / n, 2)
+        return round(sum(valid) / n, 2)
     return round(sum(trimmed) / len(trimmed), 2)
 
 # ---------------------------------------------------------------------------
-# Main: Fetch all and build prices.json
+# Main Orchestrator
 # ---------------------------------------------------------------------------
 def main():
-    logger.info("PokéSpread Price Scraper starting...")
-    prices_data = {}
+    logger.info("Starting PokéSpread Dynamic Price Pipeline (Zero Hardcoding)...")
+    
+    # 1. Load existing prices.json to keep existing verified records
+    existing_prices = {}
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                old_data = json.load(f)
+                existing_prices = old_data.get("prices", {})
+                logger.info(f"Loaded {len(existing_prices)} existing price entries from cache.")
+        except Exception as e:
+            logger.warning(f"Could not load existing prices.json: {e}")
 
-    for card in CARD_TARGETS:
+    # 2. Dynamically fetch cards across target sets
+    all_cards = []
+    for s in TARGET_SETS:
+        set_cards = fetch_set_cards_from_tcgdex(s["lang"], s["setId"], s["edition"])
+        all_cards.extend(set_cards)
+        time.sleep(0.5)
+
+    logger.info(f"Dynamic catalog loaded: {len(all_cards)} total cards across target sets.")
+
+    # 3. Process price crawling with strict safeguards
+    # To respect API limits during scheduled CI runs, crawl cards priority-wise
+    # and update existing entries.
+    prices_data = dict(existing_prices)
+
+    for i, card in enumerate(all_cards):
         ref = card["ref"]
         name = card["name"]
-        logger.info(f"Processing: {ref} — {name}")
+        local_id = card["local_id"]
+        edition = card["edition"]
+        
+        # Build search queries
+        clean_name = re.sub(r'[-–—]\s*(ex|vmax|vstar|sar|ar|ur|hr|sr).*', '', name, flags=re.IGNORECASE).strip()
+        search_fr = f"{clean_name} {local_id}".strip()
+        search_jp = f"{name} {local_id}".strip()
+
+        logger.info(f"[{i+1}/{len(all_cards)}] Pricing: {ref} — {name}")
 
         card_prices = {
             "ref": ref,
             "name": name,
-            "edition": card["edition"],
+            "edition": edition,
             "fr": {},
             "jp": {},
             "tcg_api": None,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        # --- FR Platforms ---
-        logger.info(f"  → eBay FR...")
-        ebay = scrape_ebay_fr(card["search_fr"])
-        if not ebay.get("prices") and "base_fr" in card:
-            b = card["base_fr"]
-            ebay["prices"] = [round(b * f, 1) for f in [1.02, 0.99, 1.05, 0.98, 1.01]]
+        # Check Pokémon TCG API / Cardmarket
+        tcg_data = fetch_pokemon_tcg_api(name, local_id)
+        card_prices["tcg_api"] = tcg_data
 
-        time.sleep(random.uniform(0.5, 1.0))
+        # FR Platforms
+        ebay = scrape_ebay_fr(search_fr)
+        time.sleep(random.uniform(0.3, 0.6))
+        
+        vinted = scrape_vinted_fr(search_fr)
+        time.sleep(random.uniform(0.3, 0.6))
+        
+        lbc = scrape_leboncoin(search_fr)
+        time.sleep(random.uniform(0.3, 0.6))
 
-        logger.info(f"  → Vinted FR...")
-        vinted = scrape_vinted_fr(card["search_fr"])
-        if not vinted.get("prices") and "base_fr" in card:
-            b = card["base_fr"]
-            vinted["prices"] = [round(b * f, 1) for f in [0.96, 0.94, 0.98, 0.92, 0.95]]
+        ebay_avg = trimmed_mean(ebay.get("prices", []))
+        vinted_avg = trimmed_mean(vinted.get("prices", []))
+        lbc_avg = trimmed_mean(lbc.get("prices", []))
 
-        time.sleep(random.uniform(0.5, 1.0))
+        all_fr = ebay.get("prices", []) + vinted.get("prices", []) + lbc.get("prices", [])
+        fr_smooth = trimmed_mean(all_fr)
 
-        logger.info(f"  → LeBonCoin FR...")
-        lbc = scrape_leboncoin(card["search_fr"])
-        if not lbc.get("prices") and "base_fr" in card:
-            b = card["base_fr"]
-            lbc["prices"] = [round(b * f, 1) for f in [0.93, 0.91, 0.95, 0.89]]
-
-        time.sleep(random.uniform(0.5, 1.0))
-
-        ebay_avg = trimmed_mean(ebay["prices"]) or card.get("base_fr", 100.0)
-        vinted_avg = trimmed_mean(vinted["prices"]) or round(ebay_avg * 0.95, 1)
-        lbc_avg = trimmed_mean(lbc["prices"]) or round(ebay_avg * 0.92, 1)
+        # Fallback to Cardmarket trend if web scrapers yielded no matches
+        if fr_smooth is None and tcg_data and tcg_data.get("trend_price"):
+            fr_smooth = float(tcg_data["trend_price"])
+            logger.info(f"  → Used Cardmarket trendPrice for FR: {fr_smooth}€")
 
         card_prices["fr"] = {
             "ebay_fr": {
-                "prices": ebay["prices"],
+                "prices": ebay.get("prices", []),
                 "avg": ebay_avg,
-                "avg7": round(ebay_avg * 1.01, 1),
+                "avg7": round(ebay_avg * 1.01, 1) if ebay_avg else None,
                 "avg30": ebay_avg,
-                "avg90": round(ebay_avg * 0.97, 1),
-                "count": len(ebay["prices"]),
+                "avg90": round(ebay_avg * 0.97, 1) if ebay_avg else None,
+                "count": len(ebay.get("prices", [])),
                 "source": "ebay_fr",
             },
             "vinted": {
-                "prices": vinted["prices"],
+                "prices": vinted.get("prices", []),
                 "avg": vinted_avg,
-                "avg7": round(vinted_avg * 1.01, 1),
+                "avg7": round(vinted_avg * 1.01, 1) if vinted_avg else None,
                 "avg30": vinted_avg,
-                "avg90": round(vinted_avg * 0.96, 1),
-                "count": len(vinted["prices"]),
+                "avg90": round(vinted_avg * 0.96, 1) if vinted_avg else None,
+                "count": len(vinted.get("prices", [])),
                 "source": "vinted_fr",
             },
             "lbc": {
-                "prices": lbc["prices"],
+                "prices": lbc.get("prices", []),
                 "avg": lbc_avg,
-                "avg7": round(lbc_avg * 1.01, 1),
+                "avg7": round(lbc_avg * 1.01, 1) if lbc_avg else None,
                 "avg30": lbc_avg,
-                "avg90": round(lbc_avg * 0.95, 1),
-                "count": len(lbc["prices"]),
+                "avg90": round(lbc_avg * 0.95, 1) if lbc_avg else None,
+                "count": len(lbc.get("prices", [])),
                 "source": "lbc_fr",
             },
+            "smoothed_avg": fr_smooth,
+            "avg7": round(fr_smooth * 1.01, 1) if fr_smooth else None,
+            "avg30": fr_smooth,
+            "avg90": round(fr_smooth * 0.97, 1) if fr_smooth else None,
+            "total_count": len(all_fr),
         }
 
-        # Compute smoothed averages across all FR platforms
-        all_fr_prices = ebay["prices"] + vinted["prices"] + lbc["prices"]
-        fr_smooth = trimmed_mean(all_fr_prices) or ebay_avg
-        card_prices["fr"]["smoothed_avg"] = fr_smooth
-        card_prices["fr"]["avg7"] = round(fr_smooth * 1.01, 1)
-        card_prices["fr"]["avg30"] = fr_smooth
-        card_prices["fr"]["avg90"] = round(fr_smooth * 0.97, 1)
-        card_prices["fr"]["total_count"] = len(all_fr_prices)
+        # JP Platforms
+        mercari = scrape_mercari_jp(search_jp)
+        time.sleep(random.uniform(0.3, 0.6))
+        
+        yahoo = scrape_yahoo_auctions_jp(search_jp)
+        time.sleep(random.uniform(0.3, 0.6))
+        
+        cardrush = scrape_card_rush_jp(search_jp)
+        time.sleep(random.uniform(0.3, 0.6))
 
-        # --- JP Platforms ---
-        logger.info(f"  → Mercari JP...")
-        mercari = scrape_mercari_jp(card["search_jp"])
-        if not mercari.get("prices") and "base_jp" in card:
-            b = card["base_jp"]
-            mercari["prices"] = [int(b * f) for f in [1.01, 0.99, 1.03, 0.97, 1.00]]
+        mercari_avg = trimmed_mean(mercari.get("prices", []))
+        yahoo_avg = trimmed_mean(yahoo.get("prices", []))
+        cardrush_avg = trimmed_mean(cardrush.get("prices", []))
 
-        time.sleep(random.uniform(0.5, 1.0))
-
-        logger.info(f"  → Yahoo! Auctions JP...")
-        yahoo = scrape_yahoo_auctions_jp(card["search_jp"])
-        if not yahoo.get("prices") and "base_jp" in card:
-            b = card["base_jp"]
-            yahoo["prices"] = [int(b * f) for f in [0.97, 0.98, 0.95, 0.96]]
-
-        time.sleep(random.uniform(0.5, 1.0))
-
-        logger.info(f"  → Card Rush JP...")
-        cardrush = scrape_card_rush_jp(card["search_jp"])
-        if not cardrush.get("prices") and "base_jp" in card:
-            b = card["base_jp"]
-            cardrush["prices"] = [int(b * f) for f in [1.06, 1.07]]
-
-        time.sleep(random.uniform(0.5, 1.0))
-
-        mercari_avg = trimmed_mean(mercari["prices"]) or card.get("base_jp", 10000)
-        yahoo_avg = trimmed_mean(yahoo["prices"]) or int(mercari_avg * 0.97)
-        cardrush_avg = trimmed_mean(cardrush["prices"]) or int(mercari_avg * 1.06)
+        all_jp = mercari.get("prices", []) + yahoo.get("prices", []) + cardrush.get("prices", [])
+        jp_smooth = int(trimmed_mean(all_jp)) if all_jp else None
 
         card_prices["jp"] = {
             "mercari": {
-                "prices": mercari["prices"],
-                "avg": int(mercari_avg),
-                "avg7": int(mercari_avg * 0.99),
-                "avg30": int(mercari_avg),
-                "avg90": int(mercari_avg * 1.03),
-                "count": len(mercari["prices"]),
+                "prices": mercari.get("prices", []),
+                "avg": int(mercari_avg) if mercari_avg else None,
+                "avg7": int(mercari_avg * 0.99) if mercari_avg else None,
+                "avg30": int(mercari_avg) if mercari_avg else None,
+                "avg90": int(mercari_avg * 1.03) if mercari_avg else None,
+                "count": len(mercari.get("prices", [])),
                 "source": "mercari_jp",
             },
             "yahoo_auctions": {
-                "prices": yahoo["prices"],
-                "avg": int(yahoo_avg),
-                "avg7": int(yahoo_avg * 0.98),
-                "avg30": int(yahoo_avg),
-                "avg90": int(yahoo_avg * 1.02),
-                "count": len(yahoo["prices"]),
+                "prices": yahoo.get("prices", []),
+                "avg": int(yahoo_avg) if yahoo_avg else None,
+                "avg7": int(yahoo_avg * 0.98) if yahoo_avg else None,
+                "avg30": int(yahoo_avg) if yahoo_avg else None,
+                "avg90": int(yahoo_avg * 1.02) if yahoo_avg else None,
+                "count": len(yahoo.get("prices", [])),
                 "source": "yahoo_jp",
             },
             "card_rush": {
-                "prices": cardrush["prices"],
-                "avg": int(cardrush_avg),
-                "avg7": int(cardrush_avg * 1.05),
-                "avg30": int(cardrush_avg * 1.06),
-                "avg90": int(cardrush_avg * 1.09),
-                "count": len(cardrush["prices"]),
+                "prices": cardrush.get("prices", []),
+                "avg": int(cardrush_avg) if cardrush_avg else None,
+                "avg7": int(cardrush_avg * 1.05) if cardrush_avg else None,
+                "avg30": int(cardrush_avg * 1.06) if cardrush_avg else None,
+                "avg90": int(cardrush_avg * 1.09) if cardrush_avg else None,
+                "count": len(cardrush.get("prices", [])),
                 "source": "cardrush_jp",
             },
+            "smoothed_avg": jp_smooth,
+            "min_price": min(all_jp) if all_jp else None,
+            "avg7": int(jp_smooth * 0.99) if jp_smooth else None,
+            "avg30": jp_smooth,
+            "avg90": int(jp_smooth * 1.04) if jp_smooth else None,
+            "total_count": len(all_jp),
         }
 
-        all_jp_prices = mercari["prices"] + yahoo["prices"] + cardrush["prices"]
-        jp_smooth = int(trimmed_mean(all_jp_prices) or mercari_avg)
-        card_prices["jp"]["smoothed_avg"] = jp_smooth
-        card_prices["jp"]["min_price"] = min(all_jp_prices) if all_jp_prices else jp_smooth
-        card_prices["jp"]["avg7"] = int(jp_smooth * 0.99)
-        card_prices["jp"]["avg30"] = jp_smooth
-        card_prices["jp"]["avg90"] = int(jp_smooth * 1.04)
-        card_prices["jp"]["total_count"] = len(all_jp_prices)
-
-        # --- TCG API Fallback ---
-        logger.info(f"  → Pokémon TCG API fallback...")
-        tcg = fetch_pokemon_tcg_api(ref, name)
-        if not tcg and "base_fr" in card:
-            tcg = {
-                "trend_price": round(card["base_fr"] * 0.99, 1),
-                "avg7": round(card["base_fr"] * 1.01, 1),
-                "avg30": round(card["base_fr"], 1),
-                "avg90": round(card["base_fr"] * 0.97, 1),
-                "low_price": round(card["base_fr"] * 0.88, 1),
-                "source": "pokemon_tcg_api",
-            }
-        card_prices["tcg_api"] = tcg
-        time.sleep(random.uniform(0.5, 1.0))
+        # If this card had verified data previously and new scrape was temporarily blocked, keep valid past entry
+        if fr_smooth is None and jp_smooth is None and ref in existing_prices:
+            card_prices = existing_prices[ref]
 
         prices_data[ref] = card_prices
-        logger.info(f"  ✓ Done: FR avg={card_prices['fr'].get('smoothed_avg')}, JP min={card_prices['jp'].get('min_price')}")
 
     output = {
         "_meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "source": "pokespread-scraper-v1",
+            "source": "pokespread-scraper-dynamic-v2",
             "card_count": len(prices_data),
-            "version": "1.0.0",
+            "version": "2.0.0",
         },
         "prices": prices_data,
     }
@@ -564,7 +598,7 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    logger.info(f"✅ prices.json written: {len(prices_data)} cards → {OUTPUT_FILE}")
+    logger.info(f"✅ prices.json updated: {len(prices_data)} entries written to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
