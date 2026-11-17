@@ -511,73 +511,151 @@ const CardIndex = {
   }
 };
 
-// ── CONDITION & GRADING MULTIPLIER RESOLVER ─────────────────
-function resolveConditionMultiplier(customConditionOrGrade = null) {
-  // 1. Explicit condition or grade passed (Detail Modal, Purchases, Platform Breakdown)
+// ── DYNAMIC HISTORICAL GRADE SPREAD & CONDITION RESOLVER ─────
+function resolveConditionMultiplier(customConditionOrGrade = null, card = null) {
+  let mode = 'raw';
+  let company = null;
+  let gradeShort = null;
+  let baseFrMult = 1.0;
+  let baseJpMult = 1.0;
+
+  // 1. Parse explicit condition or grade (Detail Modal, Scanner, Purchases, Platform Breakdown)
   if (customConditionOrGrade) {
     if (typeof customConditionOrGrade === 'object') {
-      if (customConditionOrGrade.mode === 'raw' || customConditionOrGrade.condition) {
+      if (customConditionOrGrade.mode === 'raw' || (customConditionOrGrade.condition && customConditionOrGrade.mode !== 'graded')) {
         const condKey = customConditionOrGrade.condition || customConditionOrGrade.key || 'NM';
         const cond = RAW_CONDITIONS.find(c => c.key === condKey) || RAW_CONDITIONS[0];
-        return { frMult: cond.multiplier, jpMult: cond.multiplier };
+        return { frMult: cond.multiplier, jpMult: cond.multiplier, source: 'raw_condition' };
       }
       if (customConditionOrGrade.mode === 'graded' || customConditionOrGrade.company) {
-        const coKey = customConditionOrGrade.company || 'PSA';
-        const grKey = customConditionOrGrade.grade || '10';
-        const scale = GRADING_SCALES[coKey] || GRADING_SCALES.PSA;
-        const gr = scale.find(g => g.grade === grKey || g.grade.startsWith(grKey) || g.short === grKey) || scale[0];
-        return { frMult: gr.frMult, jpMult: gr.jpMult };
+        mode = 'graded';
+        company = (customConditionOrGrade.company || 'PSA').toUpperCase();
+        const grKey = String(customConditionOrGrade.grade || '10');
+        const scale = GRADING_SCALES[company] || GRADING_SCALES.PSA;
+        const gr = scale.find(g => g.grade === grKey || g.short === grKey || g.grade.startsWith(grKey)) || scale[0];
+        gradeShort = gr.short;
+        baseFrMult = gr.frMult;
+        baseJpMult = gr.jpMult;
       }
-    }
-    if (typeof customConditionOrGrade === 'string') {
+    } else if (typeof customConditionOrGrade === 'string') {
       const str = customConditionOrGrade.trim();
       if (str.startsWith('Raw ')) {
         const key = str.replace('Raw ', '').trim();
         const cond = RAW_CONDITIONS.find(c => c.key === key || c.label.includes(key)) || RAW_CONDITIONS[0];
-        return { frMult: cond.multiplier, jpMult: cond.multiplier };
+        return { frMult: cond.multiplier, jpMult: cond.multiplier, source: 'raw_condition' };
       }
       const rawMatch = RAW_CONDITIONS.find(c => c.key === str || c.label.includes(str));
       if (rawMatch) {
-        return { frMult: rawMatch.multiplier, jpMult: rawMatch.multiplier };
+        return { frMult: rawMatch.multiplier, jpMult: rawMatch.multiplier, source: 'raw_condition' };
       }
-      const parts = str.split(' ');
-      const coKey = parts[0];
+      mode = 'graded';
+      const parts = str.split(/\s+/);
+      company = (parts[0] || 'PSA').toUpperCase();
       const gradeStr = parts.slice(1).join(' ').trim();
-      const scale = GRADING_SCALES[coKey] || GRADING_SCALES.ALL;
-      const gr = scale.find(g => g.grade === gradeStr || g.grade.startsWith(gradeStr) || g.short === gradeStr) || scale[0];
-      return { frMult: gr.frMult, jpMult: gr.jpMult };
+      const scale = GRADING_SCALES[company] || GRADING_SCALES.ALL;
+      const gr = scale.find(g => g.grade === gradeStr || g.short === gradeStr || g.grade.startsWith(gradeStr)) || scale[0];
+      gradeShort = gr.short;
+      baseFrMult = gr.frMult;
+      baseJpMult = gr.jpMult;
     }
-  }
-
-  // 2. Active global filter (Focus Mode & Library)
-  if (!state.condition || state.condition.mode === 'raw') {
-    const active = state.condition?.rawConditions || ['NM'];
-    const matched = RAW_CONDITIONS.filter(c => active.includes(c.key));
-    const avg = matched.length > 0 
-      ? matched.reduce((sum, c) => sum + c.multiplier, 0) / matched.length 
-      : 1.0;
-    return { frMult: avg, jpMult: avg };
   } else {
-    // mode === 'graded'
-    const companies = state.condition.companies || ['ALL'];
-    const grades = state.condition.grades || [];
-    let scale = GRADING_SCALES.ALL;
-    if (companies.length === 1 && companies[0] !== 'ALL' && GRADING_SCALES[companies[0]]) {
-      scale = GRADING_SCALES[companies[0]];
+    // 2. Active global filter (Focus Mode & Library)
+    if (!state.condition || state.condition.mode === 'raw') {
+      const active = state.condition?.rawConditions || ['NM'];
+      const matched = RAW_CONDITIONS.filter(c => active.includes(c.key));
+      const avg = matched.length > 0
+        ? matched.reduce((sum, c) => sum + c.multiplier, 0) / matched.length
+        : 1.0;
+      return { frMult: avg, jpMult: avg, source: 'raw_condition' };
+    } else {
+      mode = 'graded';
+      const companies = state.condition.companies || ['ALL'];
+      const grades = state.condition.grades || [];
+      company = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : 'ALL';
+      const scale = GRADING_SCALES[company] || GRADING_SCALES.ALL;
+      let matchedGrades = grades.length > 0
+        ? scale.filter(g => grades.includes(g.grade) || grades.includes(g.short))
+        : [];
+      if (matchedGrades.length === 0) matchedGrades = [scale[0]];
+      gradeShort = matchedGrades.length === 1 ? matchedGrades[0].short : null;
+      baseFrMult = matchedGrades.reduce((sum, g) => sum + g.frMult, 0) / matchedGrades.length;
+      baseJpMult = matchedGrades.reduce((sum, g) => sum + g.jpMult, 0) / matchedGrades.length;
     }
-
-    let matchedGrades = [];
-    if (grades.length > 0) {
-      matchedGrades = scale.filter(g => grades.includes(g.grade) || grades.includes(g.short));
-    }
-    if (matchedGrades.length === 0) {
-      matchedGrades = [scale[0]]; // fallback to top grade of the company
-    }
-
-    const avgFr = matchedGrades.reduce((sum, g) => sum + g.frMult, 0) / matchedGrades.length;
-    const avgJp = matchedGrades.reduce((sum, g) => sum + g.jpMult, 0) / matchedGrades.length;
-    return { frMult: avgFr, jpMult: avgJp };
   }
+
+  // 3. Dynamic Historical Market Grade Spread Resolution (Graded Slabs)
+  if (mode === 'graded') {
+    const gradeKey = (company && company !== 'ALL' && gradeShort) ? `${company} ${gradeShort}` : null;
+    let frMult = baseFrMult;
+    let jpMult = baseJpMult;
+    let source = 'historical_curve';
+
+    // Priority A: Direct verified graded sold prices for this specific card in prices.json
+    if (card && gradeKey && typeof PriceService !== 'undefined') {
+      const entry = PriceService.findPriceEntry(card);
+      const rawFr = entry?.fr?.smoothed_avg || card.frPrice;
+      const rawJp = entry?.jp?.smoothed_avg || card.jpPrice;
+      const directFr = entry?.fr?.graded?.[gradeKey]?.smoothed_avg;
+      const directJp = entry?.jp?.graded?.[gradeKey]?.smoothed_avg;
+
+      if (directFr && rawFr > 0) {
+        frMult = directFr / rawFr;
+        source = 'direct_sold';
+      }
+      if (directJp && rawJp > 0) {
+        jpMult = directJp / rawJp;
+        source = 'direct_sold';
+      }
+    }
+
+    // Priority B: Empirical market-wide grade spreads observed in prices.json._meta
+    if (source !== 'direct_sold' && gradeKey && typeof PriceService !== 'undefined') {
+      const observed = PriceService.pricesJsonData?._meta?.observed_grade_spreads;
+      if (observed?.fr?.[gradeKey] && observed.fr[gradeKey] > 0) {
+        frMult = observed.fr[gradeKey];
+        source = 'market_spread';
+      }
+      if (observed?.jp?.[gradeKey] && observed.jp[gradeKey] > 0) {
+        jpMult = observed.jp[gradeKey];
+        source = 'market_spread';
+      }
+    }
+
+    // Priority C: Dynamic Price-Tier & Print-Quality Spread Curve (adjusts for raw value tier & edition)
+    if (source === 'historical_curve' && card && baseFrMult > 1.1) {
+      const rawEur = card.frPrice || (card.jpPrice ? card.jpPrice / (state.rate || 165) : null);
+      if (rawEur != null && rawEur > 0) {
+        let tierFactor = 1.0;
+        if (rawEur < 15) tierFactor = 1.18;        // Low-raw grading fee floor effect
+        else if (rawEur < 45) tierFactor = 1.06;   // Mid-entry AR / SR spread
+        else if (rawEur > 140) tierFactor = 0.88;  // High-value chase card compression
+
+        // Edition gem-rate adjustment (JP modern print quality vs FR/EN centering scarcity)
+        let editionFactorFr = 1.0;
+        let editionFactorJp = 1.0;
+        if (card.edition === 'JP') {
+          editionFactorFr = (company === 'ARS') ? 1.05 : 0.94;
+          editionFactorJp = (company === 'ARS') ? 1.08 : 0.93;
+        } else if (card.edition === 'FR' || card.edition === 'EN') {
+          editionFactorFr = 1.05;
+          editionFactorJp = 1.02;
+        }
+
+        // Apply adjustments only to the premium above 1.0x raw
+        frMult = Math.max(0.7, 1.0 + (baseFrMult - 1.0) * tierFactor * editionFactorFr);
+        jpMult = Math.max(0.7, 1.0 + (baseJpMult - 1.0) * tierFactor * editionFactorJp);
+      }
+    }
+
+    return {
+      frMult: Math.round(frMult * 1000) / 1000,
+      jpMult: Math.round(jpMult * 1000) / 1000,
+      source,
+      gradeKey
+    };
+  }
+
+  return { frMult: baseFrMult, jpMult: baseJpMult, source: 'raw_condition' };
 }
 
 // ── REAL MARKETPLACE PRICE ENGINE (`PriceService`) ───────────
@@ -712,17 +790,18 @@ const PriceService = {
           : { mode: 'graded', company: 'PSA', grade: conditionOrGrade };
       }
     }
-    const { frMult, jpMult } = resolveConditionMultiplier(custom);
+    const { frMult, jpMult } = resolveConditionMultiplier(custom, card);
 
     const entry = this.findPriceEntry(card);
     if (entry && entry.fr && entry.jp && card.hasPrice) {
+      const cm = entry.fr.cardmarket || {};
       return {
         fr: {
           ebay: {
             last: entry.fr.ebay_fr?.sold_prices?.[0] ? Math.round(entry.fr.ebay_fr.sold_prices[0] * frMult * 10) / 10 : null,
-            avg7: null,
-            avg30: entry.fr.smoothed_avg ? Math.round(entry.fr.smoothed_avg * frMult * 10) / 10 : null,
-            avg90: null
+            avg7: cm.avg7 ? Math.round(cm.avg7 * frMult * 10) / 10 : null,
+            avg30: (entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) ? Math.round((entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) * frMult * 10) / 10 : null,
+            avg90: cm.avg30 ? Math.round(cm.avg30 * frMult * 10) / 10 : null
           },
           vinted: { last: null, avg7: null, avg30: null, avg90: null },
           lbc: { last: null, avg7: null, avg30: null, avg90: null }
@@ -731,19 +810,19 @@ const PriceService = {
           mercari: {
             last: entry.jp.mercari?.sold_prices?.[0] ? Math.round(entry.jp.mercari.sold_prices[0] * jpMult) : null,
             avg7: null,
-            avg30: entry.jp.smoothed_avg ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg30: entry.jp.mercari?.avg ? Math.round(entry.jp.mercari.avg * jpMult) : (entry.jp.mercari?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
             avg90: null
           },
           yahoo: {
             last: entry.jp.yahoo_auctions?.sold_prices?.[0] ? Math.round(entry.jp.yahoo_auctions.sold_prices[0] * jpMult) : null,
             avg7: null,
-            avg30: entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg30: entry.jp.yahoo_auctions?.avg ? Math.round(entry.jp.yahoo_auctions.avg * jpMult) : (entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
             avg90: null
           },
           cardrush: {
             last: entry.jp.card_rush?.sold_prices?.[0] ? Math.round(entry.jp.card_rush.sold_prices[0] * jpMult) : null,
             avg7: null,
-            avg30: entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null,
+            avg30: entry.jp.card_rush?.avg ? Math.round(entry.jp.card_rush.avg * jpMult) : (entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
             avg90: null
           }
         }
@@ -948,19 +1027,110 @@ const CatalogService = {
     }
   },
 
-  async lookupCardBySerial(serial) {
-    if (!serial) return null;
-    const cleanSerial = serial.trim();
-    const localResults = CardIndex.search(cleanSerial);
-    if (localResults.length > 0) return localResults[0];
+  async lookupCardsBySerial(serialInput, setHint = null) {
+    if (!serialInput) return [];
+    const cleanSerial = String(serialInput).trim();
+    const parts = cleanSerial.match(/\b([0-9]{1,3})\s*\/\s*([0-9]{2,3})\b/);
+    const rawLocal = parts ? parts[1] : (cleanSerial.match(/([0-9]{1,3})/)?.[1] || '');
+    const total = parts ? parts[2] : null;
+    if (!rawLocal) return [];
+    const cleanNum = rawLocal.replace(/^0+/, '') || rawLocal;
 
-    const numMatch = cleanSerial.match(/([0-9]{1,3})/);
-    if (numMatch) {
-      const localId = numMatch[1];
-      const live = await this.searchLive(localId);
-      if (live.length > 0) return live[0];
+    // 1. Check local dynamic CardIndex first
+    let candidates = CardIndex.lookupByLocalId(rawLocal);
+    if (candidates.length === 0 && cleanNum !== rawLocal) {
+      candidates = CardIndex.lookupByLocalId(cleanNum);
     }
-    return null;
+
+    if (candidates.length > 0) {
+      // Narrow by exact setHint and/or total card count if detected (e.g. 201/165)
+      if (setHint) {
+        const hintLow = setHint.toLowerCase();
+        const setMatches = candidates.filter(c => (c.ref || '').toLowerCase().includes(hintLow) || (c.id || '').toLowerCase().includes(hintLow));
+        if (setMatches.length > 0) return setMatches;
+      }
+      if (total) {
+        const exactTotal = candidates.filter(c => {
+          const ref = (c.ref || '').toLowerCase();
+          return ref.includes(`/${total}`) || ref.includes(`/${total.replace(/^0+/, '')}`);
+        });
+        if (exactTotal.length > 0) return exactTotal;
+      }
+      return candidates;
+    }
+
+    // 2. Live query official TCGdex API by exact localId across FR & JP catalogues
+    try {
+      const queries = [
+        { lang: 'fr', edition: 'FR', id: rawLocal },
+        { lang: 'ja', edition: 'JP', id: rawLocal }
+      ];
+      if (cleanNum !== rawLocal) {
+        queries.push({ lang: 'fr', edition: 'FR', id: cleanNum });
+        queries.push({ lang: 'ja', edition: 'JP', id: cleanNum });
+      }
+
+      const responses = await Promise.all(
+        queries.map(async q => {
+          try {
+            const res = await fetch(`https://api.tcgdex.net/v2/${q.lang}/cards?localId=${encodeURIComponent(q.id)}`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            if (!Array.isArray(data)) return [];
+            return data
+              .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
+              .slice(0, 10)
+              .map(c => {
+                const setId = (c.id || '').split('-')[0] || 'sv';
+                const ref = total ? `${setId} ${c.localId}/${total}` : `${setId} ${c.localId}`;
+                const { name, subName } = resolveLocalizedNames(c.name, q.lang);
+                return PriceService.enrichCard({
+                  id: `${q.lang}-${c.id}`,
+                  name,
+                  subName,
+                  localId: String(c.localId || ''),
+                  ref,
+                  image: c.image,
+                  hp: c.hp || null,
+                  edition: q.edition
+                });
+              });
+          } catch (e) {
+            return [];
+          }
+        })
+      );
+
+      const seen = new Set();
+      const fetched = [];
+      for (const card of responses.flat()) {
+        if (!seen.has(card.id)) {
+          seen.add(card.id);
+          fetched.push(card);
+          if (!CARDS.some(c => c.id === card.id)) {
+            CARDS.push(card);
+          }
+        }
+      }
+
+      if (fetched.length > 0) {
+        CardIndex.build(CARDS);
+        if (setHint) {
+          const hintLow = setHint.toLowerCase();
+          const setMatches = fetched.filter(c => (c.ref || '').toLowerCase().includes(hintLow));
+          if (setMatches.length > 0) return setMatches;
+        }
+      }
+      return fetched;
+    } catch (e) {
+      console.warn('[CatalogService] TCGdex live localId lookup error:', e);
+      return [];
+    }
+  },
+
+  async lookupCardBySerial(serial, setHint = null) {
+    const matches = await this.lookupCardsBySerial(serial, setHint);
+    return matches.length > 0 ? matches[0] : null;
   }
 };
 
@@ -989,9 +1159,9 @@ function getActiveFrPrice(card, customConditionOrGrade = null) {
   if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
     const entry = PriceService.findPriceEntry(card);
     if (entry && entry.fr) {
-      if (ref === 'ebay') basePrice = entry.fr.ebay_fr?.avg30 || entry.fr.ebay_fr?.avg || basePrice;
-      else if (ref === 'vinted') basePrice = entry.fr.vinted?.avg30 || entry.fr.vinted?.avg || basePrice;
-      else if (ref === 'lbc') basePrice = entry.fr.lbc?.avg30 || entry.fr.lbc?.avg || basePrice;
+      if (ref === 'ebay') basePrice = entry.fr.ebay_fr?.avg ?? entry.fr.ebay_fr?.median ?? basePrice;
+      else if (ref === 'vinted') basePrice = entry.fr.vinted?.avg ?? basePrice;
+      else if (ref === 'lbc') basePrice = entry.fr.lbc?.avg ?? basePrice;
       else basePrice = entry.fr.smoothed_avg != null ? entry.fr.smoothed_avg : basePrice;
     }
   }
@@ -1000,8 +1170,8 @@ function getActiveFrPrice(card, customConditionOrGrade = null) {
     return null;
   }
 
-  // Calculate multiplier
-  const { frMult } = resolveConditionMultiplier(customConditionOrGrade);
+  // Dynamic grade spread / condition resolution
+  const { frMult } = resolveConditionMultiplier(customConditionOrGrade, card);
   return Math.round(basePrice * frMult * 10) / 10;
 }
 
@@ -1013,10 +1183,10 @@ function getActiveJpPrice(card, customConditionOrGrade = null) {
   if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
     const entry = PriceService.findPriceEntry(card);
     if (entry && entry.jp) {
-      if (ref === 'mercari') basePrice = entry.jp.mercari?.avg30 || entry.jp.mercari?.avg || basePrice;
-      else if (ref === 'yahoo') basePrice = entry.jp.yahoo_auctions?.avg30 || entry.jp.yahoo_auctions?.avg || basePrice;
-      else if (ref === 'cardrush') basePrice = entry.jp.card_rush?.avg30 || entry.jp.card_rush?.avg || basePrice;
-      else basePrice = entry.jp.min_price || entry.jp.smoothed_avg || basePrice;
+      if (ref === 'mercari') basePrice = entry.jp.mercari?.avg ?? entry.jp.mercari?.median ?? basePrice;
+      else if (ref === 'yahoo') basePrice = entry.jp.yahoo_auctions?.avg ?? entry.jp.yahoo_auctions?.median ?? basePrice;
+      else if (ref === 'cardrush') basePrice = entry.jp.card_rush?.avg ?? entry.jp.card_rush?.median ?? basePrice;
+      else basePrice = entry.jp.min ?? entry.jp.smoothed_avg ?? basePrice;
     }
   }
 
@@ -1024,8 +1194,8 @@ function getActiveJpPrice(card, customConditionOrGrade = null) {
     return null;
   }
 
-  // Calculate multiplier
-  const { jpMult } = resolveConditionMultiplier(customConditionOrGrade);
+  // Dynamic grade spread / condition resolution
+  const { jpMult } = resolveConditionMultiplier(customConditionOrGrade, card);
   return Math.round(basePrice * jpMult);
 }
 
@@ -2214,28 +2384,36 @@ let detailModalState = {
   grade: '10 (Gem Mint)' // Authentic grade string from GRADING_SCALES[company]
 };
 
-function openCardDetail(cardId, initialMode = null) {
+function openCardDetail(cardId, initialMode = null, initialSlab = null) {
   detailModalState.cardId = cardId;
-  if (initialMode) {
-    detailModalState.mode = initialMode;
-  } else if (state.condition?.mode === 'graded') {
+  if (initialSlab && initialSlab.company) {
     detailModalState.mode = 'graded';
-  } else {
-    detailModalState.mode = 'raw';
-  }
-
-  if (detailModalState.mode === 'graded') {
-    if (state.condition?.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') {
-      detailModalState.company = state.condition.companies[0];
-    } else if (!detailModalState.company || !GRADING_COMPANIES[detailModalState.company]) {
-      detailModalState.company = 'PSA';
-    }
+    detailModalState.company = GRADING_COMPANIES[initialSlab.company] ? initialSlab.company : 'PSA';
     const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
-    const activeGrades = state.condition?.grades || [];
-    const matched = scale.find(g => activeGrades.includes(g.grade));
+    const matched = scale.find(g => g.grade === initialSlab.grade || g.short === initialSlab.short || g.grade.startsWith(String(initialSlab.short || initialSlab.grade || '10')));
     detailModalState.grade = matched ? matched.grade : scale[0].grade;
   } else {
-    detailModalState.rawCondition = state.condition?.rawConditions?.[0] || 'NM';
+    if (initialMode) {
+      detailModalState.mode = initialMode;
+    } else if (state.condition?.mode === 'graded') {
+      detailModalState.mode = 'graded';
+    } else {
+      detailModalState.mode = 'raw';
+    }
+
+    if (detailModalState.mode === 'graded') {
+      if (state.condition?.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') {
+        detailModalState.company = state.condition.companies[0];
+      } else if (!detailModalState.company || !GRADING_COMPANIES[detailModalState.company]) {
+        detailModalState.company = 'PSA';
+      }
+      const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
+      const activeGrades = state.condition?.grades || [];
+      const matched = scale.find(g => activeGrades.includes(g.grade));
+      detailModalState.grade = matched ? matched.grade : scale[0].grade;
+    } else {
+      detailModalState.rawCondition = state.condition?.rawConditions?.[0] || 'NM';
+    }
   }
 
   renderCardDetailModal();
@@ -2401,24 +2579,31 @@ function renderCardDetailModal() {
     }
 
     const summaryTableRows = currentScale.map(g => {
-      const gFr = getActiveFrPrice(card, `${detailModalState.company} ${g.grade}`);
-      const gJp = getActiveJpPrice(card, `${detailModalState.company} ${g.grade}`);
-      const gMargin = netMargin(card, `${detailModalState.company} ${g.grade}`);
-      const gRoi = netROI(card, `${detailModalState.company} ${g.grade}`);
+      const gradeLabelStr = `${detailModalState.company} ${g.grade}`;
+      const multMeta = resolveConditionMultiplier(gradeLabelStr, card);
+      const gFr = getActiveFrPrice(card, gradeLabelStr);
+      const gJp = getActiveJpPrice(card, gradeLabelStr);
+      const gMargin = netMargin(card, gradeLabelStr);
+      const gRoi = netROI(card, gradeLabelStr);
       const isSelected = detailModalState.grade === g.grade;
       const hasGPrice = (gFr !== null && gJp !== null && gMargin !== null);
       const profitCls = hasGPrice ? (gMargin >= 0 ? 'profit-positive' : 'profit-negative') : 'text-slate-400';
       const pSign = hasGPrice && gMargin >= 0 ? '+' : '';
       const frText = gFr !== null ? `${gFr.toFixed(2)} €` : '—';
       const jpText = gJp !== null ? `¥${gJp.toLocaleString('fr-FR')}` : '—';
-      const marginText = hasGPrice ? `${pSign}${gMargin.toFixed(2)} €` : 'En attente';
+      const marginText = hasGPrice ? `${pSign}${gMargin.toFixed(2)} €` : 'Pas de ventes';
       const roiText = hasGPrice ? `${pSign}${gRoi.toFixed(0)} %` : '—';
+      const spreadTag = hasGPrice ? (
+        multMeta.source === 'direct_sold'
+          ? '<span class="text-[9px] font-semibold text-emerald-600 ml-1" title="Ventes slab réelles">● Réel</span>'
+          : `<span class="text-[9px] text-slate-400 ml-1" title="Spread historique marché">×${multMeta.frMult.toFixed(2)}</span>`
+      ) : '';
 
       return `
         <tr class="${isSelected ? 'selected' : ''} cursor-pointer" data-select-grade="${g.grade}">
           <td class="font-bold flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-slate-300'}"></span>
-            <span>${g.grade}</span>
+            <span>${g.grade}</span>${spreadTag}
           </td>
           <td>${jpText}</td>
           <td class="font-semibold text-slate-800">${frText}</td>
@@ -3671,89 +3856,238 @@ const CardRecognizer = {
 
 // ── FULL-SCREEN CAMERA SCANNER (NATIVE CAMERA CAPTURE) ──────────
 
-// ── NATIVE OCR & SERIAL NUMBER EXTRACTOR (`CardOCR`) ───────────
+// ── ADVANCED NATIVE OCR: SERIAL NUMBER + GRADED SLAB EXTRACTOR (`CardOCR`) ──
 const CardOCR = {
   isTesseractAvailable() {
     return typeof window !== 'undefined' && typeof window.Tesseract !== 'undefined';
   },
 
-  // Crop bottom 18% of card image where serial number is printed
-  getCroppedSerialStrip(cardCanvas) {
-    if (!cardCanvas || !cardCanvas.width || !cardCanvas.height) return null;
-    const w = cardCanvas.width;
-    const h = cardCanvas.height;
-    const stripH = Math.max(24, Math.round(h * 0.18));
+  // Extract and contrast-enhance a targeted image strip for crisp OCR recognition
+  prepareOcrStrip(source, sx, sy, sw, sh, highContrast = true) {
+    if (!source || sw < 10 || sh < 10) return null;
+    // Upscale narrow strips to at least 640px wide so small printed serials & slab labels read clearly
+    const scale = sw < 640 ? Math.min(2.5, 640 / sw) : 1.0;
+    const outW = Math.round(sw * scale);
+    const outH = Math.round(sh * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(source, sx, sy, sw, sh, 0, 0, outW, outH);
+
+    if (highContrast) {
+      try {
+        const imgData = ctx.getImageData(0, 0, outW, outH);
+        const d = imgData.data;
+        // Compute mean luminance for adaptive contrast expansion
+        let lumSum = 0;
+        const pxCount = d.length / 4;
+        for (let i = 0; i < d.length; i += 4) {
+          lumSum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        }
+        const meanLum = pxCount > 0 ? lumSum / pxCount : 128;
+        const hi = Math.min(220, meanLum + 28);
+        const lo = Math.max(40, meanLum - 28);
+
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const val = lum > hi ? 255 : (lum < lo ? 0 : Math.round(((lum - lo) / (hi - lo)) * 255));
+          d[i] = val;
+          d[i + 1] = val;
+          d[i + 2] = val;
+        }
+        ctx.putImageData(imgData, 0, 0);
+      } catch (e) {}
+    }
+
+    return canvas;
+  },
+
+  // Crop top 30% of full photo for PSA / BGS / CGC / PCA slab headers
+  getTopSlabStrip(fullImg) {
+    const w = fullImg.naturalWidth || fullImg.width;
+    const h = fullImg.naturalHeight || fullImg.height;
+    if (!w || !h) return null;
+    const stripH = Math.max(40, Math.round(h * 0.30));
+    return this.prepareOcrStrip(fullImg, 0, 0, w, stripH, true);
+  },
+
+  // Crop bottom 22% of card/slab for printed serial numbers (e.g. 201/165, 120/119) & ARS labels
+  getBottomSerialStrip(source) {
+    const w = source.naturalWidth || source.width;
+    const h = source.naturalHeight || source.height;
+    if (!w || !h) return null;
+    const stripH = Math.max(32, Math.round(h * 0.22));
     const stripY = h - stripH;
-
-    const stripCanvas = document.createElement('canvas');
-    stripCanvas.width = w;
-    stripCanvas.height = stripH;
-    const ctx = stripCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(cardCanvas, 0, stripY, w, stripH, 0, 0, w, stripH);
-
-    // Grayscale and dynamic contrast threshold to make printed numbers stand out
-    try {
-      const imgData = ctx.getImageData(0, 0, w, stripH);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        const val = lum > 135 ? 255 : (lum < 85 ? 0 : lum);
-        d[i] = val;
-        d[i + 1] = val;
-        d[i + 2] = val;
-      }
-      ctx.putImageData(imgData, 0, 0);
-    } catch (e) {}
-
-    return stripCanvas;
+    return this.prepareOcrStrip(source, 0, stripY, w, stripH, true);
   },
 
-  async extractSerialNumber(cardCanvas) {
-    const strip = this.getCroppedSerialStrip(cardCanvas);
-    if (!strip) return null;
-
-    if (!this.isTesseractAvailable()) {
-      return null;
-    }
-
+  async runTesseract(canvas, whitelist = null) {
+    if (!canvas || !this.isTesseractAvailable()) return '';
     try {
-      const res = await window.Tesseract.recognize(strip, 'eng', {
-        tessedit_char_whitelist: '0123456789/SVsv- '
-      });
-      const text = res?.data?.text || '';
-      return this.parseSerialFromText(text);
+      const opts = whitelist ? { tessedit_char_whitelist: whitelist } : {};
+      const res = await window.Tesseract.recognize(canvas, 'eng', opts);
+      return (res?.data?.text || '').trim();
     } catch (err) {
-      console.warn('[CardOCR] Tesseract OCR error:', err);
-      return null;
+      console.warn('[CardOCR] Tesseract pass warning:', err);
+      return '';
     }
   },
 
+  // Full multi-region OCR pipeline: detects both card serial numbers & graded slab markers
+  async extractCardAndSlabData(fullImg, cardCanvas) {
+    if (!this.isTesseractAvailable()) {
+      return { serial: null, slab: null, rawText: '' };
+    }
+
+    const topStrip = fullImg ? this.getTopSlabStrip(fullImg) : null;
+    const bottomCardStrip = cardCanvas ? this.getBottomSerialStrip(cardCanvas) : null;
+    const bottomFullStrip = fullImg ? this.getBottomSerialStrip(fullImg) : null;
+
+    // Run targeted OCR passes on slab header + serial strip
+    const [topText, bottomCardText] = await Promise.all([
+      this.runTesseract(topStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- '),
+      this.runTesseract(bottomCardStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- ')
+    ]);
+
+    let combinedText = `${topText}\n${bottomCardText}`.trim();
+    let slab = this.parseSlabFromText(topText) || this.parseSlabFromText(bottomCardText);
+    let serial = this.parseSerialFromText(bottomCardText) || this.parseSerialFromText(topText);
+
+    // If neither serial nor ARS bottom slab was found yet, inspect the full photo bottom strip
+    if ((!serial || !slab) && bottomFullStrip) {
+      const bottomFullText = await this.runTesseract(
+        bottomFullStrip,
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- '
+      );
+      if (bottomFullText) {
+        combinedText = `${combinedText}\n${bottomFullText}`.trim();
+        if (!slab) slab = this.parseSlabFromText(bottomFullText);
+        if (!serial) serial = this.parseSerialFromText(bottomFullText);
+      }
+    }
+
+    return { serial, slab, rawText: combinedText };
+  },
+
+  // Parse grading company & grade markers (PSA 10, BGS 9.5, CGC 10, PCA 10, ARS 10+, etc.)
+  parseSlabFromText(text) {
+    if (!text) return null;
+    const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!clean) return null;
+
+    const buildSlab = (company, shortMatch) => {
+      const scale = GRADING_SCALES[company] || GRADING_SCALES.PSA;
+      const found = scale.find(g =>
+        g.short.toLowerCase() === shortMatch.toLowerCase() ||
+        g.grade.toLowerCase().startsWith(shortMatch.toLowerCase())
+      ) || scale[0];
+      return {
+        company,
+        grade: found.grade,
+        short: found.short,
+        displayLabel: `${company} ${found.short}`,
+        rawText: clean
+      };
+    };
+
+    // 1. PSA (PSA 10, GEM MT 10, PSA 9, MINT 9, PSA 8, PSA 7)
+    let m = clean.match(/\bPSA\s*(10|9|8|7)\b/i);
+    if (m) return buildSlab('PSA', m[1] === '7' ? '≤ 7' : m[1]);
+    if (/\bGEM\s*MT\s*10\b/i.test(clean)) return buildSlab('PSA', '10');
+    if (/\bPSA\b/i.test(clean) && /\bMINT\s*9\b/i.test(clean)) return buildSlab('PSA', '9');
+
+    // 2. BGS / BECKETT (Black Label, Pristine 10, 9.5, 9, 8.5)
+    if (/\bBLACK\s*LABEL\b/i.test(clean)) return buildSlab('BGS', '10 BL');
+    m = clean.match(/\b(?:BGS|BECKETT)\s*(10\s*PRISTINE|10|9\.5|9|8\.5|8)\b/i);
+    if (m) {
+      const g = m[1].toUpperCase();
+      if (g.includes('10')) return buildSlab('BGS', '10 Pr');
+      if (g === '9.5') return buildSlab('BGS', '9.5');
+      if (g === '9') return buildSlab('BGS', '9');
+      return buildSlab('BGS', '≤ 8.5');
+    }
+    if (/\b(?:BECKETT|BGS)\b/i.test(clean) && /\b9\.5\b/.test(clean)) return buildSlab('BGS', '9.5');
+
+    // 3. CGC (Pristine 10, CGC 10, CGC 9.5, CGC 9)
+    m = clean.match(/\bCGC\s*(?:PRISTINE\s*)?(10|9\.5|9|8\.5|8)\b/i);
+    if (m) {
+      const isPristine = /PRISTINE/i.test(clean);
+      if (m[1] === '10') return buildSlab('CGC', isPristine ? '10 Pr' : '10');
+      if (m[1] === '9.5') return buildSlab('CGC', '9.5');
+      if (m[1] === '9') return buildSlab('CGC', '9');
+      return buildSlab('CGC', '≤ 8.5');
+    }
+
+    // 4. PCA (PCA 10+, PCA 10, PCA 9.5, PCA 9, PCA 8)
+    m = clean.match(/\bPCA\s*(10\+|10|9\.5|9|8)\b/i);
+    if (m) {
+      if (m[1] === '10+') return buildSlab('PCA', '10+');
+      if (m[1] === '10') return buildSlab('PCA', '10');
+      if (m[1] === '9.5') return buildSlab('PCA', '9.5');
+      if (m[1] === '9') return buildSlab('PCA', '9');
+      return buildSlab('PCA', '≤ 8');
+    }
+
+    // 5. ARS (ARS 10+, ARS 10, ARS 9, Grade 10+, Grade 10)
+    m = clean.match(/\b(?:ARS|GRADE)\s*(10\+|10|9|8)\b/i);
+    if (m) {
+      if (m[1] === '10+') return buildSlab('ARS', '10+');
+      if (m[1] === '10') return buildSlab('ARS', '10');
+      if (m[1] === '9') return buildSlab('ARS', '9');
+      return buildSlab('ARS', '≤ 8');
+    }
+
+    return null;
+  },
+
+  // Parse card serial / local ID (e.g. 201/165, 120/119, 025/165, SV2a #201)
   parseSerialFromText(text) {
     if (!text) return null;
-    const clean = text.replace(/[\r\n]+/g, ' ').trim();
-    // Match patterns like "201/165", "025/165", "120/119", "201|165"
-    const match = clean.match(/\b([0-9]{1,3})\s*[\/|Il1!]\s*([0-9]{2,3})\b/);
-    if (match) {
-      const localId = match[1];
-      const total = match[2];
+    const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!clean) return null;
+
+    // Optional set code hint (e.g. SV2a, SV4a, SV6, SV7, S12a, SWSH7, SV03.5)
+    const setMatch = clean.match(/\b(sv\d+[a-z]?|sv0?\d\.\d|swsh\d+|s\d+[a-z])\b/i);
+    const setHint = setMatch ? setMatch[1].toLowerCase() : null;
+
+    // Primary pattern: explicit fraction serial "201/165", "120/119", "025/165"
+    const fracMatch = clean.match(/\b([0-9O]{1,3})\s*[\/|Il!]\s*([0-9O]{2,3})\b/);
+    if (fracMatch) {
+      const localId = fracMatch[1].replace(/O/g, '0');
+      const total = fracMatch[2].replace(/O/g, '0');
+      // Sanity check: total set size is typically between 20 and 300
+      const totalInt = parseInt(total, 10);
+      if (totalInt >= 15 && totalInt <= 350) {
+        return {
+          serial: `${localId}/${total}`,
+          localId,
+          cleanLocalId: localId.replace(/^0+/, '') || localId,
+          total,
+          setHint,
+          exactFraction: true,
+          rawText: clean
+        };
+      }
+    }
+
+    // Secondary pattern: slab-label hash card number "#201", "#025", "No. 201"
+    const hashMatch = clean.match(/(?:#|No\.?\s*)([0-9]{1,3})\b/i);
+    if (hashMatch) {
+      const localId = hashMatch[1];
       return {
-        serial: `${localId}/${total}`,
-        localId: localId,
+        serial: `#${localId}`,
+        localId,
         cleanLocalId: localId.replace(/^0+/, '') || localId,
-        total: total,
-        rawText: clean
-      };
-    }
-    const simpleNum = clean.match(/\b([0-9]{3})\b/);
-    if (simpleNum) {
-      return {
-        serial: simpleNum[1],
-        localId: simpleNum[1],
-        cleanLocalId: simpleNum[1].replace(/^0+/, ''),
         total: null,
+        setHint,
+        exactFraction: false,
         rawText: clean
       };
     }
+
     return null;
   }
 };
@@ -3870,7 +4204,7 @@ function closeScanner() {
   resetScannerPreview();
 }
 
-// Process snapped photo or gallery image through dual OCR & 4x4 structural matcher
+// Process snapped photo or gallery image through Advanced OCR (Serial + Slab) & 4x4 structural matcher
 async function processCapturedPhoto(file) {
   if (!file) return;
   const resultsEl = document.getElementById('scanner-results');
@@ -3894,8 +4228,8 @@ async function processCapturedPhoto(file) {
         <div class="flex items-center gap-3">
           <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
           <div class="text-left flex-1 min-w-0">
-            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse de la carte...</div>
-            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Lecture du numéro de série & calcul structurel</div>
+            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse OCR & Slab...</div>
+            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Lecture du n° de série & détection PSA / BGS / CGC / PCA / ARS</div>
           </div>
           <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">25%</span>
         </div>
@@ -3921,7 +4255,7 @@ async function processCapturedPhoto(file) {
   const img = new Image();
   img.onload = async () => {
     try {
-      // 1. Crop to central card proportion
+      // 1. Crop to central card proportion for structural analysis & bottom serial extraction
       const crop = CardRecognizer.getDefaultCropRect(img.naturalWidth || img.width, img.naturalHeight || img.height);
       const cropCanvas = document.createElement('canvas');
       cropCanvas.width = crop.sw;
@@ -3932,83 +4266,108 @@ async function processCapturedPhoto(file) {
       // Enhance canvas snapshot (sharpening + contrast boost)
       enhanceCanvasSnapshot(cropCanvas);
 
-      // 2. OCR Serial Extraction Step
+      // 2. Multi-Region Tesseract OCR: Serial Number + Graded Slab Recognition
       updateProgress(
-        "Détection du n° de série & OCR...",
-        "Lecture du numéro officiel en bas de carte",
+        "OCR Tesseract (Numéro & Boîtier)...",
+        "Extraction du n° officiel et du grade (PSA, BGS, CGC, PCA, ARS)",
         40
       );
 
-      let ocrMatch = null;
+      let ocrData = { serial: null, slab: null, rawText: '' };
       try {
-        ocrMatch = await CardOCR.extractSerialNumber(cropCanvas);
+        ocrData = await CardOCR.extractCardAndSlabData(img, cropCanvas);
       } catch (ocrErr) {
         console.warn('OCR execution warning:', ocrErr);
       }
 
+      const detectedSlab = ocrData.slab || null;
+      const detectedSerial = ocrData.serial || null;
+
       // 3. 4x4 Structural Artwork Signature Step
       updateProgress(
         "Analyse des contrastes de l'artwork...",
-        "Calcul de la grille structurelle 4x4",
+        detectedSlab
+          ? `Slab ${detectedSlab.displayLabel} détecté — calcul structurel`
+          : "Calcul de la grille structurelle 4x4",
         65
       );
 
       const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
-      if (!scanSignature || scanSignature.isPoorQuality) {
-        showNoMatchResult(scanSignature?.score || 10, resultsEl);
-        return;
+
+      // 4. Instant 100% Confidence Lookup via Extracted Serial Number (Local Index + Live TCGdex API)
+      if (detectedSerial && detectedSerial.cleanLocalId) {
+        updateProgress(
+          `Numéro ${detectedSerial.serial} extrait par OCR...`,
+          "Vérification instantanée dans le catalogue dynamique TCGdex",
+          85
+        );
+
+        let serialCandidates = [];
+        try {
+          serialCandidates = await CatalogService.lookupCardsBySerial(
+            detectedSerial.serial,
+            detectedSerial.setHint
+          );
+        } catch (lookupErr) {
+          console.warn('Dynamic serial lookup warning:', lookupErr);
+        }
+
+        if (serialCandidates && serialCandidates.length > 0) {
+          let ordered = serialCandidates.map(c => ({ card: c, score: 100, scoreVisual: 100 }));
+          if (serialCandidates.length > 1 && scanSignature && !scanSignature.isPoorQuality) {
+            const visualRanked = await CardRecognizer.rankCardsFromSignature(scanSignature, serialCandidates);
+            if (visualRanked && visualRanked.length > 0) {
+              ordered = visualRanked;
+            }
+          }
+
+          const bestMatch = {
+            ...ordered[0],
+            score: 100,
+            ocrVerified: true,
+            ocrSerial: detectedSerial.serial,
+            detectedSlab
+          };
+          const runnerUps = ordered.slice(1, 4).map(r => ({
+            ...r,
+            detectedSlab
+          }));
+          showScannerResult(bestMatch, runnerUps, resultsEl);
+          return;
+        }
       }
 
-      // 4. Combine Serial OCR with Structural Grayscale Matcher
-      let candidateCards = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
-      let ocrBoosted = false;
-
-      if (ocrMatch && ocrMatch.cleanLocalId) {
-        const serialCandidates = CardIndex.lookupByLocalId(ocrMatch.cleanLocalId);
-        if (serialCandidates && serialCandidates.length > 0) {
-          candidateCards = serialCandidates;
-          ocrBoosted = true;
-        }
+      // 5. Fallback to 4x4 Structural Grayscale Matcher when OCR found no catalog serial
+      if (!scanSignature || scanSignature.isPoorQuality) {
+        showNoMatchResult(scanSignature?.score || 10, resultsEl, detectedSlab);
+        return;
       }
 
       updateProgress(
         "Comparaison avec le catalogue...",
-        ocrBoosted ? `Numéro ${ocrMatch.serial} identifié — vérification structurelle` : "Recherche structurelle sans faux positifs",
+        "Aucun texte détecté — recherche structurelle 4x4",
         85
       );
 
-      let ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, candidateCards);
-
-      // If OCR candidate list was tested but had poor visual match, fallback to entire CARDS catalog
-      if (ocrBoosted && (!ranked || ranked.length === 0 || ranked[0].score < 40)) {
-        ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
-        ocrBoosted = false;
-      }
-
+      const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
       if (!ranked || ranked.length === 0) {
-        showNoMatchResult(0, resultsEl);
+        showNoMatchResult(0, resultsEl, detectedSlab);
         return;
       }
 
-      let bestMatch = ranked[0];
+      const bestMatch = {
+        ...ranked[0],
+        detectedSlab
+      };
 
-      // If serial was matched and visual signature confirms, boost to high confidence (95-100%)
-      if (ocrBoosted && bestMatch.score >= 50) {
-        bestMatch = {
-          ...bestMatch,
-          score: Math.min(100, Math.max(92, bestMatch.score + 25)),
-          ocrSerial: ocrMatch.serial
-        };
-      }
-
-      // Enforce strict thresholds:
+      // Enforce strict confidence thresholds:
       // - Score >= 75%: Confirmed match
       // - 50% <= Score < 75%: Warning state
-      // - Score < 50%: Honest rejection with manual reference input
+      // - Score < 50%: Honest rejection with smooth manual fallback
       if (bestMatch.score < 50) {
-        showNoMatchResult(bestMatch.score, resultsEl);
+        showNoMatchResult(bestMatch.score, resultsEl, detectedSlab);
       } else {
-        const runnerUps = ranked.slice(1, 4);
+        const runnerUps = ranked.slice(1, 4).map(r => ({ ...r, detectedSlab }));
         showScannerResult(bestMatch, runnerUps, resultsEl);
       }
     } catch (e) {
@@ -4028,19 +4387,26 @@ async function processCapturedPhoto(file) {
   img.src = objectUrl;
 }
 
-// Honest threshold display when confidence is below 50%
-function showNoMatchResult(score = 0, resultsEl = null) {
+// Honest threshold display when confidence is below 50% (retains any detected slab marker)
+function showNoMatchResult(score = 0, resultsEl = null, detectedSlab = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
+
+  const slabHintHtml = detectedSlab ? `
+    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-[11px] font-bold">
+      <span>🛡️ Slab détecté : ${detectedSlab.displayLabel}</span>
+    </div>
+  ` : '';
 
   resultsEl.innerHTML = `
     <div class="scanner-no-match bg-slate-900/95 border border-amber-500/50 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-3">
       <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
         <i data-lucide="scan" style="width:24px;height:24px;"></i>
       </div>
+      ${slabHintHtml}
       <div class="space-y-1">
         <div class="text-sm font-bold text-amber-300">Photo non concluante — Réessayez ou tapez le n°</div>
-        <p class="text-xs text-white/60">Aucune correspondance structurelle suffisante dans le catalogue (${Math.round(score)}% &lt; 50%). Assurez-vous que l'illustration est nette et bien cadrée.</p>
+        <p class="text-xs text-white/60">Aucun numéro de série lisible et similarité insuffisante (${Math.round(score)}% &lt; 50%). Cadrez le bas de carte ou tapez directement le numéro.</p>
       </div>
 
       <div class="flex gap-2">
@@ -4052,9 +4418,9 @@ function showNoMatchResult(score = 0, resultsEl = null) {
 
       <!-- Quick manual reference input box -->
       <div class="border-t border-white/10 pt-3 text-left">
-        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro :</label>
+        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro ou le nom :</label>
         <div class="flex gap-2">
-          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165" 
+          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou 120/119" 
                  class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
           <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
         </div>
@@ -4070,12 +4436,12 @@ function showNoMatchResult(score = 0, resultsEl = null) {
     document.getElementById('native-camera-input')?.click();
   });
 
-  // Inline manual reference lookup
+  // Inline manual reference lookup (preserves any OCR-detected slab)
   const inlineInput = document.getElementById('scanner-inline-manual-ref');
   const inlineBtn = document.getElementById('scanner-inline-manual-btn');
   if (inlineInput && inlineBtn) {
     const handleInlineLookup = () => {
-      runScannerManualLookup(inlineInput.value, resultsEl);
+      runScannerManualLookup(inlineInput.value, resultsEl, detectedSlab);
     };
     inlineBtn.addEventListener('click', handleInlineLookup);
     inlineInput.addEventListener('keydown', e => {
@@ -4084,19 +4450,33 @@ function showNoMatchResult(score = 0, resultsEl = null) {
   }
 }
 
-// Display recognized card with confidence score >= 50%
-function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
+// Display recognized card with confidence score >= 50% + Dynamic Graded Slab Switcher
+function showScannerResult(matchedResult, runnerUps = [], resultsEl = null, activeCondOverride = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl || !matchedResult) return;
 
   const card = matchedResult.card || matchedResult;
   const score = matchedResult.score !== undefined ? Math.round(matchedResult.score) : 100;
   const isHighConfidence = score >= 75;
+  const detectedSlab = matchedResult.detectedSlab || null;
 
-  const margin = (typeof netMargin === 'function') ? netMargin(card) : null;
-  const roi = (typeof netROI === 'function') ? netROI(card) : null;
-  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card) : null;
-  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card) : null;
+  // Determine active pricing condition (defaults to detected slab if scanned, else Raw NM)
+  const activeCond = activeCondOverride || (detectedSlab ? detectedSlab.displayLabel : 'Raw NM');
+  const isGradedActive = !activeCond.startsWith('Raw');
+  const activeSlabObj = isGradedActive ? (() => {
+    const parts = activeCond.split(/\s+/);
+    const co = parts[0] || 'PSA';
+    const sh = parts.slice(1).join(' ').trim() || '10';
+    const scale = GRADING_SCALES[co] || GRADING_SCALES.PSA;
+    const found = scale.find(g => g.short === sh || g.grade === sh || g.grade.startsWith(sh)) || scale[0];
+    return { company: co, grade: found.grade, short: found.short, displayLabel: `${co} ${found.short}` };
+  })() : null;
+
+  const multInfo = resolveConditionMultiplier(activeCond, card);
+  const margin = (typeof netMargin === 'function') ? netMargin(card, activeCond) : null;
+  const roi = (typeof netROI === 'function') ? netROI(card, activeCond) : null;
+  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card, activeCond) : null;
+  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card, activeCond) : null;
   const hasPrices = (margin !== null && roi !== null && frActive !== null && jpActive !== null);
 
   const profitCls = hasPrices && margin >= 0 ? 'text-emerald-400' : 'text-red-400';
@@ -4112,7 +4492,9 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   // Header status styling based on strict thresholds
   const statusColor = isHighConfidence ? 'text-emerald-400' : 'text-amber-400';
   const statusIcon = isHighConfidence ? 'check-circle' : 'alert-triangle';
-  const statusTitle = isHighConfidence ? 'Carte identifiée avec certitude' : '⚠️ Correspondance probable mais incertaine';
+  const statusTitle = matchedResult.ocrVerified
+    ? 'Identifiée à 100% par OCR'
+    : (isHighConfidence ? 'Carte identifiée avec certitude' : '⚠️ Correspondance probable mais incertaine');
   const scoreBadgeBg = isHighConfidence
     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
     : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
@@ -4140,7 +4522,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   ` : `
     <button type="button" id="scanner-add-checklist-btn" class="scanner-badge-checklist bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 cursor-pointer transition-colors">
       <i data-lucide="plus" style="width:12px;height:12px;"></i>
-      <span>Ajouter aux achats</span>
+      <span>Ajouter (${activeCond})</span>
     </button>
   `;
 
@@ -4151,29 +4533,86 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </span>
   ` : '';
 
+  const slabBadgeHtml = detectedSlab ? `
+    <span class="scanner-badge-checklist bg-indigo-950/90 text-indigo-200 border border-indigo-400/50">
+      <i data-lucide="shield-check" style="width:12px;height:12px;"></i>
+      <span>Slab détecté : ${detectedSlab.displayLabel}</span>
+    </span>
+  ` : '';
+
   const validationPillsHtml = isHighConfidence ? `
-    <div class="flex items-center justify-center gap-2 flex-wrap">
-      <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-        <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
-        <span>Grille structurelle 4x4 validée (≥ 75%)</span>
-      </span>
+    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+      ${matchedResult.ocrVerified ? `
+        <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
+          <span>Match catalogue TCGdex 100%</span>
+        </span>
+      ` : `
+        <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
+          <span>Grille structurelle 4x4 validée (≥ 75%)</span>
+        </span>
+      `}
       ${ocrBadgeHtml}
+      ${slabBadgeHtml}
       <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
       ${checklistBadgeHtml}
     </div>
   ` : `
-    <div class="flex items-center justify-center gap-2 flex-wrap">
+    <div class="flex items-center justify-center gap-1.5 flex-wrap">
       <span class="scanner-badge-checklist bg-amber-950/80 text-amber-300 border border-amber-500/40">
         <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i>
         <span>Similarité modérée (${score}%)</span>
       </span>
       ${ocrBadgeHtml}
+      ${slabBadgeHtml}
       <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
       ${checklistBadgeHtml}
+    </div>
+  `;
+
+  // Quick Raw / Graded Condition Switcher inside Scanner Result
+  const quickCondOptions = ['Raw NM', 'PSA 9', 'PSA 10', 'BGS 9.5', 'ARS 10'];
+  if (detectedSlab && !quickCondOptions.includes(detectedSlab.displayLabel)) {
+    quickCondOptions.splice(1, 0, detectedSlab.displayLabel);
+  }
+  const conditionSwitcherHtml = `
+    <div class="flex items-center gap-1 overflow-x-auto pb-0.5 justify-center flex-wrap">
+      ${quickCondOptions.map(opt => {
+        const isAct = opt === activeCond;
+        return `<button type="button" class="scanner-cond-btn text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
+          isAct
+            ? 'bg-emerald-500 text-slate-900 border-emerald-400 shadow-sm'
+            : 'bg-white/5 text-white/70 border-white/15 hover:bg-white/15 hover:text-white'
+        }" data-cond="${opt}">${opt}</button>`;
+      }).join('')}
+    </div>
+  `;
+
+  const spreadOriginLabel = isGradedActive && hasPrices ? (
+    multInfo.source === 'direct_sold'
+      ? 'Ventes slab réelles'
+      : (multInfo.source === 'market_spread' ? 'Spread marché observé' : `Spread historique (×${multInfo.frMult.toFixed(2)})`)
+  ) : '';
+
+  const pricingSectionHtml = hasPrices ? `
+    <div class="text-xs text-white/85 mt-1 font-medium">
+      <span class="text-emerald-300 font-bold">${activeCond}</span> · JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €
+    </div>
+    <div class="text-xs font-bold ${profitCls} mt-0.5">
+      Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)
+    </div>
+    ${spreadOriginLabel ? `<div class="text-[9px] text-white/45 mt-0.5">${spreadOriginLabel}</div>` : ''}
+  ` : `
+    <div class="mt-1 flex items-center">
+      <span class="price-pending-badge">
+        <span class="price-pending-dot"></span>
+        Prix non disponible (Pas de ventes récentes)
+      </span>
     </div>
   `;
 
@@ -4230,18 +4669,6 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     </div>
   ` : '';
 
-  const pricingSectionHtml = hasPrices ? `
-    <div class="text-xs text-white/80 mt-1">JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €</div>
-    <div class="text-xs font-bold ${profitCls} mt-0.5">Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)</div>
-  ` : `
-    <div class="mt-1 flex items-center">
-      <span class="price-pending-badge">
-        <span class="price-pending-dot"></span>
-        Prix non disponible (Pas de ventes récentes)
-      </span>
-    </div>
-  `;
-
   resultsEl.innerHTML = `
     <div class="bg-slate-900/95 border ${isHighConfidence ? 'border-emerald-500/40' : 'border-amber-500/40'} backdrop-blur-md rounded-2xl p-3.5 text-white max-w-sm mx-auto shadow-2xl space-y-3">
       <!-- Status bar -->
@@ -4251,7 +4678,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
           <span>${statusTitle}</span>
         </div>
         <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${scoreBadgeBg}">
-          ${score}% structure valide
+          ${score}% ${matchedResult.ocrVerified ? 'OCR vérifié' : 'structure valide'}
         </span>
       </div>
 
@@ -4260,6 +4687,9 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
       <!-- Match Validation Pills & Checklist Badges -->
       ${validationPillsHtml}
+
+      <!-- Dynamic Raw / Graded Slab Valuation Switcher -->
+      ${conditionSwitcherHtml}
 
       <!-- Primary Card Info -->
       <div class="flex gap-3 items-center bg-white/5 border border-white/10 rounded-xl p-2.5">
@@ -4274,14 +4704,14 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
       <!-- Action Button: Open Full Card Detail View -->
       <button type="button" class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-900 text-xs font-bold py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer" id="scanner-open-detail">
-        <span>Ouvrir le détail complet</span>
+        <span>Ouvrir le détail (${activeCond})</span>
         <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
       </button>
 
       <!-- Scan next card / rescan button -->
       <button type="button" class="w-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-[11px] font-semibold py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer" id="scanner-rescan-btn">
         <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
-        <span>Scanner une autre carte</span>
+        <span>Scanner une autre carte / slab</span>
       </button>
 
       <!-- Runner-ups -->
@@ -4294,13 +4724,22 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  // Add to purchases checklist button listener
+  // Bind condition / slab switcher pills
+  resultsEl.querySelectorAll('.scanner-cond-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const chosenCond = btn.dataset.cond;
+      showScannerResult(matchedResult, runnerUps, resultsEl, chosenCond);
+    });
+  });
+
+  // Add to purchases checklist button listener (records exact active raw or slab condition)
   const addChecklistBtn = document.getElementById('scanner-add-checklist-btn');
   if (addChecklistBtn) {
     addChecklistBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (typeof addToPurchases === 'function') {
-        addToPurchases(card, null, 1, 'Raw NM');
+        addToPurchases(card, null, 1, activeCond);
       }
       addChecklistBtn.outerHTML = `
         <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
@@ -4315,7 +4754,9 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   document.getElementById('scanner-open-detail')?.addEventListener('click', () => {
     closeScanner();
     detailModalState.currentCard = card;
-    if (typeof openCardDetail === 'function') openCardDetail(card.id);
+    if (typeof openCardDetail === 'function') {
+      openCardDetail(card.id, isGradedActive ? 'graded' : 'raw', activeSlabObj);
+    }
   });
 
   document.getElementById('scanner-rescan-btn')?.addEventListener('click', () => {
@@ -4328,7 +4769,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   const inlineBtn = document.getElementById('scanner-inline-manual-btn');
   if (inlineInput && inlineBtn) {
     const handleInlineLookup = () => {
-      runScannerManualLookup(inlineInput.value, resultsEl);
+      runScannerManualLookup(inlineInput.value, resultsEl, detectedSlab);
     };
     inlineBtn.addEventListener('click', handleInlineLookup);
     inlineInput.addEventListener('keydown', e => {
@@ -4341,7 +4782,9 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
       if (e.target.closest('.scanner-runner-open')) {
         const id = e.target.closest('.scanner-runner-open').dataset.cardId;
         closeScanner();
-        if (typeof openCardDetail === 'function') openCardDetail(id);
+        if (typeof openCardDetail === 'function') {
+          openCardDetail(id, isGradedActive ? 'graded' : 'raw', activeSlabObj);
+        }
         return;
       }
       const idx = parseInt(elem.dataset.idx, 10);
@@ -4358,14 +4801,21 @@ function handleScannerFileUpload(file) {
   processCapturedPhoto(file);
 }
 
-// Manual Reference Search helper with live dynamic fallback
-async function runScannerManualLookup(rawQuery, resultsEl = null) {
+// Manual Reference Search helper with live dynamic TCGdex serial/name fallback + slab support
+async function runScannerManualLookup(rawQuery, resultsEl = null, detectedSlab = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
 
   const raw = (rawQuery || '').trim();
   if (!raw) return;
-  const q = raw.toLowerCase().replace(/\s*\/\s*/g, '/');
+
+  // Detect any inline slab marker typed by the user (e.g. "201/165 PSA 10" or "120/119 ARS 10+")
+  const typedSlab = detectedSlab || CardOCR.parseSlabFromText(raw);
+  const queryNoSlab = raw
+    .replace(/\b(?:PSA|BGS|BECKETT|CGC|PCA|ARS|GRADE)\s*(?:10\+|10\s*(?:BL|BLACK\s*LABEL|PRISTINE)?|9\.5|9|8\.5|8|7)\b/ig, '')
+    .trim() || raw;
+
+  const q = queryNoSlab.toLowerCase().replace(/\s*\/\s*/g, '/');
   const cleanNum = q.replace(/^0+/, '');
 
   const catalog = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
@@ -4398,7 +4848,7 @@ async function runScannerManualLookup(rawQuery, resultsEl = null) {
     });
   }
 
-  // If not found in loaded catalog, query TCGdex API dynamically in real time
+  // If not found in loaded catalog, query TCGdex API dynamically (by serial first, then by name)
   if (matchedList.length === 0) {
     resultsEl.innerHTML = `
       <div class="bg-slate-900/95 border border-emerald-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-2">
@@ -4407,9 +4857,18 @@ async function runScannerManualLookup(rawQuery, resultsEl = null) {
       </div>
     `;
     try {
-      const liveCards = await CatalogService.searchLive(raw);
-      if (liveCards && liveCards.length > 0) {
-        matchedList = liveCards;
+      const parsedSerial = CardOCR.parseSerialFromText(queryNoSlab);
+      if (parsedSerial && parsedSerial.cleanLocalId) {
+        const serialLive = await CatalogService.lookupCardsBySerial(parsedSerial.serial, parsedSerial.setHint);
+        if (serialLive && serialLive.length > 0) {
+          matchedList = serialLive;
+        }
+      }
+      if (matchedList.length === 0) {
+        const liveCards = await CatalogService.searchLive(queryNoSlab);
+        if (liveCards && liveCards.length > 0) {
+          matchedList = liveCards;
+        }
       }
     } catch (e) {
       console.warn('Manual live search warning:', e);
@@ -4420,12 +4879,15 @@ async function runScannerManualLookup(rawQuery, resultsEl = null) {
     const primary = {
       card: matchedList[0],
       score: 100,
-      scoreVisual: 100
+      scoreVisual: 100,
+      ocrVerified: true,
+      detectedSlab: typedSlab
     };
     const runners = matchedList.slice(1, 4).map(c => ({
       card: c,
       score: 95,
-      scoreVisual: 95
+      scoreVisual: 95,
+      detectedSlab: typedSlab
     }));
     showScannerResult(primary, runners, resultsEl);
   } else {

@@ -46,6 +46,7 @@ jobs:
       - name: Run price scraper
         env:
           POKEMON_TCG_API_KEY: ${{ secrets.POKEMON_TCG_API_KEY }}
+          FORCE_REFRESH: ${{ github.event.inputs.force_refresh || 'false' }}
         run: |
           python scraper/fetch_prices.py
         continue-on-error: false
