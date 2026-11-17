@@ -3056,51 +3056,19 @@ const CardRecognizer = {
     });
   },
 
-  // Viewfinder coordinate mapping: maps viewfinder box in DOM to intrinsic video frame coords
-  // Accounts for CSS object-fit: cover
-  getCropRect(video, viewfinder) {
-    if (!video || !video.videoWidth || !video.videoHeight) {
-      return { sx: 0, sy: 0, sw: 600, sh: 840 };
-    }
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-    if (!viewfinder) {
-      return this.getDefaultCropRect(vw, vh);
-    }
-    const vRect = video.getBoundingClientRect();
-    const vfRect = viewfinder.getBoundingClientRect();
-    if (vRect.width <= 0 || vRect.height <= 0 || vfRect.width <= 0 || vfRect.height <= 0) {
-      return this.getDefaultCropRect(vw, vh);
-    }
-
-    // Exact coordinate mapping for object-fit: cover
-    const scale = Math.max(vRect.width / vw, vRect.height / vh);
-    const visibleW = vRect.width / scale;
-    const visibleH = vRect.height / scale;
-    const offsetX = (vw - visibleW) / 2;
-    const offsetY = (vh - visibleH) / 2;
-
-    const relX = (vfRect.left - vRect.left) / vRect.width;
-    const relY = (vfRect.top - vRect.top) / vRect.height;
-    const relW = vfRect.width / vRect.width;
-    const relH = vfRect.height / vRect.height;
-
-    const sx = Math.max(0, Math.min(vw - 10, Math.round(offsetX + relX * visibleW)));
-    const sy = Math.max(0, Math.min(vh - 10, Math.round(offsetY + relY * visibleH)));
-    const sw = Math.max(30, Math.min(vw - sx, Math.round(relW * visibleW)));
-    const sh = Math.max(30, Math.min(vh - sy, Math.round(relH * visibleH)));
-
-    return { sx, sy, sw, sh };
-  },
-
   getDefaultCropRect(sourceWidth, sourceHeight) {
     const targetAspect = 63 / 88; // Standard Pokémon card aspect ratio ~0.716
+    const sourceAspect = sourceWidth / sourceHeight;
+    // If the image already roughly matches the card's aspect ratio (+/- 5%), treat as pre-cropped
+    if (Math.abs(sourceAspect - targetAspect) < 0.05) {
+      return { sx: 0, sy: 0, sw: sourceWidth, sh: sourceHeight };
+    }
     let sw, sh;
-    if (sourceWidth / sourceHeight > targetAspect) {
-      sh = Math.round(sourceHeight * 0.88);
+    if (sourceAspect > targetAspect) {
+      sh = Math.round(sourceHeight * 0.90);
       sw = Math.round(sh * targetAspect);
     } else {
-      sw = Math.round(sourceWidth * 0.88);
+      sw = Math.round(sourceWidth * 0.90);
       sh = Math.round(sw / targetAspect);
     }
     const sx = Math.max(0, Math.round((sourceWidth - sw) / 2));
@@ -3111,9 +3079,9 @@ const CardRecognizer = {
   // Central artwork bounding box coords on card (excluding borders, name bar and bottom text)
   getArtworkCropRect(cardW, cardH) {
     const artX = Math.max(0, Math.round(cardW * 0.10));
-    const artY = Math.max(0, Math.round(cardH * 0.14));
+    const artY = Math.max(0, Math.round(cardH * 0.13));
     const artW = Math.max(20, Math.min(cardW - artX, Math.round(cardW * 0.80)));
-    const artH = Math.max(20, Math.min(cardH - artY, Math.round(cardH * 0.40)));
+    const artH = Math.max(20, Math.min(cardH - artY, Math.round(cardH * 0.42)));
     return { artX, artY, artW, artH };
   },
 
@@ -3150,8 +3118,8 @@ const CardRecognizer = {
     return this.computeStructuralGrid(artCanvas);
   },
 
-  // Strict 4x4 Grid (16 blocks) calculation:
-  // Converts to high-contrast grayscale, detects edges, computes 16-point geometric signature vector
+  // Streamlined 4x4 Grid (16 blocks) calculation:
+  // Converts to grayscale, auto-levels, computes 4x4 block luminance & contrast grid
   computeStructuralGrid(artCanvas) {
     try {
       const ctx = artCanvas.getContext('2d', { willReadFrequently: true });
@@ -3203,33 +3171,52 @@ const CardRecognizer = {
 
       // 4. Divide artwork into 4x4 grid (16 blocks, 32x32 pixels each)
       const lumVec = new Float32Array(16);
+      const contrastVec = new Float32Array(16);
       const edgeVec = new Float32Array(16);
       const signatureVec = new Float32Array(16);
 
       let lumSum16 = 0;
+      let contrastSum16 = 0;
+
       for (let by = 0; by < 4; by++) {
         for (let bx = 0; bx < 4; bx++) {
           const bIdx = by * 4 + bx;
-          let bLum = 0;
-          let bEdge = 0;
+          let bLumSum = 0;
+          let bEdgeSum = 0;
 
+          // First pass: mean luminance & edge density
           for (let y = by * 32; y < (by + 1) * 32; y++) {
             const row = y * 128;
             for (let x = bx * 32; x < (bx + 1) * 32; x++) {
               const pIdx = row + x;
-              bLum += gray[pIdx];
-              bEdge += edges[pIdx];
+              bLumSum += gray[pIdx];
+              bEdgeSum += edges[pIdx];
             }
           }
 
-          const avgLum = bLum / 1024;
-          const avgEdge = Math.min(1.0, (bEdge / 1024) * 4.5);
+          const avgLum = bLumSum / 1024;
+          const avgEdge = Math.min(1.0, (bEdgeSum / 1024) * 4.5);
+
+          // Second pass: local block contrast (standard deviation of luminance within block)
+          let bVarSum = 0;
+          for (let y = by * 32; y < (by + 1) * 32; y++) {
+            const row = y * 128;
+            for (let x = bx * 32; x < (bx + 1) * 32; x++) {
+              const diff = gray[row + x] - avgLum;
+              bVarSum += diff * diff;
+            }
+          }
+          const blockContrast = Math.min(1.0, Math.sqrt(bVarSum / 1024) * 2.5);
 
           lumVec[bIdx] = avgLum;
+          contrastVec[bIdx] = blockContrast;
           edgeVec[bIdx] = avgEdge;
-          // 16-point geometric signature vector: 55% luminance shape + 45% edge structure
-          signatureVec[bIdx] = 0.55 * avgLum + 0.45 * avgEdge;
+
+          // 16-point geometric signature vector: 40% luminance + 35% contrast + 25% edge
+          signatureVec[bIdx] = (0.40 * avgLum) + (0.35 * blockContrast) + (0.25 * avgEdge);
+
           lumSum16 += avgLum;
+          contrastSum16 += blockContrast;
         }
       }
 
@@ -3242,13 +3229,24 @@ const CardRecognizer = {
       }
       const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
 
+      const meanBlockC = contrastSum16 / 16;
+      let varBlockC = 0;
+      for (let i = 0; i < 16; i++) {
+        const diff = contrastVec[i] - meanBlockC;
+        varBlockC += diff * diff;
+      }
+      const stdBlockC = Math.sqrt(Math.max(1e-5, varBlockC / 16));
+
       return {
         isPoorQuality: false,
         lumVec,
+        contrastVec,
         edgeVec,
         signatureVec,
         meanLum: meanBlockL,
-        stdLum: stdBlockL
+        stdLum: stdBlockL,
+        meanContrast: meanBlockC,
+        stdContrast: stdBlockC
       };
     } catch (e) {
       console.warn('Error computing structural grid:', e);
@@ -3256,24 +3254,40 @@ const CardRecognizer = {
     }
   },
 
-  // Compare 16-point geometric signature vectors using Euclidean distance + Pearson structural similarity
+  // Compare 4x4 block luminance & contrast grids using Pearson correlations + Euclidean distance
   computeStructuralSimilarity(sigA, sigB, options = {}) {
     if (!sigA || !sigB || sigA.isPoorQuality || sigB.isPoorQuality) {
       return 10;
     }
 
     // 1. Zero-Mean Pearson Correlation of 16-block Luminance (Lighting-invariant)
-    let dotProd = 0;
+    let dotProdL = 0;
     for (let i = 0; i < 16; i++) {
       const devA = sigA.lumVec[i] - sigA.meanLum;
       const devB = sigB.lumVec[i] - sigB.meanLum;
-      dotProd += devA * devB;
+      dotProdL += devA * devB;
     }
-    const denom = 16 * sigA.stdLum * sigB.stdLum;
-    const pearson = denom > 1e-6 ? dotProd / denom : 0;
-    const normCorr = Math.max(0, pearson); // [0.0 .. 1.0]
+    const denomL = 16 * sigA.stdLum * sigB.stdLum;
+    const pearsonL = denomL > 1e-6 ? dotProdL / denomL : 0;
+    const normCorrL = Math.max(0, pearsonL); // [0.0 .. 1.0]
 
-    // 2. Normalized Euclidean Distance on 16-point Geometric Signature Vector
+    // 2. Zero-Mean Pearson Correlation of 16-block Contrast (Texture & detail invariant)
+    let dotProdC = 0;
+    const stdCA = sigA.stdContrast || sigA.stdLum || 0.1;
+    const stdCB = sigB.stdContrast || sigB.stdLum || 0.1;
+    const meanCA = sigA.meanContrast || sigA.meanLum || 0.5;
+    const meanCB = sigB.meanContrast || sigB.meanLum || 0.5;
+
+    for (let i = 0; i < 16; i++) {
+      const valA = sigA.contrastVec ? sigA.contrastVec[i] : (sigA.edgeVec ? sigA.edgeVec[i] : 0);
+      const valB = sigB.contrastVec ? sigB.contrastVec[i] : (sigB.edgeVec ? sigB.edgeVec[i] : 0);
+      dotProdC += (valA - meanCA) * (valB - meanCB);
+    }
+    const denomC = 16 * stdCA * stdCB;
+    const pearsonC = denomC > 1e-6 ? dotProdC / denomC : 0;
+    const normCorrC = Math.max(0, pearsonC); // [0.0 .. 1.0]
+
+    // 3. Normalized Euclidean Distance on 16-point Geometric Signature Vector
     let distSq = 0;
     for (let i = 0; i < 16; i++) {
       const diff = sigA.signatureVec[i] - sigB.signatureVec[i];
@@ -3283,19 +3297,10 @@ const CardRecognizer = {
     // Strict scaling: distance > 0.30 (random vectors) maps to 0%
     const distScore = Math.max(0, 1.0 - (euclDist / 0.30));
 
-    // 3. Edge Density Structural Alignment
-    let edgeDistSq = 0;
-    for (let i = 0; i < 16; i++) {
-      const diff = sigA.edgeVec[i] - sigB.edgeVec[i];
-      edgeDistSq += diff * diff;
-    }
-    const edgeDist = Math.sqrt(edgeDistSq / 16);
-    const edgeScore = Math.max(0, 1.0 - (edgeDist / 0.32));
+    // 4. Combined Structural Score: 40% Lum Correlation + 30% Contrast Correlation + 30% Euclidean Distance
+    const rawScore = (0.40 * normCorrL) + (0.30 * normCorrC) + (0.30 * distScore);
 
-    // 4. Combined Structural Score (40% Correlation + 35% Euclidean Vector + 25% Edge Density)
-    const rawScore = (0.40 * normCorr) + (0.35 * distScore) + (0.25 * edgeScore);
-
-    // Optional subtle edition bonus (+2% if matching active language filter, -4% if another edition)
+    // Subtle edition alignment bonus
     let editionBonus = 0;
     const activeCountries = options.activeCountries || [];
     const card = options.card;
@@ -3314,13 +3319,14 @@ const CardRecognizer = {
   // Fallback synthetic 16-point structural signature for cards without high-res images yet
   generateSyntheticSignature(card) {
     if (!card) return null;
-    const nameLower = ((card.name || '') + ' ' + (card.subName || '')).toLowerCase();
+    const nameLower = ((card.name || '') + ' ' + (card.subName || '') + ' ' + (card.ref || '')).toLowerCase();
 
     const lumVec = new Float32Array(16);
+    const contrastVec = new Float32Array(16);
     const edgeVec = new Float32Array(16);
     const signatureVec = new Float32Array(16);
 
-    let baseLum = 0.5;
+    let baseLum = 0.50;
     let centerBonus = 0.15;
     let edgePattern = [
       0.15, 0.20, 0.20, 0.15,
@@ -3337,7 +3343,7 @@ const CardRecognizer = {
         0.30, 0.55, 0.60, 0.35,
         0.25, 0.40, 0.40, 0.30
       ];
-    } else if (/pikachu|raichu|electhor|zapdos/.test(nameLower)) {
+    } else if (/pikachu|raichu|electhor|zapdos|miraidon/.test(nameLower)) {
       baseLum = 0.75;
       centerBonus = 0.20;
       edgePattern = [
@@ -3346,7 +3352,7 @@ const CardRecognizer = {
         0.30, 0.45, 0.45, 0.30,
         0.20, 0.25, 0.25, 0.20
       ];
-    } else if (/mew|psy/.test(nameLower)) {
+    } else if (/mew|psy|gardevoir|alakazam/.test(nameLower)) {
       baseLum = 0.65;
       centerBonus = 0.25;
       edgePattern = [
@@ -3371,7 +3377,7 @@ const CardRecognizer = {
         0.45, 0.50, 0.50, 0.45,
         0.30, 0.35, 0.35, 0.30
       ];
-    } else if (/umbreon|noctali/.test(nameLower)) {
+    } else if (/umbreon|noctali|darkrai|ectoplasma|gengar/.test(nameLower)) {
       baseLum = 0.20;
       centerBonus = 0.40;
       edgePattern = [
@@ -3380,7 +3386,7 @@ const CardRecognizer = {
         0.25, 0.60, 0.60, 0.25,
         0.15, 0.20, 0.20, 0.15
       ];
-    } else if (/rayquaza/.test(nameLower)) {
+    } else if (/rayquaza|giratina|lugia|ho-oh/.test(nameLower)) {
       baseLum = 0.45;
       edgePattern = [
         0.20, 0.30, 0.60, 0.70,
@@ -3390,15 +3396,31 @@ const CardRecognizer = {
       ];
     }
 
+    // Deterministic modulation from card identifiers
+    let hash = 0;
+    const str = (card.id || '') + (card.localId || '') + (card.ref || '') + (card.name || '');
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+
     let lumSum16 = 0;
+    let contrastSum16 = 0;
+
     for (let i = 0; i < 16; i++) {
       const isCenter = (i === 5 || i === 6 || i === 9 || i === 10);
-      const lum = Math.min(1.0, Math.max(0.05, baseLum + (isCenter ? centerBonus : -0.08)));
-      const edge = edgePattern[i];
+      const mod = (((Math.abs(hash * (i + 1) * 31)) % 100) / 1000) - 0.05;
+      const lum = Math.min(0.95, Math.max(0.05, baseLum + (isCenter ? centerBonus : -0.06) + mod));
+      const edge = Math.min(1.0, Math.max(0.05, edgePattern[i] + (mod * 0.5)));
+      const contrast = Math.min(1.0, Math.max(0.05, (edge * 0.7) + (isCenter ? 0.2 : 0.05) + (mod * 0.3)));
+
       lumVec[i] = lum;
+      contrastVec[i] = contrast;
       edgeVec[i] = edge;
-      signatureVec[i] = 0.55 * lum + 0.45 * edge;
+      signatureVec[i] = (0.40 * lum) + (0.35 * contrast) + (0.25 * edge);
+
       lumSum16 += lum;
+      contrastSum16 += contrast;
     }
 
     const meanBlockL = lumSum16 / 16;
@@ -3409,13 +3431,24 @@ const CardRecognizer = {
     }
     const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
 
+    const meanBlockC = contrastSum16 / 16;
+    let varBlockC = 0;
+    for (let i = 0; i < 16; i++) {
+      const diff = contrastVec[i] - meanBlockC;
+      varBlockC += diff * diff;
+    }
+    const stdBlockC = Math.sqrt(Math.max(1e-5, varBlockC / 16));
+
     return {
       isPoorQuality: false,
       lumVec,
+      contrastVec,
       edgeVec,
       signatureVec,
       meanLum: meanBlockL,
       stdLum: stdBlockL,
+      meanContrast: meanBlockC,
+      stdContrast: stdBlockC,
       isSynthetic: true
     };
   },
@@ -3636,14 +3669,14 @@ async function processCapturedPhoto(file) {
     placeholder.classList.add('hidden');
   }
 
-  // Smooth loading card with animated spinner and progress step (~1s UX budget)
+  // Smooth loading card with animated spinner and progress step
   if (resultsEl) {
     resultsEl.innerHTML = `
       <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
         <div class="flex items-center gap-3">
           <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
           <div class="text-left flex-1 min-w-0">
-            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate">Analyse de l'image en cours...</div>
+            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse des contrastes de l'artwork...</div>
             <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Calcul de la grille structurelle 4x4 de l'artwork</div>
           </div>
           <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">45%</span>
@@ -3681,8 +3714,8 @@ async function processCapturedPhoto(file) {
       // Enhance canvas snapshot (sharpening + contrast boost)
       enhanceCanvasSnapshot(cropCanvas);
 
-      // Smooth step delay (~400ms)
-      await new Promise(r => setTimeout(r, 400));
+      // Brief UX delay (~350ms) for smooth visual confirmation
+      await new Promise(r => setTimeout(r, 350));
 
       // 2. Extract 4x4 structural grayscale grid signature
       updateProgress(
@@ -3697,8 +3730,8 @@ async function processCapturedPhoto(file) {
         return;
       }
 
-      // Smooth step delay (~450ms)
-      await new Promise(r => setTimeout(r, 450));
+      // Smooth step delay (~350ms)
+      await new Promise(r => setTimeout(r, 350));
 
       // 3. Compare signature against loaded catalog
       const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
@@ -3710,9 +3743,9 @@ async function processCapturedPhoto(file) {
       const bestMatch = ranked[0];
 
       // 4. Enforce strict thresholds:
-      // - Score >= 75%: Valid primary match
-      // - 50% <= Score < 75%: "⚠️ Correspondance probable mais incertaine (Vérifiez)"
-      // - Score < 50%: Honest rejection -> "Photo non concluante — Réessayez"
+      // - Score >= 75%: Confirmed match (display card, checklist badges, and detail link).
+      // - 50% <= Score < 75%: Warning state ("⚠️ Correspondance probable mais incertaine").
+      // - Score < 50%: Honest rejection ("Photo non concluante — Réessayez ou tapez le n°") with a quick manual reference input box ("ex: 201/165").
       if (bestMatch.score < 50) {
         showNoMatchResult(bestMatch.score, resultsEl);
       } else {
@@ -3736,7 +3769,7 @@ async function processCapturedPhoto(file) {
   img.src = objectUrl;
 }
 
-// Honest threshold display when confidence is below 50% (Stop guessing wrong cards)
+// Honest threshold display when confidence is below 50%
 function showNoMatchResult(score = 0, resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
@@ -3747,7 +3780,7 @@ function showNoMatchResult(score = 0, resultsEl = null) {
         <i data-lucide="scan" style="width:24px;height:24px;"></i>
       </div>
       <div class="space-y-1">
-        <div class="text-sm font-bold text-amber-300">Photo non concluante — Réessayez</div>
+        <div class="text-sm font-bold text-amber-300">Photo non concluante — Réessayez ou tapez le n°</div>
         <p class="text-xs text-white/60">Aucune correspondance structurelle suffisante dans le catalogue (${Math.round(score)}% &lt; 50%). Assurez-vous que l'illustration est nette et bien cadrée.</p>
       </div>
 
@@ -3760,9 +3793,9 @@ function showNoMatchResult(score = 0, resultsEl = null) {
 
       <!-- Quick manual reference input box -->
       <div class="border-t border-white/10 pt-3 text-left">
-        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro (ex: 201/165) :</label>
+        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro :</label>
         <div class="flex gap-2">
-          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou sv2a 201" 
+          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165" 
                  class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
           <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
         </div>
@@ -3818,41 +3851,63 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   // Header status styling based on strict thresholds
   const statusColor = isHighConfidence ? 'text-emerald-400' : 'text-amber-400';
   const statusIcon = isHighConfidence ? 'check-circle' : 'alert-triangle';
-  const statusTitle = isHighConfidence ? 'Carte identifiée avec certitude' : 'Correspondance probable';
+  const statusTitle = isHighConfidence ? 'Carte identifiée avec certitude' : '⚠️ Correspondance probable mais incertaine';
   const scoreBadgeBg = isHighConfidence
     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
     : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
 
   // Explicit banner for 50-74% uncertain matches
   const uncertainBannerHtml = !isHighConfidence ? `
-    <div class="bg-amber-500/15 border border-amber-500/40 rounded-xl p-2.5 text-amber-200 text-xs flex items-center gap-2.5 text-left">
-      <span class="text-base flex-shrink-0">⚠️</span>
+    <div class="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 text-amber-200 text-xs flex items-center gap-2.5 text-left">
+      <span class="text-lg flex-shrink-0">⚠️</span>
       <div class="min-w-0 flex-1">
-        <div class="font-bold text-amber-300">⚠️ Correspondance probable mais incertaine (Vérifiez)</div>
-        <div class="text-[10px] text-white/60 mt-0.5">Score structurel de ${score}% (&lt; 75%). Vérifiez l'illustration ou tapez la référence ci-dessous.</div>
+        <div class="font-bold text-amber-300 text-xs">⚠️ Correspondance probable mais incertaine</div>
+        <div class="text-[10px] text-white/70 mt-0.5">Score de similarité structurelle de ${score}% (&lt; 75%). Vérifiez l'illustration ci-dessous ou tapez la référence directe.</div>
       </div>
     </div>
   ` : '';
 
+  // Checklist badges:
+  // 1) 4x4 structural grid badge
+  // 2) Edition flag badge
+  // 3) Collection / Checklist status badge
+  const isPurchased = (typeof state !== 'undefined' && state.purchasedCards)
+    ? state.purchasedCards.find(p => p.card.id === card.id)
+    : null;
+
+  const checklistBadgeHtml = isPurchased ? `
+    <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
+      <i data-lucide="check" style="width:12px;height:12px;"></i>
+      <span>Dans vos achats (x${isPurchased.quantity})</span>
+    </span>
+  ` : `
+    <button type="button" id="scanner-add-checklist-btn" class="scanner-badge-checklist bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 cursor-pointer transition-colors">
+      <i data-lucide="plus" style="width:12px;height:12px;"></i>
+      <span>Ajouter aux achats</span>
+    </button>
+  `;
+
   const validationPillsHtml = isHighConfidence ? `
-    <div class="flex items-center justify-center gap-2">
-      <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+    <div class="flex items-center justify-center gap-2 flex-wrap">
+      <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
         <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
         <span>Grille structurelle 4x4 validée (≥ 75%)</span>
       </span>
-      <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
+      <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
+      ${checklistBadgeHtml}
     </div>
   ` : `
-    <div class="flex items-center justify-center gap-2">
-      <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-950/70 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
-        <i data-lucide="help-circle" style="width:12px;height:12px;"></i>
-        <span>Similarité structurelle modérée (${score}%)</span>
+    <div class="flex items-center justify-center gap-2 flex-wrap">
+      <span class="scanner-badge-checklist bg-amber-950/80 text-amber-300 border border-amber-500/40">
+        <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i>
+        <span>Similarité modérée (${score}%)</span>
       </span>
-      <span class="inline-flex items-center gap-1 text-[11px] font-medium text-white/80 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full">
+      <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
         <span>${editionFlag} ${card.edition || 'JP'}</span>
       </span>
+      ${checklistBadgeHtml}
     </div>
   `;
 
@@ -3903,7 +3958,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
     <div class="border-t border-white/10 pt-2 text-left">
       <label class="text-[10px] text-white/60 block mb-1">Ou tapez directement la référence :</label>
       <div class="flex gap-2">
-        <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou sv2a 201"
+        <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165"
                class="flex-1 px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
         <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
       </div>
@@ -3926,7 +3981,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
       <!-- Uncertain Banner (if score 50-74%) -->
       ${uncertainBannerHtml}
 
-      <!-- Match Validation Pills -->
+      <!-- Match Validation Pills & Checklist Badges -->
       ${validationPillsHtml}
 
       <!-- Primary Card Info -->
@@ -3962,6 +4017,24 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null) {
   `;
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Add to purchases checklist button listener
+  const addChecklistBtn = document.getElementById('scanner-add-checklist-btn');
+  if (addChecklistBtn) {
+    addChecklistBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof addToPurchases === 'function') {
+        addToPurchases(card, null, 1, 'Raw NM');
+      }
+      addChecklistBtn.outerHTML = `
+        <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
+          <i data-lucide="check" style="width:12px;height:12px;"></i>
+          <span>Dans vos achats (x1)</span>
+        </span>
+      `;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  }
 
   document.getElementById('scanner-open-detail')?.addEventListener('click', () => {
     closeScanner();
@@ -4013,8 +4086,10 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
   if (!resultsEl) resultsEl = document.getElementById('scanner-results');
   if (!resultsEl) return;
 
-  const q = (rawQuery || '').trim().toLowerCase();
-  if (!q) return;
+  const raw = (rawQuery || '').trim();
+  if (!raw) return;
+  const q = raw.toLowerCase().replace(/\s*\/\s*/g, '/'); // normalize "201 / 165" to "201/165"
+  const cleanNum = q.replace(/^0+/, '');
 
   const catalog = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
   const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
@@ -4026,9 +4101,15 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
     const name = (c.name || '').toLowerCase();
     const subName = (c.subName || '').toLowerCase();
     const localId = (c.localId || '').toLowerCase();
+    const localIdClean = localId.replace(/^0+/, '');
+    const id = (c.id || '').toLowerCase();
 
-    // Match "201/165" or "sv2a 201" or "201"
-    return ref.includes(q) || localId === q || name.includes(q) || subName.includes(q) || (c.id && c.id.toLowerCase() === q);
+    return ref.includes(q) ||
+           localId === q ||
+           (cleanNum && localIdClean === cleanNum) ||
+           name.includes(q) ||
+           subName.includes(q) ||
+           id === q;
   });
 
   // Prioritize active language edition
@@ -4059,8 +4140,8 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
           <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i>
           <span>Carte non trouvée</span>
         </div>
-        <p class="text-xs text-white/70">Aucune carte trouvée pour <span class="font-mono text-emerald-300">"${q}"</span> dans le catalogue.</p>
-        <p class="text-[11px] text-white/50">Vérifiez le numéro de set (ex: 201/165 ou sv2a 201) ou le nom du Pokémon.</p>
+        <p class="text-xs text-white/70">Aucune carte trouvée pour <span class="font-mono text-emerald-300">"${raw}"</span> dans le catalogue.</p>
+        <p class="text-[11px] text-white/50">Vérifiez le numéro de set (ex: 201/165) ou le nom du Pokémon.</p>
         <button id="scanner-retry-manual-btn" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all cursor-pointer mt-1">
           Réessayer
         </button>
@@ -4068,7 +4149,7 @@ function runScannerManualLookup(rawQuery, resultsEl = null) {
     `;
     if (typeof lucide !== 'undefined') lucide.createIcons();
     document.getElementById('scanner-retry-manual-btn')?.addEventListener('click', () => {
-      resultsEl.innerHTML = '<p class="text-white/60 text-xs">Cadrez la carte Pokémon à l\'intérieur du viseur vert</p>';
+      resetScannerPreview();
     });
   }
 }
@@ -4504,6 +4585,24 @@ function bindEvents() {
   if (scannerNativeBtn && nativeCameraInput) {
     scannerNativeBtn.addEventListener('click', () => {
       nativeCameraInput.click();
+    });
+  }
+
+  // Preview silhouette frame click also opens camera
+  const previewWrapper = document.getElementById('scanner-preview-wrapper');
+  if (previewWrapper && nativeCameraInput) {
+    previewWrapper.addEventListener('click', () => {
+      nativeCameraInput.click();
+    });
+  }
+
+  // Backdrop click closes scanner
+  const modalScanner = document.getElementById('modal-scanner');
+  if (modalScanner) {
+    modalScanner.addEventListener('click', e => {
+      if (e.target === modalScanner) {
+        closeScanner();
+      }
     });
   }
 
