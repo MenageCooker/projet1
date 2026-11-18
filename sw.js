@@ -1,6 +1,6 @@
-// PokéSpread Service Worker v9
-const CACHE_NAME = 'pokespread-cache-v9';
-const IMAGE_CACHE_NAME = 'pokespread-images-v9';
+// PokéSpread Service Worker v10
+const CACHE_NAME = 'pokespread-cache-v10';
+const IMAGE_CACHE_NAME = 'pokespread-images-v10';
 
 const PRECACHE_ASSETS = [
   './',
@@ -47,6 +47,12 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass SW cache on localhost and 127.0.0.1 for instant development feedback
   if (self.location.hostname === '127.0.0.1' || self.location.hostname === 'localhost') {
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // 0. Live Market Prices: Strictly network-only (never stale-cached)
+  if (url.pathname.endsWith('prices.json') || url.pathname.includes('prices.json')) {
     event.respondWith(fetch(req));
     return;
   }

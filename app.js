@@ -666,6 +666,23 @@ function resolveConditionMultiplier(customConditionOrGrade = null, card = null) 
 const PriceService = {
   pricesJsonData: null,
   pricesJsonLoaded: false,
+  priceMap: new Map(),
+
+  // Builds an O(1) Map indexing exact normalized ref keys
+  buildPriceMap() {
+    this.priceMap.clear();
+    if (!this.pricesJsonData?.prices) return;
+    const p = this.pricesJsonData.prices;
+    for (const [key, entry] of Object.entries(p)) {
+      if (!key || !entry) continue;
+      const normKey = String(key).toLowerCase().replace(/\s+/g, ' ').trim();
+      this.priceMap.set(normKey, entry);
+      if (entry.ref) {
+        const normRef = String(entry.ref).toLowerCase().replace(/\s+/g, ' ').trim();
+        this.priceMap.set(normRef, entry);
+      }
+    }
+  },
 
   // Load real sold-item prices from prices.json or 24h storage cache
   async loadPricesJson() {
@@ -677,6 +694,7 @@ const PriceService = {
         if (data && data.prices && Object.keys(data.prices).length > 0) {
           this.pricesJsonData = data;
           this.pricesJsonLoaded = true;
+          this.buildPriceMap();
           // Store in 24h persistent storage
           await StorageService.set(StorageService.PRICES_STORE, 'market_prices', data);
           if (badge) {
@@ -703,6 +721,7 @@ const PriceService = {
     if (cachedPrices && cachedPrices.prices && Object.keys(cachedPrices.prices).length > 0) {
       this.pricesJsonData = cachedPrices;
       this.pricesJsonLoaded = true;
+      this.buildPriceMap();
       if (badge) {
         badge.className = 'prices-source-badge prices-source-scraped';
         badge.textContent = '🟢 Cache 24h';
@@ -717,6 +736,7 @@ const PriceService = {
     // No verified sold sales available: strict safeguard mode (no fabricated prices)
     this.pricesJsonData = null;
     this.pricesJsonLoaded = false;
+    this.priceMap.clear();
     if (badge) {
       badge.className = 'prices-source-badge prices-source-api';
       badge.textContent = '⚪ En attente de ventes';
@@ -728,16 +748,33 @@ const PriceService = {
     return false;
   },
 
-  // Match pricing record by ref or localId from real sold-item database
+  // Match pricing record strictly by exact normalized ref from O(1) priceMap
   findPriceEntry(card) {
-    if (!this.pricesJsonData?.prices) return null;
-    const p = this.pricesJsonData.prices;
-    if (p[card.ref]) return p[card.ref];
-    const cleanRef = card.ref ? card.ref.toLowerCase().replace(/\s+/g, ' ') : '';
-    for (const k of Object.keys(p)) {
-      if (k.toLowerCase().replace(/\s+/g, ' ') === cleanRef) return p[k];
-      if (card.localId && k.includes(` ${card.localId}/`)) return p[k];
+    if (!card || !this.priceMap || this.priceMap.size === 0) return null;
+
+    // 1. Direct normalized ref lookup (e.g. "sv2a 201/165")
+    if (card.ref) {
+      const cleanRef = String(card.ref).toLowerCase().replace(/\s+/g, ' ').trim();
+      const match = this.priceMap.get(cleanRef);
+      if (match) return match;
     }
+
+    // 2. Exact set_id + local_id/official_count fallback (if ref was formatted differently)
+    if (card.setId && card.localId) {
+      const cleanSet = String(card.setId).toLowerCase().trim();
+      const cleanLocal = String(card.localId).trim();
+      if (card.officialCount && card.officialCount !== '---') {
+        const fullRef = `${cleanSet} ${cleanLocal}/${String(card.officialCount).trim()}`;
+        const match = this.priceMap.get(fullRef);
+        if (match) return match;
+      } else {
+        const shortRef = `${cleanSet} ${cleanLocal}`;
+        const match = this.priceMap.get(shortRef);
+        if (match) return match;
+      }
+    }
+
+    // STRICT: NEVER match localId alone across sets!
     return null;
   },
 
@@ -1061,6 +1098,7 @@ const CatalogService = {
           // Paint first wave immediately so user sees cards right away without blocking
           if (i === 0 && combined.length > 0) {
             CARDS = combined;
+            PriceService.repriceAllCards();
             CardIndex.build(CARDS);
             renderAllColumns();
             renderMobileColumn();
@@ -1360,7 +1398,11 @@ function editionBadge(card) {
 
 // ── FILTER MATCHING ──────────────────────────────────────────
 function isFilterModeActive() {
-  return state.focusCol !== null || (typeof window !== 'undefined' && window.innerWidth < 768);
+  const hasCountry = state.filters.countries && state.filters.countries.length > 0;
+  const hasPrice = state.filters.priceMin !== null || state.filters.priceMax !== null;
+  const hasPricedOnly = !!state.filters.pricedOnly;
+  const hasGraded = state.condition?.mode === 'graded';
+  return state.focusCol !== null || hasCountry || hasPrice || hasPricedOnly || hasGraded || (typeof window !== 'undefined' && window.innerWidth < 768);
 }
 
 function cardMatchesFilters(card) {
