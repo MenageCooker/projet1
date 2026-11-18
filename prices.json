@@ -1,10 +1,10 @@
 {
   "_meta": {
-    "generated_at": "2026-11-18T00:40:03.908008+00:00",
+    "generated_at": "2026-11-18T15:14:25.737807+00:00",
     "source": "real_sold_pipeline_v2.1",
-    "card_count": 32,
-    "priced_cards": 4,
-    "processed_this_run": 32,
+    "card_count": 78,
+    "priced_cards": 11,
+    "processed_this_run": 46,
     "observed_grade_spreads": {
       "fr": {},
       "jp": {}
@@ -1787,6 +1787,2638 @@
       "lang": "ja",
       "local_id": "197",
       "fetched_at": "2026-11-18T00:40:03.907771+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 198/165": {
+      "ref": "sv2a 198/165",
+      "name": "ナナミの手助け",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "198",
+      "fetched_at": "2026-11-18T14:59:10.834084+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 199/165": {
+      "ref": "sv2a 199/165",
+      "name": "マサキの転送",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "199",
+      "fetched_at": "2026-11-18T14:59:15.207634+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 200/165": {
+      "ref": "sv2a 200/165",
+      "name": "フシギバナex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "200",
+      "fetched_at": "2026-11-18T14:59:18.410692+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 201/165": {
+      "ref": "sv2a 201/165",
+      "name": "リザードンex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "201",
+      "fetched_at": "2026-11-18T14:59:23.036991+00:00",
+      "fr": {
+        "smoothed_avg": 53.73,
+        "median": 53.73,
+        "min": 53.05,
+        "max": 54.42,
+        "count": 2,
+        "sold_samples": [
+          53.05,
+          54.42
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 53.05,
+          "avg30": 54.42,
+          "avg7": 52.51,
+          "lowPrice": 33.9
+        },
+        "cardmarket_trend": 53.05,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 202/165": {
+      "ref": "sv2a 202/165",
+      "name": "カメックスex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "202",
+      "fetched_at": "2026-11-18T15:01:27.731978+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 203/165": {
+      "ref": "sv2a 203/165",
+      "name": "フーディンex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "203",
+      "fetched_at": "2026-11-18T15:01:32.645192+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 204/165": {
+      "ref": "sv2a 204/165",
+      "name": "サンダーex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "204",
+      "fetched_at": "2026-11-18T15:01:35.946731+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 205/165": {
+      "ref": "sv2a 205/165",
+      "name": "ミュウex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "205",
+      "fetched_at": "2026-11-18T15:01:41.012347+00:00",
+      "fr": {
+        "smoothed_avg": 16.75,
+        "median": 16.75,
+        "min": 16.63,
+        "max": 16.88,
+        "count": 2,
+        "sold_samples": [
+          16.63,
+          16.88
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 16.63,
+          "avg30": 16.88,
+          "avg7": 16.19,
+          "lowPrice": 8.95
+        },
+        "cardmarket_trend": 16.63,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 206/165": {
+      "ref": "sv2a 206/165",
+      "name": "エリカの招待",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "206",
+      "fetched_at": "2026-11-18T15:01:44.437707+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 207/165": {
+      "ref": "sv2a 207/165",
+      "name": "サカキのカリスマ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "207",
+      "fetched_at": "2026-11-18T15:01:47.895882+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 208/165": {
+      "ref": "sv2a 208/165",
+      "name": "ミュウex",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "208",
+      "fetched_at": "2026-11-18T15:01:50.829894+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 209/165": {
+      "ref": "sv2a 209/165",
+      "name": "ポケモンいれかえ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "209",
+      "fetched_at": "2026-11-18T15:01:54.451672+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv2a 210/165": {
+      "ref": "sv2a 210/165",
+      "name": "基本超エネルギー",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "210",
+      "fetched_at": "2026-11-18T15:01:57.557453+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 191/190": {
+      "ref": "sv4a 191/190",
+      "name": "ナゾノクサ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "191",
+      "fetched_at": "2026-11-18T15:02:02.457881+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 192/190": {
+      "ref": "sv4a 192/190",
+      "name": "クサイハナ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "192",
+      "fetched_at": "2026-11-18T15:02:07.770869+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 193/190": {
+      "ref": "sv4a 193/190",
+      "name": "ラフレシア",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "193",
+      "fetched_at": "2026-11-18T15:02:10.829077+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 194/190": {
+      "ref": "sv4a 194/190",
+      "name": "ストライク",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "194",
+      "fetched_at": "2026-11-18T15:02:13.977603+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 195/190": {
+      "ref": "sv4a 195/190",
+      "name": "ハネッコ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "195",
+      "fetched_at": "2026-11-18T15:02:18.459299+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 196/190": {
+      "ref": "sv4a 196/190",
+      "name": "ポポッコ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "196",
+      "fetched_at": "2026-11-18T15:02:21.752274+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 197/190": {
+      "ref": "sv4a 197/190",
+      "name": "ワタッコ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "197",
+      "fetched_at": "2026-11-18T15:02:26.525368+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 198/190": {
+      "ref": "sv4a 198/190",
+      "name": "クヌギダマ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "198",
+      "fetched_at": "2026-11-18T15:02:29.570328+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 199/190": {
+      "ref": "sv4a 199/190",
+      "name": "ユキカブリ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "199",
+      "fetched_at": "2026-11-18T15:03:35.501682+00:00",
+      "fr": {
+        "smoothed_avg": 3.06,
+        "median": 3.06,
+        "min": 2.98,
+        "max": 3.15,
+        "count": 2,
+        "sold_samples": [
+          2.98,
+          3.15
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 3.15,
+          "avg30": 2.98,
+          "avg7": 3.13,
+          "lowPrice": 1.5
+        },
+        "cardmarket_trend": 3.15,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 200/190": {
+      "ref": "sv4a 200/190",
+      "name": "ユキノオー",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "200",
+      "fetched_at": "2026-11-18T15:03:39.360218+00:00",
+      "fr": {
+        "smoothed_avg": 2.76,
+        "median": 2.76,
+        "min": 2.73,
+        "max": 2.79,
+        "count": 2,
+        "sold_samples": [
+          2.73,
+          2.79
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 2.73,
+          "avg30": 2.79,
+          "avg7": 2.7,
+          "lowPrice": 1.5
+        },
+        "cardmarket_trend": 2.73,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 201/190": {
+      "ref": "sv4a 201/190",
+      "name": "ニャオハ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "201",
+      "fetched_at": "2026-11-18T15:03:44.175840+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 202/190": {
+      "ref": "sv4a 202/190",
+      "name": "ニャローテ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "202",
+      "fetched_at": "2026-11-18T15:03:47.366724+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 203/190": {
+      "ref": "sv4a 203/190",
+      "name": "ミニーブ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "203",
+      "fetched_at": "2026-11-18T15:03:50.747881+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 204/190": {
+      "ref": "sv4a 204/190",
+      "name": "オリーニョ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "204",
+      "fetched_at": "2026-11-18T15:03:53.887787+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 205/190": {
+      "ref": "sv4a 205/190",
+      "name": "オリーヴァ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "205",
+      "fetched_at": "2026-11-18T15:04:59.906324+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 206/190": {
+      "ref": "sv4a 206/190",
+      "name": "ノノクラゲ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "206",
+      "fetched_at": "2026-11-18T15:06:04.697330+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 207/190": {
+      "ref": "sv4a 207/190",
+      "name": "カプサイジ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "207",
+      "fetched_at": "2026-11-18T15:06:10.026804+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 208/190": {
+      "ref": "sv4a 208/190",
+      "name": "スコヴィラン",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "208",
+      "fetched_at": "2026-11-18T15:06:13.112114+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 209/190": {
+      "ref": "sv4a 209/190",
+      "name": "シガロコ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "209",
+      "fetched_at": "2026-11-18T15:06:16.380657+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 210/190": {
+      "ref": "sv4a 210/190",
+      "name": "ヒトカゲ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "210",
+      "fetched_at": "2026-11-18T15:06:19.764285+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 211/190": {
+      "ref": "sv4a 211/190",
+      "name": "リザード",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "211",
+      "fetched_at": "2026-11-18T15:07:26.167253+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 212/190": {
+      "ref": "sv4a 212/190",
+      "name": "パルデア ケンタロス",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "212",
+      "fetched_at": "2026-11-18T15:07:30.973953+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 213/190": {
+      "ref": "sv4a 213/190",
+      "name": "エンテイ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "213",
+      "fetched_at": "2026-11-18T15:08:36.943247+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 214/190": {
+      "ref": "sv4a 214/190",
+      "name": "オドリドリ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "214",
+      "fetched_at": "2026-11-18T15:08:42.978075+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 215/190": {
+      "ref": "sv4a 215/190",
+      "name": "ホゲータ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "215",
+      "fetched_at": "2026-11-18T15:08:52.261255+00:00",
+      "fr": {
+        "smoothed_avg": 2.42,
+        "median": 2.42,
+        "min": 2.4,
+        "max": 2.43,
+        "count": 2,
+        "sold_samples": [
+          2.4,
+          2.43
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 2.43,
+          "avg30": 2.4,
+          "avg7": 2.35,
+          "lowPrice": 0.99
+        },
+        "cardmarket_trend": 2.43,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 216/190": {
+      "ref": "sv4a 216/190",
+      "name": "アチゲータ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "216",
+      "fetched_at": "2026-11-18T15:09:57.028206+00:00",
+      "fr": {
+        "smoothed_avg": 16.15,
+        "median": 16.15,
+        "min": 15.56,
+        "max": 16.74,
+        "count": 2,
+        "sold_samples": [
+          15.56,
+          16.74
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 16.74,
+          "avg30": 15.56,
+          "avg7": 15.36,
+          "lowPrice": 7.97
+        },
+        "cardmarket_trend": 16.74,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 217/190": {
+      "ref": "sv4a 217/190",
+      "name": "カルボウ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "217",
+      "fetched_at": "2026-11-18T15:10:00.142189+00:00",
+      "fr": {
+        "smoothed_avg": 4.2,
+        "median": 4.2,
+        "min": 4.13,
+        "max": 4.26,
+        "count": 2,
+        "sold_samples": [
+          4.13,
+          4.26
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 4.13,
+          "avg30": 4.26,
+          "avg7": 4.14,
+          "lowPrice": 1.44
+        },
+        "cardmarket_trend": 4.13,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 218/190": {
+      "ref": "sv4a 218/190",
+      "name": "グレンアルマ",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "218",
+      "fetched_at": "2026-11-18T15:10:03.201070+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 219/190": {
+      "ref": "sv4a 219/190",
+      "name": "ヤドン",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "219",
+      "fetched_at": "2026-11-18T15:10:06.608736+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 220/190": {
+      "ref": "sv4a 220/190",
+      "name": "ヤドラン",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "220",
+      "fetched_at": "2026-11-18T15:11:12.368327+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 221/190": {
+      "ref": "sv4a 221/190",
+      "name": "ヒトデマン",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "221",
+      "fetched_at": "2026-11-18T15:12:17.150327+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 222/190": {
+      "ref": "sv4a 222/190",
+      "name": "スターミー",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "222",
+      "fetched_at": "2026-11-18T15:12:20.517609+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv4a 223/190": {
+      "ref": "sv4a 223/190",
+      "name": "パルデア ケンタロス",
+      "edition": "JP",
+      "lang": "ja",
+      "local_id": "223",
+      "fetched_at": "2026-11-18T15:14:25.737562+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
