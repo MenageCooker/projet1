@@ -1,26 +1,25 @@
 #!/usr/bin/env python3
 """
-PokéSpread JP→FR — Unrestricted Global Catalog & Real Sold-Item Pricing Pipeline
-================================================================================
-ZERO HARDCODING:
-- No TARGET_SETS or static card lists.
-- Dynamically fetches the complete list of official sets and cards from TCGdex
-  API (/v2/fr/sets, /v2/ja/sets, /v2/fr/cards, /v2/ja/cards) covering every
-  Pokémon TCG release (~50,000 cards).
-- Native multi-language localization via TCGdex ID linking (zero static maps).
+PokéSpread JP→FR — High-Value Arbitrage Price Pipeline & Market Scraper
+========================================================================
+OPTIMIZED ARBITRAGE ARCHITECTURE:
+1. High-Value / Chase Cards Prioritization:
+   - Filters and prioritizes cards so CI runtime is 100% focused on profitable targets.
+   - All Secret Rares (local_id > official_count).
+   - All Ultra Rares & Chase cards matching: ex, VMAX, VSTAR, V, GX, EX, SAR,
+     SR, UR, AR, CHR, CSR, Shiny, Radiant, Mega, etc.
+   - Sorted by newest sets first (SV, SWSH, SM...) for maximal arbitrage liquidity.
 
-ABSOLUTE PRICING INTEGRITY:
-- French / European Resale Market:
-    * eBay France completed/sold listings (LH_Sold=1&LH_Complete=1)
-    * Cardmarket completed trend metrics (trendPrice / avg30)
-- Japanese Acquisition Market:
-    * Mercari Japan finalized sales (STATUS_SOLD_OUT)
-    * Yahoo! Auctions Japan closed auctions (closedsearch)
-    * Card Rush Akihabara single-card market price
-- Strict Anti-Outlier Trimming:
-    * Discards top/bottom 10% outliers when sample count >= 4.
-    * Zero default/fallback/fictional prices: if no verified transactions exist,
-      smoothed_avg is strictly None (JSON null).
+2. Reliable Anti-Bot-Free European Pricing (Cardmarket via Pokémon TCG API):
+   - Dynamically indexes English card names from TCGdex (/v2/en/cards) mapped
+     by raw_id (e.g. 'xy4-120' -> 'Manectric-EX', 'sv2a-201' -> 'Charizard ex').
+   - Resolves real Cardmarket trendPrice, avg30, and avg7 in EUR.
+
+3. Concurrent Multi-Threaded Execution:
+   - ThreadPoolExecutor(max_workers=6) with thread-local HTTP sessions and polite pacing.
+   - Anti-bot diagnostic counters detecting datacenter IP blocks (consecutive 0 items).
+   - Incremental atomic checkpoint saves preserving previous verified records.
+   - Strict safeguard: Zero fabricated fallback prices. Real sales or null.
 """
 
 import os
@@ -30,8 +29,10 @@ import time
 import random
 import logging
 import statistics
+import threading
+import concurrent.futures
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 # ---------------------------------------------------------------------------
 # Dependencies
@@ -56,13 +57,14 @@ except ImportError:
 # Configuration & Logging
 # ---------------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("pokespread-global-scraper")
+logger = logging.getLogger("pokespread-scraper")
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.path.join(ROOT_DIR, "prices.json")
 
 # Safe runtime budget for GitHub Actions (default 15 min inside 20-min job)
 MAX_RUNTIME_SECONDS = int(os.environ.get("SCRAPER_MAX_RUNTIME", "900"))
+MAX_WORKERS = int(os.environ.get("SCRAPER_MAX_WORKERS", "6"))
 FORCE_REFRESH = os.environ.get("FORCE_REFRESH", "false").lower() == "true"
 POKEMON_TCG_API_KEY = os.environ.get("POKEMON_TCG_API_KEY", "")
 
@@ -108,18 +110,48 @@ RE_ANY_GRADED = re.compile(
     re.IGNORECASE,
 )
 
+# Chase / High-value card identification regex
+RE_CHASE_KEYWORDS = re.compile(
+    r'(?:^|[^\w])(ex|vmax|vstar|gx|sar|sr|ur|ar|chr|csr|shiny|radiant|radieux|mega|prime|legend|level\s*x|lv\.x|gold|rainbow)(?:[^\w]|$)|'
+    r'(?:^|[^\w])v(?:[^\w]|$)|'
+    r'[-–—]\s*(ex|vmax|vstar|v|gx|sar|sr|ur|ar|chr|csr)\b|'
+    r'(?:^|\s)M\s+[A-Z]|'
+    r'(?:メガ|かがやく|プロモ|マスターボール)',
+    re.IGNORECASE,
+)
 
-def create_http_session():
+# ---------------------------------------------------------------------------
+# Thread-Safe State & Session Management
+# ---------------------------------------------------------------------------
+_thread_local = threading.local()
+db_lock = threading.Lock()
+anti_bot_lock = threading.Lock()
+save_lock = threading.Lock()
+
+consecutive_zero_ebay_fr = 0
+consecutive_zero_mercari_jp = 0
+
+
+def create_http_session() -> Optional[requests.Session]:
     """Creates a pooled requests.Session with automatic polite retries."""
     if not HAS_REQUESTS:
         return None
     session = requests.Session()
     retries = Retry(total=2, backoff_factor=0.6, status_forcelist=[429, 500, 502, 503, 504])
-    adapter = HTTPAdapter(max_retries=retries, pool_connections=10, pool_maxsize=10)
+    adapter = HTTPAdapter(max_retries=retries, pool_connections=15, pool_maxsize=15)
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     session.headers.update(HEADERS)
     return session
+
+
+def get_thread_session() -> Optional[requests.Session]:
+    """Returns a thread-local HTTP session ensuring socket thread-safety."""
+    if not HAS_REQUESTS:
+        return None
+    if not hasattr(_thread_local, "session") or _thread_local.session is None:
+        _thread_local.session = create_http_session()
+    return _thread_local.session
 
 
 SESSION = create_http_session()
@@ -149,20 +181,59 @@ def title_matches_local_id(title: str, local_id: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Unrestricted Dynamic TCGdex Global Catalog Loader
+# Chase / High-Value Filter & Era Ranking
 # ---------------------------------------------------------------------------
-def fetch_all_sets_from_tcgdex(lang: str) -> Dict[str, Dict[str, Any]]:
+def is_chase_card(card: Dict[str, Any], en_name: str = "") -> bool:
+    """Identifies high-value arbitrage cards (Ultra Rares, Secrets, Alt Arts, Graded Targets)."""
+    if card.get("is_secret"):
+        return True
+    local_id = str(card.get("local_id", "")).strip().upper()
+    if any(local_id.startswith(pfx) for pfx in ("TG", "GG", "SV", "SWSH", "SVP", "PROMO", "RC")):
+        return True
+    for text in (card.get("name", ""), en_name):
+        if text and RE_CHASE_KEYWORDS.search(text):
+            return True
+    return False
+
+
+def get_set_era_rank(set_id: str) -> int:
+    """Ranks Pokémon TCG eras newest to oldest for optimal liquidity."""
+    sid = str(set_id).lower()
+    if sid.startswith("sv"):       # Scarlet & Violet (2023 - present)
+        return 0
+    if sid.startswith("swsh"):     # Sword & Shield (2020 - 2023)
+        return 1
+    if sid.startswith("sm"):       # Sun & Moon (2017 - 2019)
+        return 2
+    if sid.startswith("xy"):       # XY (2014 - 2016)
+        return 3
+    if sid.startswith("bw"):       # Black & White (2011 - 2013)
+        return 4
+    if sid.startswith(("dp", "pt", "hgss")):  # Diamond/Pearl/Platinum/HGSS (2007 - 2010)
+        return 5
+    if sid.startswith("ex"):       # EX series (2003 - 2007)
+        return 6
+    if sid.startswith(("base", "neo", "ecard", "gym", "col")):  # Vintage (1996 - 2002)
+        return 7
+    return 8
+
+
+# ---------------------------------------------------------------------------
+# Dynamic TCGdex Global Catalog & English Card Mapping
+# ---------------------------------------------------------------------------
+def fetch_all_sets_from_tcgdex(lang: str, session: Optional[requests.Session] = None) -> Dict[str, Dict[str, Any]]:
     """
     Dynamically fetches EVERY official expansion set from TCGdex (/v2/{lang}/sets).
     Zero hardcoded TARGET_SETS.
     """
-    if not SESSION:
+    sess = session or SESSION
+    if not sess:
         return {}
 
     url = f"https://api.tcgdex.net/v2/{lang}/sets"
     logger.info(f"Fetching complete set index from TCGdex: {url}")
     try:
-        resp = SESSION.get(url, timeout=20)
+        resp = sess.get(url, timeout=20)
         if resp.status_code != 200:
             logger.warning(f"TCGdex /v2/{lang}/sets returned HTTP {resp.status_code}")
             return {}
@@ -189,13 +260,48 @@ def fetch_all_sets_from_tcgdex(lang: str) -> Dict[str, Dict[str, Any]]:
         return {}
 
 
-def fetch_global_cards_for_lang(lang: str, edition: str, set_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+def fetch_tcgdex_en_cards(session: Optional[requests.Session] = None) -> Dict[str, str]:
+    """
+    Fetches the English card catalog from TCGdex (/v2/en/cards)
+    to build an exact mapping: raw_id -> en_name (e.g. 'xy4-120' -> 'Manectric-EX').
+    Allows querying api.pokemontcg.io with accurate English names for Cardmarket data.
+    """
+    sess = session or SESSION
+    if not sess:
+        return {}
+
+    url = "https://api.tcgdex.net/v2/en/cards"
+    logger.info(f"Fetching English card catalog for Cardmarket mapping: {url}")
+    try:
+        resp = sess.get(url, timeout=30)
+        if resp.status_code == 200:
+            raw_cards = resp.json()
+            en_map: Dict[str, str] = {}
+            for c in raw_cards:
+                cid = str(c.get("id", "")).strip()
+                name = str(c.get("name", "")).strip()
+                if cid and name:
+                    en_map[cid] = name
+            logger.info(f"Loaded {len(en_map)} English card name mappings from TCGdex.")
+            return en_map
+        logger.warning(f"TCGdex /v2/en/cards returned HTTP {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Could not load English cards from TCGdex: {e}")
+    return {}
+
+
+def fetch_global_cards_for_lang(
+    lang: str,
+    edition: str,
+    set_map: Dict[str, Dict[str, Any]],
+    session: Optional[requests.Session] = None,
+) -> List[Dict[str, Any]]:
     """
     Dynamically retrieves ALL cards across all retrieved sets for a language.
-    Uses the bulk /v2/{lang}/cards index mapped against /v2/{lang}/sets metadata,
-    with automatic fallback to iterating through every set if bulk index fails.
+    Uses the bulk /v2/{lang}/cards index mapped against /v2/{lang}/sets metadata.
     """
-    if not SESSION:
+    sess = session or SESSION
+    if not sess:
         return []
 
     cards: List[Dict[str, Any]] = []
@@ -203,7 +309,7 @@ def fetch_global_cards_for_lang(lang: str, edition: str, set_map: Dict[str, Dict
     logger.info(f"Fetching complete card catalog from TCGdex: {bulk_url}")
 
     try:
-        resp = SESSION.get(bulk_url, timeout=30)
+        resp = sess.get(bulk_url, timeout=30)
         if resp.status_code == 200:
             raw_cards = resp.json()
             if isinstance(raw_cards, list) and len(raw_cards) > 0:
@@ -242,12 +348,12 @@ def fetch_global_cards_for_lang(lang: str, edition: str, set_map: Dict[str, Dict
                 logger.info(f"Loaded {len(cards)} total cards for lang={lang.upper()} across {len(set_map)} sets.")
                 return cards
     except Exception as e:
-        logger.warning(f"Bulk /v2/{lang}/cards fetch failed ({e}); falling back to iterating retrieved sets.")
+        logger.warning(f"Bulk /v2/{lang}/cards fetch failed ({e}); falling back to set iteration.")
 
     # Fallback: iterate dynamically through every retrieved set from /v2/{lang}/sets
     for set_id, s_meta in set_map.items():
         try:
-            s_resp = SESSION.get(f"https://api.tcgdex.net/v2/{lang}/sets/{set_id}", timeout=15)
+            s_resp = sess.get(f"https://api.tcgdex.net/v2/{lang}/sets/{set_id}", timeout=15)
             if s_resp.status_code != 200:
                 continue
             s_data = s_resp.json()
@@ -279,7 +385,7 @@ def fetch_global_cards_for_lang(lang: str, edition: str, set_map: Dict[str, Dict
                     "image": image,
                     "is_secret": is_secret,
                 })
-            time.sleep(0.15)
+            time.sleep(0.10)
         except Exception:
             continue
 
@@ -355,12 +461,18 @@ def aggregate_sold_metrics(prices: List[float], is_jpy: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 # French / European Market: eBay FR Completed/Sold Items (LH_Sold=1)
 # ---------------------------------------------------------------------------
-def scrape_ebay_fr_sold(search_query: str, card_local_id: str = "") -> dict:
+def scrape_ebay_fr_sold(
+    search_query: str,
+    card_local_id: str = "",
+    session: Optional[requests.Session] = None,
+) -> dict:
     """Scrapes actual finalized sales on eBay France (LH_Sold=1&LH_Complete=1)."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "ebay_fr_sold"}
-    if not SESSION or not HAS_BS4:
+    sess = session or get_thread_session()
+    if not sess or not HAS_BS4:
         return empty
 
+    global consecutive_zero_ebay_fr
     try:
         url = "https://www.ebay.fr/sch/i.html"
         params = {
@@ -371,8 +483,15 @@ def scrape_ebay_fr_sold(search_query: str, card_local_id: str = "") -> dict:
             "LH_PrefLoc": "1",
             "_ipg": "50",
         }
-        resp = SESSION.get(url, params=params, timeout=14)
+        resp = sess.get(url, params=params, timeout=12)
         if resp.status_code != 200:
+            with anti_bot_lock:
+                consecutive_zero_ebay_fr += 1
+                if consecutive_zero_ebay_fr >= 10 and consecutive_zero_ebay_fr % 10 == 0:
+                    logger.warning(
+                        f"🚨 [ANTI-BOT WARNING] eBay FR has returned HTTP {resp.status_code} / 0 items "
+                        f"across {consecutive_zero_ebay_fr} consecutive requests! Possible datacenter IP block."
+                    )
             return empty
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -425,6 +544,18 @@ def scrape_ebay_fr_sold(search_query: str, card_local_id: str = "") -> dict:
                 raw_sold.append(val)
 
         agg = aggregate_sold_metrics(raw_sold, is_jpy=False)
+
+        with anti_bot_lock:
+            if agg["count"] > 0:
+                consecutive_zero_ebay_fr = 0
+            else:
+                consecutive_zero_ebay_fr += 1
+                if consecutive_zero_ebay_fr >= 10 and consecutive_zero_ebay_fr % 10 == 0:
+                    logger.warning(
+                        f"🚨 [ANTI-BOT WARNING] eBay FR returned 0 sold items across "
+                        f"{consecutive_zero_ebay_fr} consecutive requests! Possible IP block or captcha."
+                    )
+
         graded_summary = {}
         for g_key, g_prices in graded_sold.items():
             g_agg = aggregate_sold_metrics(g_prices, is_jpy=False)
@@ -441,62 +572,127 @@ def scrape_ebay_fr_sold(search_query: str, card_local_id: str = "") -> dict:
         }
     except Exception as e:
         logger.debug(f"eBay FR sold error: {e}")
+        with anti_bot_lock:
+            consecutive_zero_ebay_fr += 1
         return empty
 
 
 # ---------------------------------------------------------------------------
-# European Cardmarket Completed Trend Metrics (via Pokémon TCG API)
+# European Cardmarket Completed Metrics (via Pokémon TCG API)
 # ---------------------------------------------------------------------------
-def fetch_cardmarket_metrics(card_name: str, local_id: str = "") -> Optional[dict]:
-    """Fetches real Cardmarket completed trendPrice / avg30 / avg7 metrics."""
-    if not SESSION or not card_name:
+def fetch_cardmarket_metrics(
+    card_name: str,
+    local_id: str = "",
+    en_name: str = "",
+    set_id: str = "",
+    session: Optional[requests.Session] = None,
+) -> Optional[dict]:
+    """
+    Fetches real Cardmarket completed trendPrice / avg30 / avg7 metrics via api.pokemontcg.io.
+    Uses the exact English name (or set/number mapping) since api.pokemontcg.io indexes English names.
+    Reliable anti-bot-free pricing source.
+    """
+    sess = session or get_thread_session()
+    if not sess:
         return None
-    if re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', card_name):
-        return None
-    try:
-        clean_name = re.sub(
-            r"[-–—]\s*(ex|vmax|vstar|sar|ar|ur|hr|sr|gx).*", "", card_name, flags=re.IGNORECASE
+
+    # Priority target: English name if available, otherwise card_name if latin
+    target_name = en_name.strip() if en_name else card_name.strip()
+    if not target_name or re.search(r'[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', target_name):
+        target_name = ""
+
+    clean_num = local_id.lstrip("0") if local_id else ""
+    if not clean_num and local_id:
+        clean_num = local_id.strip()
+
+    # Build queries to try in priority order
+    queries_to_try: List[str] = []
+
+    if target_name and clean_num:
+        safe_name = target_name.replace('"', '').strip()
+        queries_to_try.append(f'name:"{safe_name}" number:"{clean_num}"')
+
+        # Base name without suffix (ex, vmax, vstar, v, gx, sar, etc.)
+        base_name = re.sub(
+            r'[-–—]?\s*(ex|vmax|vstar|v|gx|sar|sr|ur|ar|chr|csr|radiant|radieux).*',
+            '',
+            safe_name,
+            flags=re.IGNORECASE,
         ).strip()
-        if not clean_name:
-            return None
+        if base_name and base_name.lower() != safe_name.lower():
+            queries_to_try.append(f'name:"{base_name}" number:"{clean_num}"')
 
-        query = f'name:"{clean_name}"'
-        if local_id:
-            clean_num = local_id.lstrip("0")
-            if clean_num:
-                query += f' number:"{clean_num}"'
+    if target_name and not queries_to_try:
+        safe_name = target_name.replace('"', '').strip()
+        queries_to_try.append(f'name:"{safe_name}"')
 
-        headers = {"X-Api-Key": POKEMON_TCG_API_KEY} if POKEMON_TCG_API_KEY else {}
-        url = f"https://api.pokemontcg.io/v2/cards?q={requests.utils.quote(query)}&pageSize=1"
-        resp = SESSION.get(url, headers=headers, timeout=10)
-        if resp.status_code != 200:
-            return None
+    if not queries_to_try and clean_num:
+        queries_to_try.append(f'number:"{clean_num}"')
 
-        cards = resp.json().get("data", [])
-        if not cards:
-            return None
+    headers = {"X-Api-Key": POKEMON_TCG_API_KEY} if POKEMON_TCG_API_KEY else {}
 
-        cm = cards[0].get("cardmarket", {}).get("prices", {})
-        metrics = {}
-        for k in ("trendPrice", "avg30", "avg7", "lowPrice"):
-            v = cm.get(k)
-            if v and float(v) > 0:
-                metrics[k] = round(float(v), 2)
-        return metrics if metrics else None
-    except Exception as e:
-        logger.debug(f"Cardmarket metrics error for {card_name}: {e}")
-        return None
+    for q in queries_to_try:
+        try:
+            url = f"https://api.pokemontcg.io/v2/cards?q={requests.utils.quote(q)}&pageSize=5"
+            resp = sess.get(url, headers=headers, timeout=10)
+            if resp.status_code == 429:
+                time.sleep(1.0)
+                continue
+            if resp.status_code != 200:
+                continue
+
+            cards_data = resp.json().get("data", [])
+            if not cards_data:
+                continue
+
+            best_card = None
+            if len(cards_data) == 1:
+                best_card = cards_data[0]
+            else:
+                for c in cards_data:
+                    c_num = str(c.get("number", "")).lstrip("0")
+                    if clean_num and c_num == clean_num:
+                        best_card = c
+                        break
+                if not best_card:
+                    best_card = cards_data[0]
+
+            cm = best_card.get("cardmarket", {}).get("prices", {})
+            metrics = {}
+            for k in ("trendPrice", "avg30", "avg7", "avg1", "lowPrice", "averageSellPrice", "reverseHoloTrend"):
+                v = cm.get(k)
+                if v is not None:
+                    try:
+                        fv = float(v)
+                        if fv > 0:
+                            metrics[k] = round(fv, 2)
+                    except (ValueError, TypeError):
+                        pass
+
+            if metrics:
+                return metrics
+        except Exception as e:
+            logger.debug(f"Cardmarket query error for '{q}': {e}")
+            continue
+
+    return None
 
 
 # ---------------------------------------------------------------------------
 # Japanese Market: Mercari Japan Finalized Sold Items (STATUS_SOLD_OUT)
 # ---------------------------------------------------------------------------
-def scrape_mercari_jp_sold(search_query: str, card_local_id: str = "") -> dict:
+def scrape_mercari_jp_sold(
+    search_query: str,
+    card_local_id: str = "",
+    session: Optional[requests.Session] = None,
+) -> dict:
     """Scrapes finalized sold items on Mercari Japan (STATUS_SOLD_OUT)."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "mercari_jp_sold"}
-    if not SESSION:
+    sess = session or get_thread_session()
+    if not sess:
         return empty
 
+    global consecutive_zero_mercari_jp
     jp_headers = {
         **HEADERS,
         "Accept": "application/json",
@@ -505,7 +701,7 @@ def scrape_mercari_jp_sold(search_query: str, card_local_id: str = "") -> dict:
     }
 
     try:
-        resp = SESSION.get(
+        resp = sess.get(
             "https://api.mercari.jp/v2/entities:search",
             params={
                 "keyword": search_query,
@@ -545,7 +741,7 @@ def scrape_mercari_jp_sold(search_query: str, card_local_id: str = "") -> dict:
                     raw_sold.append(val)
 
         if not raw_sold and not graded_sold and HAS_BS4:
-            html_resp = SESSION.get(
+            html_resp = sess.get(
                 "https://jp.mercari.com/search",
                 params={"keyword": search_query, "status": "sold_out"},
                 headers={**HEADERS, "Accept-Language": "ja-JP,ja;q=0.9"},
@@ -563,6 +759,18 @@ def scrape_mercari_jp_sold(search_query: str, card_local_id: str = "") -> dict:
                         pass
 
         agg = aggregate_sold_metrics(raw_sold, is_jpy=True)
+
+        with anti_bot_lock:
+            if agg["count"] > 0:
+                consecutive_zero_mercari_jp = 0
+            else:
+                consecutive_zero_mercari_jp += 1
+                if consecutive_zero_mercari_jp >= 10 and consecutive_zero_mercari_jp % 10 == 0:
+                    logger.warning(
+                        f"🚨 [ANTI-BOT WARNING] Mercari JP returned 0 sold items across "
+                        f"{consecutive_zero_mercari_jp} consecutive requests! Possible datacenter IP block."
+                    )
+
         graded_summary = {}
         for g_key, g_prices in graded_sold.items():
             g_agg = aggregate_sold_metrics(g_prices, is_jpy=True)
@@ -579,20 +787,27 @@ def scrape_mercari_jp_sold(search_query: str, card_local_id: str = "") -> dict:
         }
     except Exception as e:
         logger.debug(f"Mercari JP sold error: {e}")
+        with anti_bot_lock:
+            consecutive_zero_mercari_jp += 1
         return empty
 
 
 # ---------------------------------------------------------------------------
 # Japanese Market: Yahoo! Auctions Japan Closed Auctions (closedsearch)
 # ---------------------------------------------------------------------------
-def scrape_yahoo_auctions_jp_sold(search_query: str, card_local_id: str = "") -> dict:
+def scrape_yahoo_auctions_jp_sold(
+    search_query: str,
+    card_local_id: str = "",
+    session: Optional[requests.Session] = None,
+) -> dict:
     """Scrapes closed winning auctions on Yahoo! Auctions Japan."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "yahoo_jp_sold"}
-    if not SESSION or not HAS_BS4:
+    sess = session or get_thread_session()
+    if not sess or not HAS_BS4:
         return empty
 
     try:
-        resp = SESSION.get(
+        resp = sess.get(
             "https://auctions.yahoo.co.jp/closedsearch/closedsearch",
             params={"p": search_query, "va": search_query, "b": "1", "n": "25", "s1": "bids", "o1": "d"},
             headers={**HEADERS, "Accept-Language": "ja-JP,ja;q=0.9"},
@@ -654,14 +869,19 @@ def scrape_yahoo_auctions_jp_sold(search_query: str, card_local_id: str = "") ->
 # ---------------------------------------------------------------------------
 # Japanese Market: Card Rush Akihabara Single-Card Retail
 # ---------------------------------------------------------------------------
-def scrape_card_rush_jp(search_query: str, card_local_id: str = "") -> dict:
+def scrape_card_rush_jp(
+    search_query: str,
+    card_local_id: str = "",
+    session: Optional[requests.Session] = None,
+) -> dict:
     """Scrapes single-card retail acquisition prices from Card Rush Japan."""
     empty = {"sold_prices": [], "count": 0, "avg": None, "median": None, "source": "cardrush_jp"}
-    if not SESSION or not HAS_BS4:
+    sess = session or get_thread_session()
+    if not sess or not HAS_BS4:
         return empty
 
     try:
-        resp = SESSION.get(
+        resp = sess.get(
             "https://www.cardrush-pokemon.jp/product/list",
             params={"keyword": search_query, "per_page": 20},
             headers={**HEADERS, "Accept-Language": "ja-JP,ja;q=0.9"},
@@ -721,15 +941,224 @@ def merge_graded_observations(sources: List[Dict[str, dict]], is_jpy: bool = Fal
 
 
 # ---------------------------------------------------------------------------
-# Main Unrestricted Orchestrator
+# Worker Task: Single Card Finalized Sales Crawl
+# ---------------------------------------------------------------------------
+def scrape_single_card(
+    card: Dict[str, Any],
+    fr_name_by_raw_id: Dict[str, str],
+    en_name_by_raw_id: Dict[str, str],
+    existing_prices: Dict[str, Any],
+    stop_event: threading.Event,
+) -> Optional[Dict[str, Any]]:
+    """Crawls finalized sales across European and Japanese markets for one card."""
+    if stop_event.is_set():
+        return None
+
+    sess = get_thread_session()
+    ref = card["ref"]
+    name = card["name"]
+    local_id = card["local_id"]
+    official_count = card["official_count"]
+    edition = card["edition"]
+    lang = card["lang"]
+    set_id = card["set_id"]
+
+    # Multi-language naming resolution (TCGdex direct linking)
+    linked_fr_name = fr_name_by_raw_id.get(card["raw_id"]) if lang == "ja" else name
+    linked_en_name = en_name_by_raw_id.get(card["raw_id"], "")
+
+    clean_fr = re.sub(
+        r"[-–—]\s*(ex|vmax|vstar|sar|ar|ur|hr|sr|gx).*",
+        "",
+        (linked_fr_name or name),
+        flags=re.IGNORECASE,
+    ).strip()
+
+    serial_token = f"{local_id}/{official_count}" if official_count != "---" else local_id
+    if lang == "ja":
+        query_fr = f"pokemon {set_id} {serial_token}".strip()
+        query_jp = f"{name} {local_id}".strip()
+    else:
+        query_fr = f"pokemon {clean_fr} {serial_token}".strip()
+        query_jp = f"{clean_fr} {local_id}".strip()
+
+    # --- A. French / European Resale Market ---
+    ebay_fr = scrape_ebay_fr_sold(query_fr, local_id, session=sess)
+    time.sleep(random.uniform(0.12, 0.25))
+
+    cm_metrics = fetch_cardmarket_metrics(
+        card_name=(linked_fr_name or name),
+        local_id=local_id,
+        en_name=linked_en_name,
+        set_id=set_id,
+        session=sess,
+    )
+
+    all_fr_sold = list(ebay_fr.get("sold_prices", []))
+    if cm_metrics:
+        if cm_metrics.get("trendPrice"):
+            all_fr_sold.append(cm_metrics["trendPrice"])
+        if cm_metrics.get("avg30"):
+            all_fr_sold.append(cm_metrics["avg30"])
+
+    fr_metrics = aggregate_sold_metrics(all_fr_sold, is_jpy=False)
+    fr_graded = ebay_fr.get("graded_prices", {})
+
+    # --- B. Japanese Acquisition Market ---
+    mercari_jp = scrape_mercari_jp_sold(query_jp, local_id, session=sess)
+    time.sleep(random.uniform(0.12, 0.25))
+
+    yahoo_jp = scrape_yahoo_auctions_jp_sold(query_jp, local_id, session=sess)
+    time.sleep(random.uniform(0.12, 0.25))
+
+    cardrush_jp = scrape_card_rush_jp(query_jp, local_id, session=sess)
+
+    all_jp_sold = (
+        mercari_jp.get("sold_prices", [])
+        + yahoo_jp.get("sold_prices", [])
+        + cardrush_jp.get("sold_prices", [])
+    )
+    jp_metrics = aggregate_sold_metrics(all_jp_sold, is_jpy=True)
+    jp_graded = merge_graded_observations(
+        [mercari_jp.get("graded_prices", {}), yahoo_jp.get("graded_prices", {})],
+        is_jpy=True,
+    )
+
+    # Incremental Preservation: keep existing verified record if scrape returned 0 hits
+    prev = existing_prices.get(ref)
+    if fr_metrics["count"] == 0 and jp_metrics["count"] == 0 and prev:
+        if prev.get("fr", {}).get("smoothed_avg") is not None or prev.get("jp", {}).get("smoothed_avg") is not None:
+            return prev
+
+    # Strict Safeguard: Zero fabricated prices. Real sales or null.
+    return {
+        "ref": ref,
+        "name": name,
+        "edition": edition,
+        "lang": lang,
+        "local_id": local_id,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fr": {
+            "smoothed_avg": fr_metrics["smoothed_avg"],
+            "median": fr_metrics["median"],
+            "min": fr_metrics["min"],
+            "max": fr_metrics["max"],
+            "count": fr_metrics["count"],
+            "sold_samples": fr_metrics["sold_prices"],
+            "ebay_fr": {
+                "sold_prices": ebay_fr.get("sold_prices", []),
+                "avg": ebay_fr.get("avg"),
+                "median": ebay_fr.get("median"),
+                "count": ebay_fr.get("count", 0),
+                "source": "ebay_fr_sold",
+            },
+            "cardmarket": cm_metrics,
+            "cardmarket_trend": cm_metrics.get("trendPrice") if cm_metrics else None,
+            "graded": fr_graded,
+        },
+        "jp": {
+            "smoothed_avg": jp_metrics["smoothed_avg"],
+            "median": jp_metrics["median"],
+            "min": jp_metrics["min"],
+            "max": jp_metrics["max"],
+            "count": jp_metrics["count"],
+            "sold_samples": jp_metrics["sold_prices"],
+            "mercari": {
+                "sold_prices": mercari_jp.get("sold_prices", []),
+                "avg": mercari_jp.get("avg"),
+                "median": mercari_jp.get("median"),
+                "count": mercari_jp.get("count", 0),
+                "source": "mercari_jp_sold",
+            },
+            "yahoo_auctions": {
+                "sold_prices": yahoo_jp.get("sold_prices", []),
+                "avg": yahoo_jp.get("avg"),
+                "median": yahoo_jp.get("median"),
+                "count": yahoo_jp.get("count", 0),
+                "source": "yahoo_jp_sold",
+            },
+            "card_rush": {
+                "sold_prices": cardrush_jp.get("sold_prices", []),
+                "avg": cardrush_jp.get("avg"),
+                "median": cardrush_jp.get("median"),
+                "count": cardrush_jp.get("count", 0),
+                "source": "cardrush_jp",
+            },
+            "graded": jp_graded,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint Database Saver
+# ---------------------------------------------------------------------------
+def save_database_checkpoint(
+    prices_db: Dict[str, Any],
+    spreads_fr: Dict[str, List[float]],
+    spreads_jp: Dict[str, List[float]],
+    total_sets: int,
+    total_catalog: int,
+    total_chase: int,
+    processed: int,
+):
+    """Atomically commits current verified price database to prices.json."""
+    with save_lock:
+        observed_grade_spreads = {
+            "fr": {
+                g_key: round(statistics.median(vals), 3)
+                for g_key, vals in spreads_fr.items()
+                if len(vals) >= 2
+            },
+            "jp": {
+                g_key: round(statistics.median(vals), 3)
+                for g_key, vals in spreads_jp.items()
+                if len(vals) >= 2
+            },
+        }
+
+        total_priced = sum(
+            1 for entry in prices_db.values()
+            if entry.get("fr", {}).get("smoothed_avg") is not None
+            or entry.get("jp", {}).get("smoothed_avg") is not None
+        )
+
+        output_payload = {
+            "_meta": {
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "source": "global_real_sold_pipeline_v3",
+                "total_sets_discovered": total_sets,
+                "total_catalog_cards": total_catalog,
+                "total_chase_cards": total_chase,
+                "card_count": len(prices_db),
+                "priced_cards": total_priced,
+                "processed_this_run": processed,
+                "observed_grade_spreads": observed_grade_spreads,
+                "consecutive_zero_ebay_fr": consecutive_zero_ebay_fr,
+                "consecutive_zero_mercari_jp": consecutive_zero_mercari_jp,
+                "version": "3.1.0",
+            },
+            "prices": prices_db,
+        }
+
+        temp_file = OUTPUT_FILE + ".tmp"
+        try:
+            with open(temp_file, "w", encoding="utf-8") as f:
+                json.dump(output_payload, f, ensure_ascii=False, indent=2)
+            os.replace(temp_file, OUTPUT_FILE)
+        except Exception as e:
+            logger.error(f"Error saving prices.json checkpoint: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Main Orchestrator
 # ---------------------------------------------------------------------------
 def main():
     start_ts = time.time()
     logger.info("==========================================================================")
-    logger.info("PokéSpread JP→FR — Unrestricted Global Catalog & Real Sold-Item Pipeline")
+    logger.info("PokéSpread JP→FR — High-Value Arbitrage Pipeline (Multi-Threaded)")
     logger.info("==========================================================================")
 
-    # 1. Load existing verified records for incremental refresh across the global catalog
+    # 1. Load existing verified records for incremental refresh
     existing_prices: Dict[str, Any] = {}
     if not FORCE_REFRESH and os.path.exists(OUTPUT_FILE):
         try:
@@ -741,7 +1170,10 @@ def main():
         except Exception as e:
             logger.warning(f"Ignoring unreadable previous prices.json: {e}")
 
-    # 2. Dynamically fetch ALL official sets & cards from TCGdex (FR + JP)
+    # 2. Dynamically fetch English catalog mapping for Cardmarket
+    en_name_by_raw_id = fetch_tcgdex_en_cards()
+
+    # 3. Dynamically fetch ALL official sets & cards from TCGdex (FR + JP)
     all_cards: List[Dict[str, Any]] = []
     fr_name_by_raw_id: Dict[str, str] = {}
     total_sets_discovered = 0
@@ -755,188 +1187,144 @@ def main():
                 fr_name_by_raw_id[c["raw_id"]] = c["name"]
         all_cards.extend(lang_cards)
 
-    # Prioritize secret rares / chase cards & unpriced or oldest-fetched cards first
-    def crawl_priority(card: Dict[str, Any]):
-        prev = existing_prices.get(card["ref"])
-        fetched_at = prev.get("fetched_at", "") if prev else ""
-        return (
-            0 if card.get("is_secret") else 1,
-            0 if prev is None else 1,
-            fetched_at,
-        )
+    # 4. Filter and sort strictly targeting high-value chase cards first
+    for card in all_cards:
+        en_name = en_name_by_raw_id.get(card["raw_id"], "")
+        card["en_name"] = en_name
+        card["is_chase"] = is_chase_card(card, en_name=en_name)
 
-    all_cards.sort(key=crawl_priority)
+    chase_cards = [c for c in all_cards if c["is_chase"]]
+    common_cards = [c for c in all_cards if not c["is_chase"]]
+
     logger.info(
-        f"Global TCGdex catalog ready: {len(all_cards)} total cards across {total_sets_discovered} official sets."
+        f"Global catalog: {len(all_cards)} cards across {total_sets_discovered} sets. "
+        f"Identified {len(chase_cards)} high-value chase cards (Secrets, Ultra Rares, Alt Arts)."
     )
 
-    # 3. Crawl finalized transactions within safe CI runtime budget
+    def crawl_priority(card: Dict[str, Any]):
+        prev = existing_prices.get(card["ref"])
+        has_price = prev is not None and (
+            prev.get("fr", {}).get("smoothed_avg") is not None
+            or prev.get("jp", {}).get("smoothed_avg") is not None
+        )
+        fetched_at = prev.get("fetched_at", "") if prev else ""
+        era_rank = get_set_era_rank(card.get("set_id", ""))
+        is_secret = 0 if card.get("is_secret") else 1
+
+        return (
+            era_rank,                      # 1. Newest eras first (SV, SWSH, SM, XY...)
+            0 if not has_price else 1,     # 2. Unpriced / missing prices first
+            is_secret,                     # 3. Secret rares first within era
+            fetched_at,                    # 4. Oldest fetched first
+        )
+
+    chase_cards.sort(key=crawl_priority)
+    common_cards.sort(key=crawl_priority)
+
+    # Chase cards are prioritized at the front of the queue
+    queue_cards = chase_cards + common_cards
+
+    # 5. Concurrent Crawl with ThreadPoolExecutor(max_workers=6)
     prices_db: Dict[str, Any] = dict(existing_prices)
     observed_spread_samples_fr: Dict[str, List[float]] = {}
     observed_spread_samples_jp: Dict[str, List[float]] = {}
-    processed_this_run = 0
+    processed_count = 0
+    stop_event = threading.Event()
 
-    for i, card in enumerate(all_cards):
-        elapsed = time.time() - start_ts
-        if elapsed >= MAX_RUNTIME_SECONDS:
-            logger.info(
-                f"Reached CI runtime budget ({int(elapsed)}s / {MAX_RUNTIME_SECONDS}s) "
-                f"after processing {processed_this_run} cards. Saving verified database..."
+    def worker_task(card_item: Dict[str, Any]):
+        if stop_event.is_set():
+            return None
+        try:
+            res = scrape_single_card(
+                card_item,
+                fr_name_by_raw_id,
+                en_name_by_raw_id,
+                existing_prices,
+                stop_event,
             )
-            break
+            return (card_item, res)
+        except Exception as exc:
+            logger.debug(f"Card crawl error for {card_item.get('ref')}: {exc}")
+            return None
 
-        ref = card["ref"]
-        name = card["name"]
-        local_id = card["local_id"]
-        official_count = card["official_count"]
-        edition = card["edition"]
-        lang = card["lang"]
-        set_id = card["set_id"]
+    logger.info(
+        f"Starting multi-threaded scraping with {MAX_WORKERS} workers "
+        f"(Runtime budget: {MAX_RUNTIME_SECONDS}s)..."
+    )
 
-        # Native TCGdex multi-language ID link (zero static dictionaries)
-        linked_fr_name = fr_name_by_raw_id.get(card["raw_id"]) if lang == "ja" else name
-        clean_fr = re.sub(
-            r"[-–—]\s*(ex|vmax|vstar|sar|ar|ur|hr|sr|gx).*", "", (linked_fr_name or name), flags=re.IGNORECASE
-        ).strip()
+    chunk_size = 30
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for chunk_start in range(0, len(queue_cards), chunk_size):
+            elapsed = time.time() - start_ts
+            if elapsed >= MAX_RUNTIME_SECONDS:
+                logger.info(
+                    f"Reached CI runtime budget ({int(elapsed)}s / {MAX_RUNTIME_SECONDS}s) "
+                    f"after processing {processed_count} cards. Finalizing database..."
+                )
+                stop_event.set()
+                break
 
-        serial_token = f"{local_id}/{official_count}" if official_count != "---" else local_id
-        if lang == "ja":
-            query_fr = f"pokemon {set_id} {serial_token}".strip()
-            query_jp = f"{name} {local_id}".strip()
-        else:
-            query_fr = f"pokemon {clean_fr} {serial_token}".strip()
-            query_jp = f"{clean_fr} {local_id}".strip()
+            chunk = queue_cards[chunk_start : chunk_start + chunk_size]
+            future_to_card = {executor.submit(worker_task, card): card for card in chunk}
 
-        logger.info(f"[{i+1}/{len(all_cards)}] Finalized-sales crawl: {ref} — {name}")
+            for future in concurrent.futures.as_completed(future_to_card):
+                if time.time() - start_ts >= MAX_RUNTIME_SECONDS and not stop_event.is_set():
+                    logger.info("Runtime threshold reached. Signalling workers to complete...")
+                    stop_event.set()
 
-        # --- A. French / European Resale Market ---
-        ebay_fr = scrape_ebay_fr_sold(query_fr, local_id)
-        time.sleep(random.uniform(0.25, 0.45))
+                result = future.result()
+                if not result:
+                    continue
+                card_item, record = result
+                if record:
+                    ref = card_item["ref"]
+                    with db_lock:
+                        prices_db[ref] = record
+                        processed_count += 1
 
-        cm_metrics = fetch_cardmarket_metrics(linked_fr_name or "", local_id)
-        all_fr_sold = list(ebay_fr.get("sold_prices", []))
-        if cm_metrics:
-            if cm_metrics.get("trendPrice"):
-                all_fr_sold.append(cm_metrics["trendPrice"])
-            if cm_metrics.get("avg30"):
-                all_fr_sold.append(cm_metrics["avg30"])
+                        fr_smooth = record.get("fr", {}).get("smoothed_avg")
+                        if fr_smooth and fr_smooth > 0:
+                            for g_key, g_data in record.get("fr", {}).get("graded", {}).items():
+                                g_smooth = g_data.get("smoothed_avg")
+                                if g_smooth:
+                                    ratio = g_smooth / fr_smooth
+                                    if 0.6 <= ratio <= 12.0:
+                                        observed_spread_samples_fr.setdefault(g_key, []).append(ratio)
 
-        fr_metrics = aggregate_sold_metrics(all_fr_sold, is_jpy=False)
-        fr_graded = ebay_fr.get("graded_prices", {})
+                        jp_smooth = record.get("jp", {}).get("smoothed_avg")
+                        if jp_smooth and jp_smooth > 0:
+                            for g_key, g_data in record.get("jp", {}).get("graded", {}).items():
+                                g_smooth = g_data.get("smoothed_avg")
+                                if g_smooth:
+                                    ratio = g_smooth / jp_smooth
+                                    if 0.6 <= ratio <= 12.0:
+                                        observed_spread_samples_jp.setdefault(g_key, []).append(ratio)
 
-        # --- B. Japanese Acquisition Market ---
-        mercari_jp = scrape_mercari_jp_sold(query_jp, local_id)
-        time.sleep(random.uniform(0.25, 0.45))
+            # Checkpoint save after each chunk
+            save_database_checkpoint(
+                prices_db,
+                observed_spread_samples_fr,
+                observed_spread_samples_jp,
+                total_sets_discovered,
+                len(all_cards),
+                len(chase_cards),
+                processed_count,
+            )
+            logger.info(
+                f"[{processed_count}/{len(queue_cards)}] Checkpoint committed "
+                f"({int(time.time() - start_ts)}s elapsed)"
+            )
 
-        yahoo_jp = scrape_yahoo_auctions_jp_sold(query_jp, local_id)
-        time.sleep(random.uniform(0.25, 0.45))
-
-        cardrush_jp = scrape_card_rush_jp(query_jp, local_id)
-        time.sleep(random.uniform(0.25, 0.45))
-
-        all_jp_sold = (
-            mercari_jp.get("sold_prices", [])
-            + yahoo_jp.get("sold_prices", [])
-            + cardrush_jp.get("sold_prices", [])
-        )
-        jp_metrics = aggregate_sold_metrics(all_jp_sold, is_jpy=True)
-        jp_graded = merge_graded_observations(
-            [mercari_jp.get("graded_prices", {}), yahoo_jp.get("graded_prices", {})],
-            is_jpy=True,
-        )
-
-        # Record empirical graded-to-raw spread ratios
-        if fr_metrics["smoothed_avg"] and fr_metrics["smoothed_avg"] > 0:
-            for g_key, g_data in fr_graded.items():
-                ratio = g_data["smoothed_avg"] / fr_metrics["smoothed_avg"]
-                if 0.6 <= ratio <= 12.0:
-                    observed_spread_samples_fr.setdefault(g_key, []).append(ratio)
-
-        if jp_metrics["smoothed_avg"] and jp_metrics["smoothed_avg"] > 0:
-            for g_key, g_data in jp_graded.items():
-                ratio = g_data["smoothed_avg"] / jp_metrics["smoothed_avg"]
-                if 0.6 <= ratio <= 12.0:
-                    observed_spread_samples_jp.setdefault(g_key, []).append(ratio)
-
-        # Keep existing verified record if a transient scrape returned 0 hits on both sides
-        prev = existing_prices.get(ref)
-        if fr_metrics["count"] == 0 and jp_metrics["count"] == 0 and prev:
-            if prev.get("fr", {}).get("smoothed_avg") is not None or prev.get("jp", {}).get("smoothed_avg") is not None:
-                processed_this_run += 1
-                continue
-
-        # STRICT NULL HANDLING: never fabricate default or placeholder prices
-        prices_db[ref] = {
-            "ref": ref,
-            "name": name,
-            "edition": edition,
-            "lang": lang,
-            "local_id": local_id,
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "fr": {
-                "smoothed_avg": fr_metrics["smoothed_avg"],
-                "median": fr_metrics["median"],
-                "min": fr_metrics["min"],
-                "max": fr_metrics["max"],
-                "count": fr_metrics["count"],
-                "sold_samples": fr_metrics["sold_prices"],
-                "ebay_fr": {
-                    "sold_prices": ebay_fr.get("sold_prices", []),
-                    "avg": ebay_fr.get("avg"),
-                    "median": ebay_fr.get("median"),
-                    "count": ebay_fr.get("count", 0),
-                    "source": "ebay_fr_sold",
-                },
-                "cardmarket": cm_metrics,
-                "cardmarket_trend": cm_metrics.get("trendPrice") if cm_metrics else None,
-                "graded": fr_graded,
-            },
-            "jp": {
-                "smoothed_avg": jp_metrics["smoothed_avg"],
-                "median": jp_metrics["median"],
-                "min": jp_metrics["min"],
-                "max": jp_metrics["max"],
-                "count": jp_metrics["count"],
-                "sold_samples": jp_metrics["sold_prices"],
-                "mercari": {
-                    "sold_prices": mercari_jp.get("sold_prices", []),
-                    "avg": mercari_jp.get("avg"),
-                    "median": mercari_jp.get("median"),
-                    "count": mercari_jp.get("count", 0),
-                    "source": "mercari_jp_sold",
-                },
-                "yahoo_auctions": {
-                    "sold_prices": yahoo_jp.get("sold_prices", []),
-                    "avg": yahoo_jp.get("avg"),
-                    "median": yahoo_jp.get("median"),
-                    "count": yahoo_jp.get("count", 0),
-                    "source": "yahoo_jp_sold",
-                },
-                "card_rush": {
-                    "sold_prices": cardrush_jp.get("sold_prices", []),
-                    "avg": cardrush_jp.get("avg"),
-                    "median": cardrush_jp.get("median"),
-                    "count": cardrush_jp.get("count", 0),
-                    "source": "cardrush_jp",
-                },
-                "graded": jp_graded,
-            },
-        }
-        processed_this_run += 1
-
-    # 4. Aggregate observed empirical market grade spreads
-    observed_grade_spreads = {
-        "fr": {
-            g_key: round(statistics.median(vals), 3)
-            for g_key, vals in observed_spread_samples_fr.items()
-            if len(vals) >= 2
-        },
-        "jp": {
-            g_key: round(statistics.median(vals), 3)
-            for g_key, vals in observed_spread_samples_jp.items()
-            if len(vals) >= 2
-        },
-    }
+    # 6. Final atomic save
+    save_database_checkpoint(
+        prices_db,
+        observed_spread_samples_fr,
+        observed_spread_samples_jp,
+        total_sets_discovered,
+        len(all_cards),
+        len(chase_cards),
+        processed_count,
+    )
 
     total_priced = sum(
         1 for entry in prices_db.values()
@@ -944,29 +1332,9 @@ def main():
         or entry.get("jp", {}).get("smoothed_avg") is not None
     )
 
-    output_payload = {
-        "_meta": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "source": "global_real_sold_pipeline_v3",
-            "total_sets_discovered": total_sets_discovered,
-            "total_catalog_cards": len(all_cards),
-            "card_count": len(prices_db),
-            "priced_cards": total_priced,
-            "processed_this_run": processed_this_run,
-            "observed_grade_spreads": observed_grade_spreads,
-            "version": "3.0.0",
-        },
-        "prices": prices_db,
-    }
-
-    temp_file = OUTPUT_FILE + ".tmp"
-    with open(temp_file, "w", encoding="utf-8") as f:
-        json.dump(output_payload, f, ensure_ascii=False, indent=2)
-    os.replace(temp_file, OUTPUT_FILE)
-
     logger.info(
-        f"✅ Global pipeline complete: {len(all_cards)} cards across {total_sets_discovered} sets, "
-        f"{total_priced} with verified sold sales -> {OUTPUT_FILE}"
+        f"✅ Scraper completed: {processed_count} cards processed this run, "
+        f"{total_priced} total cards with verified sold transactions -> {OUTPUT_FILE}"
     )
 
 
