@@ -152,134 +152,70 @@ function nextPageStep(current, total) {
   return total;
 }
 
-// ── POKÉMON JAPANESE / CHINESE NAME RESOLVER ─────────────────
-const POKEMON_JA_NAMES = {
-  'リザードン': 'Dracaufeu',
-  'ヒトカゲ': 'Salamèche',
-  'リザード': 'Reptincel',
-  'フシギダネ': 'Bulbizarre',
-  'フシギソウ': 'Herbizarre',
-  'フシギバナ': 'Florizarre',
-  'ゼニガメ': 'Carapuce',
-  'カメール': 'Carabaffe',
-  'カメックス': 'Tortank',
-  'ピカチュウ': 'Pikachu',
-  'ライチュウ': 'Raichu',
-  'ミュウ': 'Mew',
-  'ミュウツー': 'Mewtwo',
-  'サンダー': 'Électhor',
-  'フリーザー': 'Artikodin',
-  'ファイヤー': 'Sulfura',
-  'ゲンガー': 'Ectoplasma',
-  'カイリュー': 'Dracolosse',
-  'ブラッキー': 'Noctali',
-  'エーフィ': 'Mentali',
-  'シャワーズ': 'Aquali',
-  'サンダース': 'Voltali',
-  'ブースター': 'Pyroli',
-  'グレイシア': 'Givrali',
-  'リーフィア': 'Phyllali',
-  'ニンフィア': 'Nymphali',
-  'イーブイ': 'Évoli',
-  'レックウザ': 'Rayquaza',
-  'ルギア': 'Lugia',
-  'ホウオウ': 'Ho-Oh',
-  'ゲッコウガ': 'Amphinobi',
-  'サーナイト': 'Gardevoir',
-  'バンギラス': 'Tyranocif',
-  'ルカリオ': 'Lucario',
-  'ミミッキュ': 'Mimiqui',
-  'オーガポン': 'Ogerpon',
-  'ソウブレイズ': 'Malvalame',
-  'グレンアルマ': 'Carmadura',
-  'マスカーニャ': 'Miascarade',
-  'ラウドボーン': 'Flâmigator',
-  'ウェーニバル': 'Palmaval',
-  'パオジアン': 'Baojian',
-  'ディンルー': 'Dinglu',
-  'イーユイ': 'Yiyu',
-  'チオンジェン': 'Chongjian',
-  'テラパゴス': 'Terapagos',
-  'コライドン': 'Koraidon',
-  'ミライドン': 'Miraidon',
-  'モモワロウ': 'Pêchaminus',
-  'ギラティナ': 'Giratina',
-  'アルセウス': 'Arceus',
-  'ディアルガ': 'Dialga',
-  'パルキア': 'Palkia',
-  'ダークライ': 'Darkrai',
-  'シェイミ': 'Shaymin',
-  'ゾロアーク': 'Zoroark',
-  'レシラム': 'Reshiram',
-  'ゼクロム': 'Zekrom',
-  'キュレム': 'Kyurem',
-  'ゼルネアス': 'Xerneas',
-  'イベルタル': 'Yveltal',
-  'ジガルデ': 'Zygarde',
-  'カプ・コケコ': 'Tokorico',
-  'ウーラオス': 'Shifours'
-};
+// ── NATIVE TCGDEX MULTI-LANGUAGE LOCALIZATION (ZERO STATIC DICTIONARIES) ──
+const LocalizationService = {
+  frNameByRawId: new Map(),     // Linked directly from TCGdex /v2/fr/cards IDs
+  frNameByDexId: new Map(),     // Cached on-demand via TCGdex dexId linking
 
-const POKEMON_CN_NAMES = {
-  '噴火龍': 'Dracaufeu',
-  '小火龍': 'Salamèche',
-  '火恐龍': 'Reptincel',
-  '妙蛙種子': 'Bulbizarre',
-  '妙蛙草': 'Herbizarre',
-  '妙蛙花': 'Florizarre',
-  '傑尼龜': 'Carapuce',
-  '卡咪龜': 'Carabaffe',
-  '水箭龜': 'Tortank',
-  '皮卡丘': 'Pikachu',
-  '雷丘': 'Raichu',
-  '夢幻': 'Mew',
-  '超夢': 'Mewtwo',
-  '急凍鳥': 'Artikodin',
-  '閃電鳥': 'Électhor',
-  '火焰鳥': 'Sulfura',
-  '耿鬼': 'Ectoplasma',
-  '快龍': 'Dracolosse',
-  '月亮伊布': 'Noctali',
-  '太陽伊布': 'Mentali',
-  '伊布': 'Évoli',
-  '烈空坐': 'Rayquaza',
-  '洛奇亞': 'Lugia',
-  '鳳王': 'Ho-Oh',
-  '甲賀忍蛙': 'Amphinobi',
-  '沙奈朵': 'Gardevoir',
-  '班基拉斯': 'Tyranocif',
-  '路卡利歐': 'Lucario',
-  '謎擬Ｑ': 'Mimiqui',
-  '厄鬼椪': 'Ogerpon',
-  '紅蓮鎧騎': 'Carmadura',
-  '蒼炎刃鬼': 'Malvalame'
-};
-
-function resolveLocalizedNames(rawName, lang) {
-  if (lang === 'ja') {
-    for (const [ja, fr] of Object.entries(POKEMON_JA_NAMES)) {
-      if (rawName.includes(ja)) {
-        const suffix = rawName.replace(ja, '').trim();
-        const frenchName = suffix ? `${fr} ${suffix}` : fr;
-        return { name: frenchName, subName: rawName };
+  registerFrenchCards(frCards) {
+    if (!Array.isArray(frCards)) return;
+    for (const c of frCards) {
+      if (c && c.rawId && c.name) {
+        this.frNameByRawId.set(c.rawId, c.name);
       }
     }
-    return { name: rawName, subName: rawName };
-  }
+  },
 
-  if (lang === 'zh-tw') {
-    for (const [cn, fr] of Object.entries(POKEMON_CN_NAMES)) {
-      if (rawName.includes(cn)) {
-        const suffix = rawName.replace(cn, '').trim();
-        const frenchName = suffix ? `${fr} ${suffix}` : fr;
-        return { name: frenchName, subName: rawName };
-      }
+  // Link card name natively using TCGdex multi-language IDs (no static maps)
+  resolveNativeNames(rawName, lang, rawId = '') {
+    if (lang === 'fr') {
+      return { name: rawName, subName: '' };
     }
-    return { name: rawName, subName: rawName };
-  }
+    if (rawId && this.frNameByRawId.has(rawId)) {
+      const frName = this.frNameByRawId.get(rawId);
+      return { name: frName, subName: rawName !== frName ? rawName : '' };
+    }
+    return { name: rawName, subName: lang === 'ja' ? rawName : '' };
+  },
 
-  return { name: rawName, subName: '' };
-}
+  // On-demand native TCGdex JA→FR translation via official dexId linking
+  async translateCardViaTCGdex(card) {
+    if (!card || card.edition === 'FR' || !card.rawId) return card;
+    if (this.frNameByRawId.has(card.rawId)) {
+      card.name = this.frNameByRawId.get(card.rawId);
+      return card;
+    }
+    try {
+      const lang = card.edition === 'JP' ? 'ja' : 'en';
+      const detailRes = await fetch(`https://api.tcgdex.net/v2/${lang}/cards/${encodeURIComponent(card.rawId)}`);
+      if (!detailRes.ok) return card;
+      const detail = await detailRes.json();
+      const dexId = Array.isArray(detail?.dexId) ? detail.dexId[0] : detail?.dexId;
+      if (!dexId) return card;
+
+      if (this.frNameByDexId.has(dexId)) {
+        const frBase = this.frNameByDexId.get(dexId);
+        card.subName = card.subName || card.name;
+        card.name = frBase;
+        this.frNameByRawId.set(card.rawId, frBase);
+        return card;
+      }
+
+      const frRes = await fetch(`https://api.tcgdex.net/v2/fr/cards?dexId=${encodeURIComponent(dexId)}`);
+      if (frRes.ok) {
+        const frList = await frRes.json();
+        const firstFr = Array.isArray(frList) && frList[0]?.name ? frList[0].name : null;
+        if (firstFr) {
+          this.frNameByDexId.set(dexId, firstFr);
+          this.frNameByRawId.set(card.rawId, firstFr);
+          card.subName = card.subName || card.name;
+          card.name = firstFr;
+        }
+      }
+    } catch (e) {}
+    return card;
+  }
+};
 
 // ── IMAGE HELPERS ────────────────────────────────────────────
 function formatHighResCardImage(url) {
@@ -395,10 +331,18 @@ const StorageService = {
       }
     } catch (e) {}
 
-    // Synchronize to localStorage for instant synchronous warm startup
+    // Keep localStorage lean: store only a 100-card warm startup preview for the massive global catalog
     try {
       const lsKey = `ps_${storeName}_${key}`;
-      localStorage.setItem(lsKey, JSON.stringify(record));
+      if (storeName === this.CATALOG_STORE && key === 'cards' && Array.isArray(data)) {
+        const preview = { key, data: data.slice(0, 100), timestamp: record.timestamp };
+        localStorage.setItem(lsKey, JSON.stringify(preview));
+      } else if (storeName !== this.CATALOG_STORE) {
+        const serialized = JSON.stringify(record);
+        if (serialized.length < 2_500_000) {
+          localStorage.setItem(lsKey, serialized);
+        }
+      }
     } catch (e) {}
   },
 
@@ -417,51 +361,86 @@ const StorageService = {
   }
 };
 
-// ── FAST DYNAMIC CARD INDEX (Zero Hardcoding Lookup Engine) ─────
+// ── FAST DYNAMIC CARD INDEX (UNRESTRICTED ~50,000-CARD LOOKUP ENGINE) ──
 const CardIndex = {
   byRef: new Map(),
+  bySerial: new Map(),
   byLocalId: new Map(),
   byId: new Map(),
   byName: new Map(),
 
-  build(cards) {
+  clear() {
     this.byRef.clear();
+    this.bySerial.clear();
     this.byLocalId.clear();
     this.byId.clear();
     this.byName.clear();
+  },
 
-    if (!Array.isArray(cards)) return;
-    for (const card of cards) {
-      if (!card) continue;
-      if (card.id) this.byId.set(card.id.toLowerCase(), card);
+  addCard(card) {
+    if (!card) return;
+    if (card.id) this.byId.set(card.id.toLowerCase(), card);
 
-      if (card.ref) {
-        const cleanRef = card.ref.toLowerCase().replace(/\s+/g, ' ').trim();
-        this.byRef.set(cleanRef, card);
-        const noSpaceRef = cleanRef.replace(/\s+/g, '');
-        this.byRef.set(noSpaceRef, card);
-      }
+    if (card.ref) {
+      const cleanRef = card.ref.toLowerCase().replace(/\s+/g, ' ').trim();
+      this.byRef.set(cleanRef, card);
+      this.byRef.set(cleanRef.replace(/\s+/g, ''), card);
 
-      if (card.localId != null) {
-        const loc = String(card.localId).toLowerCase().trim();
-        const cleanNum = loc.replace(/^0+/, '') || loc;
-        if (!this.byLocalId.has(loc)) this.byLocalId.set(loc, []);
-        this.byLocalId.get(loc).push(card);
-        if (cleanNum !== loc) {
-          if (!this.byLocalId.has(cleanNum)) this.byLocalId.set(cleanNum, []);
-          this.byLocalId.get(cleanNum).push(card);
+      // Index exact fraction serial (e.g. "120/119", "201/165", "025/165")
+      const frac = cleanRef.match(/\b([0-9]{1,3})\/([0-9]{1,3})\b/);
+      if (frac) {
+        const rawKey = `${frac[1]}/${frac[2]}`;
+        const unpadKey = `${frac[1].replace(/^0+/, '') || frac[1]}/${frac[2].replace(/^0+/, '') || frac[2]}`;
+        if (!this.bySerial.has(rawKey)) this.bySerial.set(rawKey, []);
+        this.bySerial.get(rawKey).push(card);
+        if (unpadKey !== rawKey) {
+          if (!this.bySerial.has(unpadKey)) this.bySerial.set(unpadKey, []);
+          this.bySerial.get(unpadKey).push(card);
         }
       }
+    }
 
-      if (card.name) {
-        const n = card.name.toLowerCase().trim();
-        if (!this.byName.has(n)) this.byName.set(n, []);
-        this.byName.get(n).push(card);
+    if (card.localId != null && card.localId !== '') {
+      const loc = String(card.localId).toLowerCase().trim();
+      const cleanNum = loc.replace(/^0+/, '') || loc;
+      if (!this.byLocalId.has(loc)) this.byLocalId.set(loc, []);
+      this.byLocalId.get(loc).push(card);
+      if (cleanNum !== loc) {
+        if (!this.byLocalId.has(cleanNum)) this.byLocalId.set(cleanNum, []);
+        this.byLocalId.get(cleanNum).push(card);
       }
-      if (card.subName) {
-        const sn = card.subName.toLowerCase().trim();
-        if (!this.byName.has(sn)) this.byName.set(sn, []);
-        this.byName.get(sn).push(card);
+    }
+
+    if (card.name) {
+      const n = card.name.toLowerCase().trim();
+      if (!this.byName.has(n)) this.byName.set(n, []);
+      this.byName.get(n).push(card);
+    }
+    if (card.subName && card.subName !== card.name) {
+      const sn = card.subName.toLowerCase().trim();
+      if (!this.byName.has(sn)) this.byName.set(sn, []);
+      this.byName.get(sn).push(card);
+    }
+  },
+
+  build(cards) {
+    this.clear();
+    if (!Array.isArray(cards)) return;
+    for (const card of cards) {
+      this.addCard(card);
+    }
+  },
+
+  async buildChunked(cards, chunkSize = 4000) {
+    this.clear();
+    if (!Array.isArray(cards)) return;
+    for (let i = 0; i < cards.length; i += chunkSize) {
+      const end = Math.min(i + chunkSize, cards.length);
+      for (let j = i; j < end; j++) {
+        this.addCard(cards[j]);
+      }
+      if (end < cards.length) {
+        await new Promise(r => setTimeout(r, 0));
       }
     }
   },
@@ -474,6 +453,18 @@ const CardIndex = {
     return this.byRef.get(noSpace) || null;
   },
 
+  lookupBySerial(serial) {
+    if (!serial) return [];
+    const clean = String(serial).toLowerCase().replace(/\s+/g, '').trim();
+    if (this.bySerial.has(clean)) return this.bySerial.get(clean);
+    const frac = clean.match(/^0*([0-9]{1,3})\/0*([0-9]{1,3})$/);
+    if (frac) {
+      const unpad = `${frac[1]}/${frac[2]}`;
+      if (this.bySerial.has(unpad)) return this.bySerial.get(unpad);
+    }
+    return [];
+  },
+
   lookupByLocalId(id) {
     if (!id) return [];
     const clean = String(id).toLowerCase().trim();
@@ -481,33 +472,45 @@ const CardIndex = {
     return this.byLocalId.get(clean) || this.byLocalId.get(cleanNum) || [];
   },
 
-  search(query) {
+  search(query, limit = 50) {
     const q = (query || '').toLowerCase().trim();
     if (!q) return [];
     const directRef = this.lookupByRef(q);
     if (directRef) return [directRef];
 
-    if (q.includes('/')) {
-      const parts = q.split('/');
-      const num = parts[0].trim().replace(/^0+/, '');
-      const candidates = this.lookupByLocalId(num);
-      if (candidates.length > 0) return candidates;
+    // Exact serial match (e.g. "120/119", "201/165")
+    const fracMatch = q.match(/\b([0-9]{1,3})\s*\/\s*([0-9]{1,3})\b/);
+    if (fracMatch) {
+      const exactSerial = this.lookupBySerial(`${fracMatch[1]}/${fracMatch[2]}`);
+      if (exactSerial.length > 0) return exactSerial.slice(0, limit);
+      const localFallback = this.lookupByLocalId(fracMatch[1]);
+      if (localFallback.length > 0) return localFallback.slice(0, limit);
     }
-    const numCandidates = this.lookupByLocalId(q.replace(/^0+/, ''));
-    if (numCandidates.length > 0) return numCandidates;
+
+    if (/^[0-9]{1,3}$/.test(q)) {
+      const numCandidates = this.lookupByLocalId(q);
+      if (numCandidates.length > 0) return numCandidates.slice(0, limit);
+    }
 
     if (this.byName.has(q)) {
-      return this.byName.get(q);
+      return this.byName.get(q).slice(0, limit);
     }
 
-    return (typeof CARDS !== 'undefined' && Array.isArray(CARDS))
-      ? CARDS.filter(c => {
-          const name = (c.name || '').toLowerCase();
-          const sub = (c.subName || '').toLowerCase();
-          const ref = (c.ref || '').toLowerCase();
-          return name.includes(q) || sub.includes(q) || ref.includes(q);
-        })
-      : [];
+    // Fast early-exit substring scan across the full global catalog
+    const results = [];
+    if (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) {
+      for (let i = 0; i < CARDS.length; i++) {
+        const c = CARDS[i];
+        const name = (c.name || '').toLowerCase();
+        const sub = (c.subName || '').toLowerCase();
+        const ref = (c.ref || '').toLowerCase();
+        if (name.includes(q) || sub.includes(q) || ref.includes(q)) {
+          results.push(c);
+          if (results.length >= limit) break;
+        }
+      }
+    }
+    return results;
   }
 };
 
@@ -837,9 +840,11 @@ const PriceService = {
     const edition = card.edition || 'JP';
     const enriched = {
       id: card.id,
+      rawId: card.rawId || '',
       name: card.name,
       subName: card.subName || '',
       localId: String(card.localId || ''),
+      setId: card.setId || '',
       ref: card.ref,
       image: formatHighResCardImage(card.image),
       hp: card.hp || null,
@@ -847,8 +852,8 @@ const PriceService = {
       jpPrice: card.jpPrice != null ? card.jpPrice : null,
       frPrice: card.frPrice != null ? card.frPrice : null,
       hasPrice: false,
-      salesPerMonth: card.salesPerMonth || 12,
-      velocityScore: card.velocityScore || 7,
+      salesPerMonth: card.salesPerMonth || null,
+      velocityScore: card.velocityScore || null,
       priceHistory: card.priceHistory || [],
       platforms: card.platforms || null,
       lastSales: card.lastSales || []
@@ -857,76 +862,129 @@ const PriceService = {
   }
 };
 
-// ── DYNAMIC CARD CATALOG SERVICE (`CatalogService`) ───────────
+// ── UNRESTRICTED GLOBAL CATALOG SERVICE (`CatalogService`) ────
+// Zero hardcoded sets: dynamically fetches ALL sets & cards from TCGdex API
 const CatalogService = {
-  MULTI_LANG_SETS: [
-    { lang: 'ja', setId: 'sv2a', edition: 'JP' },
-    { lang: 'ja', setId: 'sv4a', edition: 'JP' },
-    { lang: 'ja', setId: 'sv6',  edition: 'JP' },
-    { lang: 'fr', setId: 'sv03.5', edition: 'FR' },
-    { lang: 'fr', setId: 'sv04.5', edition: 'FR' },
-    { lang: 'en', setId: 'sv03.5', edition: 'EN' },
-    { lang: 'en', setId: 'swsh7',  edition: 'EN' },
-    { lang: 'zh-tw', setId: 'SV4a', edition: 'CN' },
-    { lang: 'zh-tw', setId: 'SV6',  edition: 'CN' },
-    { lang: 'ko', setId: 'SV4a', edition: 'KR' },
-    { lang: 'ko', setId: 'SV2a', edition: 'KR' },
-    { lang: 'de', setId: 'sv03.5', edition: 'DE' },
-    { lang: 'it', setId: 'sv03.5', edition: 'IT' },
-    { lang: 'es', setId: 'sv03.5', edition: 'ES' }
-  ],
+  setMetaMap: new Map(),           // key: `${lang}:${setId}` -> { id, name, officialCount, totalCount }
+  setsByOfficialCount: new Map(),  // key: '119' -> [{ lang, edition, setId, name, officialCount }]
+  _setsLoaded: false,
 
-  async fetchLocalizedSet(setDef) {
-    const { lang, setId, edition } = setDef;
-    const url = `https://api.tcgdex.net/v2/${lang}/sets/${setId}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`TCGdex API error for ${lang}/${setId}: ${res.status}`);
-    const data = await res.json();
-    if (!data || !Array.isArray(data.cards)) return [];
+  async ensureSetsMetadata() {
+    if (this._setsLoaded && this.setMetaMap.size > 0) return;
 
-    const officialCount = data.cardCount?.official || data.cardCount?.total || '---';
-    const validCards = [];
-
-    for (const c of data.cards) {
-      if (!c || !c.image || typeof c.image !== 'string' || !c.image.trim()) {
-        continue;
-      }
-      const { name, subName } = resolveLocalizedNames(c.name, lang);
-      const ref = `${setId} ${c.localId}/${officialCount}`;
-
-      const cardObj = PriceService.enrichCard({
-        id: `${lang}-${c.id}`,
-        name: name,
-        subName: subName,
-        localId: String(c.localId || ''),
-        ref: ref,
-        image: c.image,
-        hp: c.hp || null,
-        edition: edition
-      });
-
-      validCards.push(cardObj);
+    // Check 24h IndexedDB cache for sets metadata first
+    const cachedSets = await StorageService.get(StorageService.CATALOG_STORE, 'sets_meta');
+    if (cachedSets && Array.isArray(cachedSets) && cachedSets.length > 50) {
+      this._hydrateSetMaps(cachedSets);
+      this._setsLoaded = true;
+      return;
     }
-    return validCards;
+
+    const langs = [
+      { lang: 'fr', edition: 'FR' },
+      { lang: 'ja', edition: 'JP' }
+    ];
+
+    const fetchedSets = [];
+    await Promise.all(
+      langs.map(async ({ lang, edition }) => {
+        try {
+          const res = await fetch(`https://api.tcgdex.net/v2/${lang}/sets`);
+          if (!res.ok) return;
+          const list = await res.json();
+          if (!Array.isArray(list)) return;
+          for (const s of list) {
+            if (!s || !s.id) continue;
+            const officialCount = String(s.cardCount?.official || s.cardCount?.total || '---');
+            const totalCount = String(s.cardCount?.total || officialCount);
+            fetchedSets.push({
+              lang,
+              edition,
+              setId: s.id,
+              name: s.name || s.id,
+              officialCount,
+              totalCount
+            });
+          }
+        } catch (err) {
+          console.warn(`[CatalogService] Failed fetching /v2/${lang}/sets:`, err.message);
+        }
+      })
+    );
+
+    if (fetchedSets.length > 0) {
+      this._hydrateSetMaps(fetchedSets);
+      this._setsLoaded = true;
+      await StorageService.set(StorageService.CATALOG_STORE, 'sets_meta', fetchedSets);
+    }
+  },
+
+  _hydrateSetMaps(setsArr) {
+    this.setMetaMap.clear();
+    this.setsByOfficialCount.clear();
+    for (const s of setsArr) {
+      this.setMetaMap.set(`${s.lang}:${s.setId}`, s);
+      if (s.officialCount && s.officialCount !== '---') {
+        const key = String(s.officialCount).replace(/^0+/, '') || String(s.officialCount);
+        if (!this.setsByOfficialCount.has(key)) this.setsByOfficialCount.set(key, []);
+        this.setsByOfficialCount.get(key).push(s);
+      }
+    }
+  },
+
+  _buildCardObj(c, lang, edition) {
+    const rawId = String(c.id || '');
+    const dashIdx = rawId.lastIndexOf('-');
+    const setId = dashIdx > 0 ? rawId.slice(0, dashIdx) : rawId;
+    const localId = String(c.localId || '');
+    const meta = this.setMetaMap.get(`${lang}:${setId}`);
+    const officialCount = meta?.officialCount || '---';
+    const ref = officialCount !== '---' ? `${setId} ${localId}/${officialCount}` : `${setId} ${localId}`;
+    const { name, subName } = LocalizationService.resolveNativeNames(c.name || '', lang, rawId);
+
+    return PriceService.enrichCard({
+      id: `${lang}-${rawId}`,
+      rawId,
+      name,
+      subName,
+      localId,
+      setId,
+      ref,
+      image: c.image,
+      hp: c.hp || null,
+      edition
+    });
   },
 
   async initCatalog() {
     state.isLoadingCatalog = true;
     try {
-      // 1. Try loading from 24h IndexedDB / LocalStorage cache
+      await this.ensureSetsMetadata();
+
+      // 1. Try loading full global catalog from 24h IndexedDB cache
       const cached = await StorageService.get(StorageService.CATALOG_STORE, 'cards');
-      if (cached && Array.isArray(cached) && cached.length >= 20) {
-        CARDS = cached.map(c => PriceService.enrichCard(c));
-        CardIndex.build(CARDS);
-        CardRecognizer.init(CARDS);
+      if (cached && Array.isArray(cached) && cached.length >= 2000) {
+        const enrichedList = new Array(cached.length);
+        const CHUNK = 4000;
+        for (let i = 0; i < cached.length; i += CHUNK) {
+          const end = Math.min(i + CHUNK, cached.length);
+          for (let j = i; j < end; j++) {
+            enrichedList[j] = PriceService.enrichCard(cached[j]);
+          }
+          if (end < cached.length) await new Promise(r => setTimeout(r, 0));
+        }
+        CARDS = enrichedList;
+        LocalizationService.registerFrenchCards(CARDS.filter(c => c.edition === 'FR'));
+        await CardIndex.buildChunked(CARDS);
         renderAllColumns();
         renderMobileColumn();
+        updateFilterMatchCount();
         updateColumnCounters();
         return;
       }
 
-      // 2. Fetch target sets dynamically from TCGdex API
-      await this.fetchAllMultiLangSets();
+      // 2. Dynamically fetch the complete unrestricted catalog from TCGdex API
+      await this.fetchGlobalCatalog();
     } catch (e) {
       console.warn('[CatalogService] initCatalog warning:', e);
     } finally {
@@ -934,35 +992,94 @@ const CatalogService = {
     }
   },
 
-  async fetchAllMultiLangSets() {
+  async fetchGlobalCatalog(forceRefresh = false) {
     state.isLoadingCatalog = true;
     try {
-      const promises = this.MULTI_LANG_SETS.map(setDef =>
-        this.fetchLocalizedSet(setDef).catch(err => {
-          console.warn(`Set ${setDef.lang}/${setDef.setId} skipped:`, err.message);
-          return [];
-        })
-      );
+      if (forceRefresh) this._setsLoaded = false;
+      await this.ensureSetsMetadata();
 
-      const results = await Promise.all(promises);
-      const allFetched = results.flat();
+      // Fetch full FR & JP card indexes in parallel (all ~50,000 official cards, zero hardcoded sets)
+      const [frRaw, jaRaw] = await Promise.all([
+        fetch('https://api.tcgdex.net/v2/fr/cards').then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch('https://api.tcgdex.net/v2/ja/cards').then(r => r.ok ? r.json() : []).catch(() => [])
+      ]);
 
-      if (allFetched.length > 0) {
-        const cardMap = new Map();
-        for (const card of CARDS) {
-          if (card && card.id && card.image) cardMap.set(card.id, card);
+      // Register French native names first so Japanese cards link natively via official IDs
+      const frNormalized = [];
+      if (Array.isArray(frRaw)) {
+        const CHUNK = 4000;
+        for (let i = 0; i < frRaw.length; i += CHUNK) {
+          const end = Math.min(i + CHUNK, frRaw.length);
+          for (let j = i; j < end; j++) {
+            const c = frRaw[j];
+            if (!c || !c.image || typeof c.image !== 'string' || !c.image.trim()) continue;
+            frNormalized.push(this._buildCardObj(c, 'fr', 'FR'));
+          }
+          if (end < frRaw.length) await new Promise(r => setTimeout(r, 0));
         }
-        for (const card of allFetched) {
+      }
+      LocalizationService.registerFrenchCards(frNormalized);
+
+      const jaNormalized = [];
+      if (Array.isArray(jaRaw)) {
+        const CHUNK = 4000;
+        for (let i = 0; i < jaRaw.length; i += CHUNK) {
+          const end = Math.min(i + CHUNK, jaRaw.length);
+          for (let j = i; j < end; j++) {
+            const c = jaRaw[j];
+            if (!c || !c.image || typeof c.image !== 'string' || !c.image.trim()) continue;
+            jaNormalized.push(this._buildCardObj(c, 'ja', 'JP'));
+          }
+          if (end < jaRaw.length) await new Promise(r => setTimeout(r, 0));
+        }
+      }
+
+      // If bulk endpoints returned nothing, fall back to lazy-iterating dynamically retrieved sets
+      let combined = [...jaNormalized, ...frNormalized];
+      if (combined.length === 0 && this.setMetaMap.size > 0) {
+        const setsArr = Array.from(this.setMetaMap.values()).reverse();
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < setsArr.length; i += BATCH_SIZE) {
+          const batch = setsArr.slice(i, i + BATCH_SIZE);
+          const batchCards = await Promise.all(
+            batch.map(async s => {
+              try {
+                const res = await fetch(`https://api.tcgdex.net/v2/${s.lang}/sets/${s.setId}`);
+                if (!res.ok) return [];
+                const data = await res.json();
+                return (data.cards || [])
+                  .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
+                  .map(c => this._buildCardObj(c, s.lang, s.edition));
+              } catch (e) {
+                return [];
+              }
+            })
+          );
+          combined.push(...batchCards.flat());
+          // Paint first wave immediately so user sees cards right away without blocking
+          if (i === 0 && combined.length > 0) {
+            CARDS = combined;
+            CardIndex.build(CARDS);
+            renderAllColumns();
+            renderMobileColumn();
+            updateColumnCounters();
+          }
+        }
+      }
+
+      if (combined.length > 0) {
+        // Deduplicate by id while preserving newest sets / priced entries
+        const cardMap = new Map();
+        for (const card of combined) {
           if (card && card.id && card.image) cardMap.set(card.id, card);
         }
 
         CARDS = Array.from(cardMap.values());
-        // Save to 24-hour persistent storage
-        await StorageService.set(StorageService.CATALOG_STORE, 'cards', CARDS);
-        
-        CardIndex.build(CARDS);
+        await CardIndex.buildChunked(CARDS);
         PriceService.repriceAllCards();
-        CardRecognizer.init(CARDS);
+
+        // Persist complete global catalog to IndexedDB (24h TTL)
+        await StorageService.set(StorageService.CATALOG_STORE, 'cards', CARDS);
 
         renderAllColumns();
         renderMobileColumn();
@@ -970,96 +1087,107 @@ const CatalogService = {
         updateColumnCounters();
       }
     } catch (e) {
-      console.error('Failed to load multi-language sets:', e);
+      console.error('[CatalogService] Global catalog fetch error:', e);
     } finally {
       state.isLoadingCatalog = false;
     }
   },
 
+  // Alias preserved for refresh controls
+  async fetchAllMultiLangSets() {
+    return this.fetchGlobalCatalog(true);
+  },
+
   async searchLive(query) {
     const q = (query || '').trim();
     if (!q) return [];
-    // 1. Check local CardIndex first
-    const localMatches = CardIndex.search(q);
+
+    // 1. Check fast local global CardIndex first
+    const localMatches = CardIndex.search(q, 25);
     if (localMatches.length > 0) {
       return localMatches.slice(0, 15);
     }
 
-    // 2. Query TCGdex API live
+    // 2. Live query TCGdex API (supports serials, set IDs, and Pokémon names)
     try {
+      await this.ensureSetsMetadata();
+      const serialMatch = q.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/);
+      if (serialMatch) {
+        return await this.lookupCardsBySerial(`${serialMatch[1]}/${serialMatch[2]}`);
+      }
+
       const isJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(q);
-      const lang = isJapanese ? 'ja' : 'fr';
-      const edition = isJapanese ? 'JP' : 'FR';
+      const langs = isJapanese ? [{ lang: 'ja', edition: 'JP' }] : [{ lang: 'fr', edition: 'FR' }, { lang: 'ja', edition: 'JP' }];
 
-      const res = await fetch(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`);
-      if (!res.ok) return [];
-      const data = await res.json();
-      if (!Array.isArray(data)) return [];
+      const results = await Promise.all(
+        langs.map(async ({ lang, edition }) => {
+          try {
+            const res = await fetch(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            if (!Array.isArray(data)) return [];
+            return data
+              .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
+              .slice(0, 15)
+              .map(c => this._buildCardObj(c, lang, edition));
+          } catch (e) {
+            return [];
+          }
+        })
+      );
 
-      const valid = data.filter(c => c && c.image && typeof c.image === 'string' && c.image.trim().length > 0);
-
-      const fetched = valid.slice(0, 15).map(c => {
-        const ref = `${c.id.split('-')[0] || 'sv'} ${c.localId || '---'}`;
-        const { name, subName } = resolveLocalizedNames(c.name, lang);
-        return PriceService.enrichCard({
-          id: `${lang}-${c.id}`,
-          name: name,
-          subName: subName,
-          localId: String(c.localId || ''),
-          ref: ref,
-          image: c.image,
-          hp: c.hp || null,
-          edition: edition
-        });
-      });
-
-      // Merge newly fetched cards into CARDS and update index
+      const fetched = results.flat().slice(0, 15);
       for (const card of fetched) {
-        if (!CARDS.some(c => c.id === card.id)) {
+        if (!CardIndex.byId.has(card.id.toLowerCase())) {
           CARDS.push(card);
+          CardIndex.addCard(card);
         }
       }
-      CardIndex.build(CARDS);
       return fetched;
     } catch (e) {
-      console.warn('TCGdex search live error:', e);
+      console.warn('TCGdex live search error:', e);
       return [];
     }
   },
 
+  // Exact serial / localId lookup across global CardIndex + live TCGdex API
+  // Handles queries like "120/119", "201/165", "sv2a 201", "#120"
   async lookupCardsBySerial(serialInput, setHint = null) {
     if (!serialInput) return [];
+    await this.ensureSetsMetadata();
+
     const cleanSerial = String(serialInput).trim();
-    const parts = cleanSerial.match(/\b([0-9]{1,3})\s*\/\s*([0-9]{2,3})\b/);
-    const rawLocal = parts ? parts[1] : (cleanSerial.match(/([0-9]{1,3})/)?.[1] || '');
+    const parts = cleanSerial.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/);
+    const rawLocal = parts ? parts[1] : (cleanSerial.match(/(\d{1,3})/)?.[1] || '');
     const total = parts ? parts[2] : null;
     if (!rawLocal) return [];
+
     const cleanNum = rawLocal.replace(/^0+/, '') || rawLocal;
+    const cleanTotal = total ? (total.replace(/^0+/, '') || total) : null;
 
-    // 1. Check local dynamic CardIndex first
-    let candidates = CardIndex.lookupByLocalId(rawLocal);
-    if (candidates.length === 0 && cleanNum !== rawLocal) {
-      candidates = CardIndex.lookupByLocalId(cleanNum);
+    // 1. O(1) exact fraction match in global CardIndex (e.g. "120/119" -> Élecsprint xy4-120)
+    if (cleanTotal) {
+      let exactLocal = CardIndex.lookupBySerial(`${rawLocal}/${total}`);
+      if (exactLocal.length === 0) exactLocal = CardIndex.lookupBySerial(`${cleanNum}/${cleanTotal}`);
+      if (exactLocal.length > 0) {
+        if (setHint) {
+          const hintLow = setHint.toLowerCase();
+          const narrowed = exactLocal.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
+          if (narrowed.length > 0) return narrowed;
+        }
+        return exactLocal;
+      }
     }
 
-    if (candidates.length > 0) {
-      // Narrow by exact setHint and/or total card count if detected (e.g. 201/165)
-      if (setHint) {
-        const hintLow = setHint.toLowerCase();
-        const setMatches = candidates.filter(c => (c.ref || '').toLowerCase().includes(hintLow) || (c.id || '').toLowerCase().includes(hintLow));
-        if (setMatches.length > 0) return setMatches;
-      }
-      if (total) {
-        const exactTotal = candidates.filter(c => {
-          const ref = (c.ref || '').toLowerCase();
-          return ref.includes(`/${total}`) || ref.includes(`/${total.replace(/^0+/, '')}`);
-        });
-        if (exactTotal.length > 0) return exactTotal;
-      }
-      return candidates;
+    // 2. Direct setHint + localId match in local index
+    if (setHint) {
+      const hintLow = setHint.toLowerCase();
+      const locList = CardIndex.lookupByLocalId(rawLocal);
+      const setMatches = locList.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
+      if (setMatches.length > 0) return setMatches;
     }
 
-    // 2. Live query official TCGdex API by exact localId across FR & JP catalogues
+    // 3. Live query official TCGdex API by exact localId across FR & JP catalogues
     try {
       const queries = [
         { lang: 'fr', edition: 'FR', id: rawLocal },
@@ -1079,22 +1207,7 @@ const CatalogService = {
             if (!Array.isArray(data)) return [];
             return data
               .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
-              .slice(0, 10)
-              .map(c => {
-                const setId = (c.id || '').split('-')[0] || 'sv';
-                const ref = total ? `${setId} ${c.localId}/${total}` : `${setId} ${c.localId}`;
-                const { name, subName } = resolveLocalizedNames(c.name, q.lang);
-                return PriceService.enrichCard({
-                  id: `${q.lang}-${c.id}`,
-                  name,
-                  subName,
-                  localId: String(c.localId || ''),
-                  ref,
-                  image: c.image,
-                  hp: c.hp || null,
-                  edition: q.edition
-                });
-              });
+              .map(c => this._buildCardObj(c, q.lang, q.edition));
           } catch (e) {
             return [];
           }
@@ -1107,24 +1220,39 @@ const CatalogService = {
         if (!seen.has(card.id)) {
           seen.add(card.id);
           fetched.push(card);
-          if (!CARDS.some(c => c.id === card.id)) {
+          if (!CardIndex.byId.has(card.id.toLowerCase())) {
             CARDS.push(card);
+            CardIndex.addCard(card);
           }
         }
       }
 
       if (fetched.length > 0) {
-        CardIndex.build(CARDS);
+        // Prioritize exact setHint match
         if (setHint) {
           const hintLow = setHint.toLowerCase();
-          const setMatches = fetched.filter(c => (c.ref || '').toLowerCase().includes(hintLow));
+          const setMatches = fetched.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
           if (setMatches.length > 0) return setMatches;
         }
+        // Prioritize exact denominator match using dynamically retrieved TCGdex set cardCount.official
+        if (cleanTotal) {
+          const matchingSets = new Set(
+            (this.setsByOfficialCount.get(cleanTotal) || []).map(s => `${s.lang}:${s.setId}`)
+          );
+          const denomMatches = fetched.filter(c => {
+            const langKey = c.edition === 'JP' ? 'ja' : 'fr';
+            return matchingSets.has(`${langKey}:${c.setId}`) || (c.ref || '').endsWith(`/${cleanTotal}`) || (c.ref || '').endsWith(`/${total}`);
+          });
+          if (denomMatches.length > 0) return denomMatches;
+        }
+        return fetched.slice(0, 10);
       }
-      return fetched;
+
+      // 4. Final fallback: return localId matches from global index if API returned none
+      return CardIndex.lookupByLocalId(cleanNum).slice(0, 10);
     } catch (e) {
       console.warn('[CatalogService] TCGdex live localId lookup error:', e);
-      return [];
+      return CardIndex.lookupByLocalId(cleanNum).slice(0, 10);
     }
   },
 
@@ -1330,7 +1458,7 @@ function renderCardTile(card, rank) {
     <div class="mt-1 flex items-center">
       <span class="price-pending-badge">
         <span class="price-pending-dot"></span>
-        Prix non disponible (Pas de ventes récentes)
+        Prix non disponible / En cours d'actualisation
       </span>
     </div>
   `;
@@ -1351,57 +1479,70 @@ function renderCardTile(card, rank) {
         ${pricingBlock}
         ${hasPrices && card.priceHistory && card.priceHistory.length > 1 ? buildSparkline(card.priceHistory) : ''}
         <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] text-slate-500">${hasPrices ? `${card.salesPerMonth || 12} ventes/mois` : 'Vérification en direct'}</span>
-          <span class="${vel.cls}">${vel.text}</span>
+          <span class="text-[10px] text-slate-500">${hasPrices && card.salesPerMonth ? `${card.salesPerMonth} ventes/mois` : 'Catalogue TCGdex'}</span>
+          ${hasPrices && card.velocityScore ? `<span class="${vel.cls}">${vel.text}</span>` : ''}
         </div>
       </div>
     </div>
   `;
 }
 
-// ── SORTED ARRAYS ────────────────────────────────────────────
+// ── FAST O(N) PARTITIONED SORTED ARRAYS (SCALES TO 50,000+ CARDS) ──
 function getSortedByMargin(filter = false) {
-  let list = CARDS;
-  if (filter) list = list.filter(cardMatchesFilters);
-  return [...list].sort((a, b) => {
-    const ma = netMargin(a);
-    const mb = netMargin(b);
-    if (ma === null && mb === null) return 0;
-    if (ma === null) return 1;
-    if (mb === null) return -1;
-    return mb - ma;
-  });
+  const priced = [];
+  const unpriced = [];
+  for (let i = 0; i < CARDS.length; i++) {
+    const c = CARDS[i];
+    if (filter && !cardMatchesFilters(c)) continue;
+    if (c.hasPrice) {
+      const m = netMargin(c);
+      if (m !== null) {
+        priced.push({ card: c, val: m });
+        continue;
+      }
+    }
+    unpriced.push(c);
+  }
+  priced.sort((a, b) => b.val - a.val);
+  return [...priced.map(x => x.card), ...unpriced];
 }
 
 function getSortedByROI(filter = false) {
-  let list = CARDS;
-  if (filter) list = list.filter(cardMatchesFilters);
-  return [...list].sort((a, b) => {
-    const ra = netROI(a);
-    const rb = netROI(b);
-    if (ra === null && rb === null) return 0;
-    if (ra === null) return 1;
-    if (rb === null) return -1;
-    return rb - ra;
-  });
+  const priced = [];
+  const unpriced = [];
+  for (let i = 0; i < CARDS.length; i++) {
+    const c = CARDS[i];
+    if (filter && !cardMatchesFilters(c)) continue;
+    if (c.hasPrice) {
+      const r = netROI(c);
+      if (r !== null) {
+        priced.push({ card: c, val: r });
+        continue;
+      }
+    }
+    unpriced.push(c);
+  }
+  priced.sort((a, b) => b.val - a.val);
+  return [...priced.map(x => x.card), ...unpriced];
 }
 
 function getSortedByVelocity(filter = false) {
-  let list = CARDS;
-  if (filter) list = list.filter(cardMatchesFilters);
-  return [...list]
-    .filter(c => (c.velocityScore || 6) >= 6)
-    .sort((a, b) => {
-      const va = a.velocityScore || 0;
-      const vb = b.velocityScore || 0;
-      if (vb !== va) return vb - va;
-      const ra = netROI(a);
-      const rb = netROI(b);
-      if (ra === null && rb === null) return 0;
-      if (ra === null) return 1;
-      if (rb === null) return -1;
-      return rb - ra;
-    });
+  const priced = [];
+  const unpriced = [];
+  for (let i = 0; i < CARDS.length; i++) {
+    const c = CARDS[i];
+    if (filter && !cardMatchesFilters(c)) continue;
+    if (c.hasPrice) {
+      const r = netROI(c);
+      if (r !== null) {
+        priced.push({ card: c, vel: c.velocityScore || 0, roi: r });
+        continue;
+      }
+    }
+    unpriced.push(c);
+  }
+  priced.sort((a, b) => (b.vel !== a.vel ? b.vel - a.vel : b.roi - a.roi));
+  return [...priced.map(x => x.card), ...unpriced];
 }
 
 function getCardsForTab(tabKey, filter = isFilterModeActive()) {
@@ -2675,7 +2816,7 @@ function renderCardDetailModal() {
     <div class="my-2">
       <span class="price-pending-badge text-xs py-1 px-3">
         <span class="price-pending-dot"></span>
-        Prix non disponible (Pas de ventes récentes)
+        Prix non disponible / En cours d'actualisation
       </span>
     </div>
     <div class="text-xs text-slate-500 mb-3">
@@ -3275,7 +3416,10 @@ function renderLibrary() {
     badgeText = 'Raw ' + (state.condition?.rawConditions && state.condition.rawConditions.length > 0 ? state.condition.rawConditions.join('/') : 'NM');
   }
 
-  grid.innerHTML = cards.slice(0, 120).map(card => {
+  const pageLimit = libraryState.pageLimit || 60;
+  const visibleCards = cards.slice(0, pageLimit);
+
+  const cardsHtml = visibleCards.map(card => {
     const frPrice = getActiveFrPrice(card);
     const jpPrice = getActiveJpPrice(card);
     const margin = netMargin(card);
@@ -3291,7 +3435,7 @@ function renderLibrary() {
       </div>
     ` : `
       <div class="mt-1">
-        <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix en cours</span>
+        <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix non disponible / En cours d'actualisation</span>
       </div>
     `;
 
@@ -3313,546 +3457,28 @@ function renderLibrary() {
     `;
   }).join('');
 
+  const loadMoreBtnHtml = cards.length > pageLimit ? `
+    <div class="col-span-full flex justify-center py-4">
+      <button type="button" id="library-load-more-btn" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow cursor-pointer transition-all">
+        Charger plus (${visibleCards.length} / ${cards.length.toLocaleString('fr-FR')})
+      </button>
+    </div>
+  ` : '';
+
+  grid.innerHTML = cardsHtml + loadMoreBtnHtml;
+
   grid.querySelectorAll('.library-card-mini').forEach(el => {
     el.addEventListener('click', () => {
       closeModal('modal-library');
       openCardDetail(el.dataset.id, isGraded ? 'graded' : 'raw');
     });
   });
+
+  document.getElementById('library-load-more-btn')?.addEventListener('click', () => {
+    libraryState.pageLimit = pageLimit + 60;
+    renderLibrary();
+  });
 }
-
-// ── STRUCTURAL GRAYSCALE GRID (4x4 BLOCK SIMILARITY) RECOGNITION ENGINE (`CardRecognizer`) ──
-const CardRecognizer = {
-  fingerprintCache: new Map(),
-  _preloading: false,
-
-  init(catalog) {
-    if (this._preloading) return;
-    this._preloading = true;
-    this.preloadCatalogSignatures(catalog || (typeof CARDS !== 'undefined' ? CARDS : []));
-  },
-
-  // Preload and cache 4x4 structural signatures from catalog card artwork
-  preloadCatalogSignatures(catalog) {
-    if (!catalog || !Array.isArray(catalog)) return;
-    catalog.forEach(card => {
-      if (!card || !card.id || this.fingerprintCache.has(card.id)) return;
-      if (!card.image || typeof card.image !== 'string') {
-        const synthetic = this.generateSyntheticSignature(card);
-        if (synthetic) this.fingerprintCache.set(card.id, synthetic);
-        return;
-      }
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const sig = this.extractArtworkSignatureFromImage(img);
-          if (sig && !sig.isPoorQuality) {
-            this.fingerprintCache.set(card.id, sig);
-          }
-        } catch (e) {
-          // If canvas extraction blocked by CORS, fallback to synthetic structural signature
-          if (!this.fingerprintCache.has(card.id)) {
-            const synthetic = this.generateSyntheticSignature(card);
-            if (synthetic) this.fingerprintCache.set(card.id, synthetic);
-          }
-        }
-      };
-      img.onerror = () => {
-        if (!this.fingerprintCache.has(card.id)) {
-          const synthetic = this.generateSyntheticSignature(card);
-          if (synthetic) this.fingerprintCache.set(card.id, synthetic);
-        }
-      };
-      const highResUrl = (typeof formatHighResCardImage === 'function')
-        ? formatHighResCardImage(card.image)
-        : (card.image.includes('/high.webp') ? card.image : `${card.image}/high.webp`);
-      img.src = highResUrl;
-    });
-  },
-
-  getDefaultCropRect(sourceWidth, sourceHeight) {
-    const targetAspect = 63 / 88; // Standard Pokémon card aspect ratio ~0.716
-    const sourceAspect = sourceWidth / sourceHeight;
-    // If the image already roughly matches the card's aspect ratio (+/- 5%), treat as pre-cropped
-    if (Math.abs(sourceAspect - targetAspect) < 0.05) {
-      return { sx: 0, sy: 0, sw: sourceWidth, sh: sourceHeight };
-    }
-    let sw, sh;
-    if (sourceAspect > targetAspect) {
-      sh = Math.round(sourceHeight * 0.90);
-      sw = Math.round(sh * targetAspect);
-    } else {
-      sw = Math.round(sourceWidth * 0.90);
-      sh = Math.round(sw / targetAspect);
-    }
-    const sx = Math.max(0, Math.round((sourceWidth - sw) / 2));
-    const sy = Math.max(0, Math.round((sourceHeight - sh) / 2));
-    return { sx, sy, sw, sh };
-  },
-
-  // Central artwork bounding box coords on card (excluding borders, name bar and bottom text)
-  getArtworkCropRect(cardW, cardH) {
-    const artX = Math.max(0, Math.round(cardW * 0.10));
-    const artY = Math.max(0, Math.round(cardH * 0.13));
-    const artW = Math.max(20, Math.min(cardW - artX, Math.round(cardW * 0.80)));
-    const artH = Math.max(20, Math.min(cardH - artY, Math.round(cardH * 0.42)));
-    return { artX, artY, artW, artH };
-  },
-
-  // Extract 128x128 artwork canvas from full card canvas
-  extractArtworkSignature(sourceCanvas) {
-    if (!sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return null;
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const { artX, artY, artW, artH } = this.getArtworkCropRect(w, h);
-
-    const artCanvas = document.createElement('canvas');
-    artCanvas.width = 128;
-    artCanvas.height = 128;
-    const artCtx = artCanvas.getContext('2d', { willReadFrequently: true });
-    artCtx.drawImage(sourceCanvas, artX, artY, artW, artH, 0, 0, 128, 128);
-
-    return this.computeStructuralGrid(artCanvas);
-  },
-
-  // Extract 128x128 artwork canvas from Image element
-  extractArtworkSignatureFromImage(img) {
-    if (!img) return null;
-    const w = img.naturalWidth || img.width;
-    const h = img.naturalHeight || img.height;
-    if (!w || !h) return null;
-
-    const { artX, artY, artW, artH } = this.getArtworkCropRect(w, h);
-    const artCanvas = document.createElement('canvas');
-    artCanvas.width = 128;
-    artCanvas.height = 128;
-    const artCtx = artCanvas.getContext('2d', { willReadFrequently: true });
-    artCtx.drawImage(img, artX, artY, artW, artH, 0, 0, 128, 128);
-
-    return this.computeStructuralGrid(artCanvas);
-  },
-
-  // Streamlined 4x4 Grid (16 blocks) calculation:
-  // Converts to grayscale, auto-levels, computes 4x4 block luminance & contrast grid
-  computeStructuralGrid(artCanvas) {
-    try {
-      const ctx = artCanvas.getContext('2d', { willReadFrequently: true });
-      const imgData = ctx.getImageData(0, 0, 128, 128).data;
-
-      // 1. Grayscale conversion + contrast range analysis
-      const gray = new Float32Array(128 * 128);
-      let minLum = 255;
-      let maxLum = 0;
-      let sumLum = 0;
-
-      for (let i = 0, p = 0; i < 128 * 128; i++, p += 4) {
-        const lum = 0.299 * imgData[p] + 0.587 * imgData[p + 1] + 0.114 * imgData[p + 2];
-        gray[i] = lum;
-        if (lum < minLum) minLum = lum;
-        if (lum > maxLum) maxLum = lum;
-        sumLum += lum;
-      }
-
-      const range = maxLum - minLum;
-      const meanL = sumLum / (128 * 128);
-
-      // Rejection condition: completely dark, blown out, or uniform
-      if (range < 18 || meanL < 15 || meanL > 245) {
-        return {
-          isPoorQuality: true,
-          qualityReason: meanL < 15 ? 'too_dark' : (meanL > 245 ? 'blown_out' : 'no_contrast'),
-          score: Math.max(5, Math.min(25, Math.round(range * 0.8)))
-        };
-      }
-
-      // 2. High-contrast normalization: auto-level [minLum..maxLum] into [0.0 .. 1.0]
-      for (let i = 0; i < 128 * 128; i++) {
-        gray[i] = (gray[i] - minLum) / range;
-      }
-
-      // 3. Edge detection: Sobel-like gradient magnitude
-      const edges = new Float32Array(128 * 128);
-      for (let y = 1; y < 127; y++) {
-        const row = y * 128;
-        for (let x = 1; x < 127; x++) {
-          const idx = row + x;
-          const gx = Math.abs(gray[idx + 1] - gray[idx - 1]);
-          const gy = Math.abs(gray[idx + 128] - gray[idx - 128]);
-          const g = (gx + gy) * 0.5;
-          edges[idx] = g > 0.08 ? g : 0;
-        }
-      }
-
-      // 4. Divide artwork into 4x4 grid (16 blocks, 32x32 pixels each)
-      const lumVec = new Float32Array(16);
-      const contrastVec = new Float32Array(16);
-      const edgeVec = new Float32Array(16);
-      const signatureVec = new Float32Array(16);
-
-      let lumSum16 = 0;
-      let contrastSum16 = 0;
-
-      for (let by = 0; by < 4; by++) {
-        for (let bx = 0; bx < 4; bx++) {
-          const bIdx = by * 4 + bx;
-          let bLumSum = 0;
-          let bEdgeSum = 0;
-
-          // First pass: mean luminance & edge density
-          for (let y = by * 32; y < (by + 1) * 32; y++) {
-            const row = y * 128;
-            for (let x = bx * 32; x < (bx + 1) * 32; x++) {
-              const pIdx = row + x;
-              bLumSum += gray[pIdx];
-              bEdgeSum += edges[pIdx];
-            }
-          }
-
-          const avgLum = bLumSum / 1024;
-          const avgEdge = Math.min(1.0, (bEdgeSum / 1024) * 4.5);
-
-          // Second pass: local block contrast (standard deviation of luminance within block)
-          let bVarSum = 0;
-          for (let y = by * 32; y < (by + 1) * 32; y++) {
-            const row = y * 128;
-            for (let x = bx * 32; x < (bx + 1) * 32; x++) {
-              const diff = gray[row + x] - avgLum;
-              bVarSum += diff * diff;
-            }
-          }
-          const blockContrast = Math.min(1.0, Math.sqrt(bVarSum / 1024) * 2.5);
-
-          lumVec[bIdx] = avgLum;
-          contrastVec[bIdx] = blockContrast;
-          edgeVec[bIdx] = avgEdge;
-
-          // 16-point geometric signature vector: 40% luminance + 35% contrast + 25% edge
-          signatureVec[bIdx] = (0.40 * avgLum) + (0.35 * blockContrast) + (0.25 * avgEdge);
-
-          lumSum16 += avgLum;
-          contrastSum16 += blockContrast;
-        }
-      }
-
-      // Mean & standard deviation for Pearson Zero-Mean correlation
-      const meanBlockL = lumSum16 / 16;
-      let varBlockL = 0;
-      for (let i = 0; i < 16; i++) {
-        const diff = lumVec[i] - meanBlockL;
-        varBlockL += diff * diff;
-      }
-      const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
-
-      const meanBlockC = contrastSum16 / 16;
-      let varBlockC = 0;
-      for (let i = 0; i < 16; i++) {
-        const diff = contrastVec[i] - meanBlockC;
-        varBlockC += diff * diff;
-      }
-      const stdBlockC = Math.sqrt(Math.max(1e-5, varBlockC / 16));
-
-      return {
-        isPoorQuality: false,
-        lumVec,
-        contrastVec,
-        edgeVec,
-        signatureVec,
-        meanLum: meanBlockL,
-        stdLum: stdBlockL,
-        meanContrast: meanBlockC,
-        stdContrast: stdBlockC
-      };
-    } catch (e) {
-      console.warn('Error computing structural grid:', e);
-      return null;
-    }
-  },
-
-  // Compare 4x4 block luminance & contrast grids using Pearson correlations + Euclidean distance
-  computeStructuralSimilarity(sigA, sigB, options = {}) {
-    if (!sigA || !sigB || sigA.isPoorQuality || sigB.isPoorQuality) {
-      return 10;
-    }
-
-    // 1. Zero-Mean Pearson Correlation of 16-block Luminance (Lighting-invariant)
-    let dotProdL = 0;
-    for (let i = 0; i < 16; i++) {
-      const devA = sigA.lumVec[i] - sigA.meanLum;
-      const devB = sigB.lumVec[i] - sigB.meanLum;
-      dotProdL += devA * devB;
-    }
-    const denomL = 16 * sigA.stdLum * sigB.stdLum;
-    const pearsonL = denomL > 1e-6 ? dotProdL / denomL : 0;
-    const normCorrL = Math.max(0, pearsonL); // [0.0 .. 1.0]
-
-    // 2. Zero-Mean Pearson Correlation of 16-block Contrast (Texture & detail invariant)
-    let dotProdC = 0;
-    const stdCA = sigA.stdContrast || sigA.stdLum || 0.1;
-    const stdCB = sigB.stdContrast || sigB.stdLum || 0.1;
-    const meanCA = sigA.meanContrast || sigA.meanLum || 0.5;
-    const meanCB = sigB.meanContrast || sigB.meanLum || 0.5;
-
-    for (let i = 0; i < 16; i++) {
-      const valA = sigA.contrastVec ? sigA.contrastVec[i] : (sigA.edgeVec ? sigA.edgeVec[i] : 0);
-      const valB = sigB.contrastVec ? sigB.contrastVec[i] : (sigB.edgeVec ? sigB.edgeVec[i] : 0);
-      dotProdC += (valA - meanCA) * (valB - meanCB);
-    }
-    const denomC = 16 * stdCA * stdCB;
-    const pearsonC = denomC > 1e-6 ? dotProdC / denomC : 0;
-    const normCorrC = Math.max(0, pearsonC); // [0.0 .. 1.0]
-
-    // 3. Normalized Euclidean Distance on 16-point Geometric Signature Vector
-    let distSq = 0;
-    for (let i = 0; i < 16; i++) {
-      const diff = sigA.signatureVec[i] - sigB.signatureVec[i];
-      distSq += diff * diff;
-    }
-    const euclDist = Math.sqrt(distSq / 16);
-    // Strict scaling: distance > 0.30 (random vectors) maps to 0%
-    const distScore = Math.max(0, 1.0 - (euclDist / 0.30));
-
-    // 4. Combined Structural Score: 40% Lum Correlation + 30% Contrast Correlation + 30% Euclidean Distance
-    const rawScore = (0.40 * normCorrL) + (0.30 * normCorrC) + (0.30 * distScore);
-
-    // Subtle edition alignment bonus
-    let editionBonus = 0;
-    const activeCountries = options.activeCountries || [];
-    const card = options.card;
-    if (card && card.edition && activeCountries.length > 0) {
-      if (activeCountries.includes(card.edition)) {
-        editionBonus = 2;
-      } else {
-        editionBonus = -4;
-      }
-    }
-
-    const finalScore = Math.min(99, Math.max(0, Math.round(rawScore * 100 + editionBonus)));
-    return finalScore;
-  },
-
-  // Fallback synthetic 16-point structural signature for cards without high-res images yet
-  generateSyntheticSignature(card) {
-    if (!card) return null;
-    const nameLower = ((card.name || '') + ' ' + (card.subName || '') + ' ' + (card.ref || '')).toLowerCase();
-
-    const lumVec = new Float32Array(16);
-    const contrastVec = new Float32Array(16);
-    const edgeVec = new Float32Array(16);
-    const signatureVec = new Float32Array(16);
-
-    let baseLum = 0.50;
-    let centerBonus = 0.15;
-    let edgePattern = [
-      0.15, 0.20, 0.20, 0.15,
-      0.25, 0.40, 0.40, 0.25,
-      0.25, 0.45, 0.45, 0.25,
-      0.20, 0.30, 0.30, 0.20
-    ];
-
-    if (/charizard|dracaufeu|salameche|reptincel|glurak/.test(nameLower)) {
-      baseLum = 0.45;
-      edgePattern = [
-        0.55, 0.30, 0.30, 0.60,
-        0.35, 0.65, 0.70, 0.45,
-        0.30, 0.55, 0.60, 0.35,
-        0.25, 0.40, 0.40, 0.30
-      ];
-    } else if (/pikachu|raichu|electhor|zapdos|miraidon/.test(nameLower)) {
-      baseLum = 0.75;
-      centerBonus = 0.20;
-      edgePattern = [
-        0.60, 0.20, 0.20, 0.60,
-        0.35, 0.50, 0.50, 0.35,
-        0.30, 0.45, 0.45, 0.30,
-        0.20, 0.25, 0.25, 0.20
-      ];
-    } else if (/mew|psy|gardevoir|alakazam/.test(nameLower)) {
-      baseLum = 0.65;
-      centerBonus = 0.25;
-      edgePattern = [
-        0.10, 0.15, 0.15, 0.10,
-        0.20, 0.45, 0.45, 0.20,
-        0.20, 0.40, 0.40, 0.20,
-        0.15, 0.20, 0.20, 0.15
-      ];
-    } else if (/tortank|blastoise|carapuce|amphinobi|greninja/.test(nameLower)) {
-      baseLum = 0.40;
-      edgePattern = [
-        0.25, 0.55, 0.50, 0.20,
-        0.60, 0.45, 0.40, 0.55,
-        0.55, 0.40, 0.45, 0.50,
-        0.35, 0.60, 0.60, 0.35
-      ];
-    } else if (/florizarre|venusaur|bulbizarre/.test(nameLower)) {
-      baseLum = 0.48;
-      edgePattern = [
-        0.30, 0.65, 0.65, 0.30,
-        0.50, 0.55, 0.55, 0.50,
-        0.45, 0.50, 0.50, 0.45,
-        0.30, 0.35, 0.35, 0.30
-      ];
-    } else if (/umbreon|noctali|darkrai|ectoplasma|gengar/.test(nameLower)) {
-      baseLum = 0.20;
-      centerBonus = 0.40;
-      edgePattern = [
-        0.20, 0.35, 0.35, 0.20,
-        0.30, 0.70, 0.65, 0.30,
-        0.25, 0.60, 0.60, 0.25,
-        0.15, 0.20, 0.20, 0.15
-      ];
-    } else if (/rayquaza|giratina|lugia|ho-oh/.test(nameLower)) {
-      baseLum = 0.45;
-      edgePattern = [
-        0.20, 0.30, 0.60, 0.70,
-        0.30, 0.65, 0.60, 0.30,
-        0.60, 0.65, 0.30, 0.20,
-        0.70, 0.30, 0.20, 0.15
-      ];
-    }
-
-    // Deterministic modulation from card identifiers
-    let hash = 0;
-    const str = (card.id || '') + (card.localId || '') + (card.ref || '') + (card.name || '');
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-
-    let lumSum16 = 0;
-    let contrastSum16 = 0;
-
-    for (let i = 0; i < 16; i++) {
-      const isCenter = (i === 5 || i === 6 || i === 9 || i === 10);
-      const mod = (((Math.abs(hash * (i + 1) * 31)) % 100) / 1000) - 0.05;
-      const lum = Math.min(0.95, Math.max(0.05, baseLum + (isCenter ? centerBonus : -0.06) + mod));
-      const edge = Math.min(1.0, Math.max(0.05, edgePattern[i] + (mod * 0.5)));
-      const contrast = Math.min(1.0, Math.max(0.05, (edge * 0.7) + (isCenter ? 0.2 : 0.05) + (mod * 0.3)));
-
-      lumVec[i] = lum;
-      contrastVec[i] = contrast;
-      edgeVec[i] = edge;
-      signatureVec[i] = (0.40 * lum) + (0.35 * contrast) + (0.25 * edge);
-
-      lumSum16 += lum;
-      contrastSum16 += contrast;
-    }
-
-    const meanBlockL = lumSum16 / 16;
-    let varBlockL = 0;
-    for (let i = 0; i < 16; i++) {
-      const diff = lumVec[i] - meanBlockL;
-      varBlockL += diff * diff;
-    }
-    const stdBlockL = Math.sqrt(Math.max(1e-5, varBlockL / 16));
-
-    const meanBlockC = contrastSum16 / 16;
-    let varBlockC = 0;
-    for (let i = 0; i < 16; i++) {
-      const diff = contrastVec[i] - meanBlockC;
-      varBlockC += diff * diff;
-    }
-    const stdBlockC = Math.sqrt(Math.max(1e-5, varBlockC / 16));
-
-    return {
-      isPoorQuality: false,
-      lumVec,
-      contrastVec,
-      edgeVec,
-      signatureVec,
-      meanLum: meanBlockL,
-      stdLum: stdBlockL,
-      meanContrast: meanBlockC,
-      stdContrast: stdBlockC,
-      isSynthetic: true
-    };
-  },
-
-  getCardSignature(card) {
-    if (!card) return null;
-    if (this.fingerprintCache.has(card.id)) {
-      return this.fingerprintCache.get(card.id);
-    }
-    const synthetic = this.generateSyntheticSignature(card);
-    if (synthetic) {
-      this.fingerprintCache.set(card.id, synthetic);
-      return synthetic;
-    }
-    return null;
-  },
-
-  // Async ranking against catalog using 16-point geometric signature vector
-  async rankCardsFromSignature(scanSignature, catalog, options = {}) {
-    if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return [];
-    if (!scanSignature || scanSignature.isPoorQuality) {
-      const rejectScore = scanSignature && scanSignature.score !== undefined ? scanSignature.score : 10;
-      return catalog.map(c => ({
-        card: c,
-        score: rejectScore,
-        scoreVisual: rejectScore,
-        isPoorQuality: true
-      }));
-    }
-
-    const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
-      ? state.filters.countries
-      : [];
-
-    const scored = catalog.map(card => {
-      const cardSig = this.getCardSignature(card);
-      const score = cardSig
-        ? this.computeStructuralSimilarity(scanSignature, cardSig, { card, activeCountries })
-        : 15;
-
-      return {
-        card,
-        score,
-        scoreVisual: score,
-        isPoorQuality: false
-      };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    return scored;
-  },
-
-  // Synchronous convenience ranking (extracts signature from cropCanvas and ranks)
-  rankCards(cropCanvas, catalog, options = {}) {
-    if (!catalog || !Array.isArray(catalog) || catalog.length === 0) return [];
-    const scanSig = this.extractArtworkSignature(cropCanvas);
-    if (!scanSig || scanSig.isPoorQuality) {
-      const rejectScore = scanSig && scanSig.score !== undefined ? scanSig.score : 10;
-      return catalog.map(c => ({
-        card: c,
-        score: rejectScore,
-        scoreVisual: rejectScore,
-        isPoorQuality: true
-      }));
-    }
-
-    const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
-      ? state.filters.countries
-      : [];
-
-    const scored = catalog.map(card => {
-      const cardSig = this.getCardSignature(card);
-      const score = cardSig
-        ? this.computeStructuralSimilarity(scanSig, cardSig, { card, activeCountries })
-        : 15;
-
-      return {
-        card,
-        score,
-        scoreVisual: score,
-        isPoorQuality: false
-      };
-    });
-
-    scored.sort((a, b) => b.score - a.score);
-    return scored;
-  }
-};
 
 // ── FULL-SCREEN CAMERA SCANNER (NATIVE CAMERA CAPTURE) ──────────
 
@@ -3936,43 +3562,39 @@ const CardOCR = {
     }
   },
 
-  // Full multi-region OCR pipeline: detects both card serial numbers & graded slab markers
-  async extractCardAndSlabData(fullImg, cardCanvas) {
+  // Direct Tesseract.js OCR pipeline: reads serial numbers & graded slab labels without visual guesswork
+  async extractFromPhoto(file, fullImg) {
     if (!this.isTesseractAvailable()) {
       return { serial: null, slab: null, rawText: '' };
     }
 
     const topStrip = fullImg ? this.getTopSlabStrip(fullImg) : null;
-    const bottomCardStrip = cardCanvas ? this.getBottomSerialStrip(cardCanvas) : null;
-    const bottomFullStrip = fullImg ? this.getBottomSerialStrip(fullImg) : null;
+    const bottomStrip = fullImg ? this.getBottomSerialStrip(fullImg) : null;
 
-    // Run targeted OCR passes on slab header + serial strip
-    const [topText, bottomCardText] = await Promise.all([
+    // Pass 1: Parallel targeted OCR on top slab header & bottom serial/ARS strip
+    const [topText, bottomText] = await Promise.all([
       this.runTesseract(topStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- '),
-      this.runTesseract(bottomCardStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- ')
+      this.runTesseract(bottomStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- ')
     ]);
 
-    let combinedText = `${topText}\n${bottomCardText}`.trim();
-    let slab = this.parseSlabFromText(topText) || this.parseSlabFromText(bottomCardText);
-    let serial = this.parseSerialFromText(bottomCardText) || this.parseSerialFromText(topText);
+    let combinedText = `${topText}\n${bottomText}`.trim();
+    let slab = this.parseSlabFromText(topText) || this.parseSlabFromText(bottomText);
+    let serial = this.parseSerialFromText(bottomText) || this.parseSerialFromText(topText);
 
-    // If neither serial nor ARS bottom slab was found yet, inspect the full photo bottom strip
-    if ((!serial || !slab) && bottomFullStrip) {
-      const bottomFullText = await this.runTesseract(
-        bottomFullStrip,
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- '
-      );
-      if (bottomFullText) {
-        combinedText = `${combinedText}\n${bottomFullText}`.trim();
-        if (!slab) slab = this.parseSlabFromText(bottomFullText);
-        if (!serial) serial = this.parseSerialFromText(bottomFullText);
+    // Pass 2: Full-image direct Tesseract OCR pass if serial or slab was missed (handles tilted/macro shots)
+    if (!serial && file) {
+      const fullText = await this.runTesseract(file);
+      if (fullText) {
+        combinedText = `${combinedText}\n${fullText}`.trim();
+        if (!slab) slab = this.parseSlabFromText(fullText);
+        if (!serial) serial = this.parseSerialFromText(fullText);
       }
     }
 
     return { serial, slab, rawText: combinedText };
   },
 
-  // Parse grading company & grade markers (PSA 10, BGS 9.5, CGC 10, PCA 10, ARS 10+, etc.)
+  // Parse grading company & grade markers: (PSA|BGS|CGC|PCA|ARS) (10 BL|10 Pr|10+|10|9.5|9|8.5|8)
   parseSlabFromText(text) {
     if (!text) return null;
     const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -3993,74 +3615,50 @@ const CardOCR = {
       };
     };
 
-    // 1. PSA (PSA 10, GEM MT 10, PSA 9, MINT 9, PSA 8, PSA 7)
-    let m = clean.match(/\bPSA\s*(10|9|8|7)\b/i);
-    if (m) return buildSlab('PSA', m[1] === '7' ? '≤ 7' : m[1]);
+    // Primary unified grading regex
+    const unified = clean.match(/\b(PSA|BGS|CGC|PCA|ARS)\s*(10\s*BL|10\s*Pr|10\+|10|9\.5|9|8\.5|8)\b/i);
+    if (unified) {
+      const company = unified[1].toUpperCase();
+      const rawGrade = unified[2].replace(/\s+/g, ' ').trim();
+      const upperG = rawGrade.toUpperCase();
+      if (upperG === '10 BL') return buildSlab('BGS', '10 BL');
+      if (upperG === '10 PR') return buildSlab(company, '10 Pr');
+      if (upperG === '10+') return buildSlab(company, '10+');
+      if (upperG === '8.5') return buildSlab(company, '≤ 8.5');
+      if (upperG === '8' && (company === 'PCA' || company === 'ARS')) return buildSlab(company, '≤ 8');
+      return buildSlab(company, rawGrade);
+    }
+
+    // Secondary authentic slab label phrasing aliases
+    if (/\bBLACK\s*LABEL\b/i.test(clean)) return buildSlab('BGS', '10 BL');
     if (/\bGEM\s*MT\s*10\b/i.test(clean)) return buildSlab('PSA', '10');
     if (/\bPSA\b/i.test(clean) && /\bMINT\s*9\b/i.test(clean)) return buildSlab('PSA', '9');
-
-    // 2. BGS / BECKETT (Black Label, Pristine 10, 9.5, 9, 8.5)
-    if (/\bBLACK\s*LABEL\b/i.test(clean)) return buildSlab('BGS', '10 BL');
-    m = clean.match(/\b(?:BGS|BECKETT)\s*(10\s*PRISTINE|10|9\.5|9|8\.5|8)\b/i);
-    if (m) {
-      const g = m[1].toUpperCase();
-      if (g.includes('10')) return buildSlab('BGS', '10 Pr');
-      if (g === '9.5') return buildSlab('BGS', '9.5');
-      if (g === '9') return buildSlab('BGS', '9');
-      return buildSlab('BGS', '≤ 8.5');
-    }
-    if (/\b(?:BECKETT|BGS)\b/i.test(clean) && /\b9\.5\b/.test(clean)) return buildSlab('BGS', '9.5');
-
-    // 3. CGC (Pristine 10, CGC 10, CGC 9.5, CGC 9)
-    m = clean.match(/\bCGC\s*(?:PRISTINE\s*)?(10|9\.5|9|8\.5|8)\b/i);
-    if (m) {
-      const isPristine = /PRISTINE/i.test(clean);
-      if (m[1] === '10') return buildSlab('CGC', isPristine ? '10 Pr' : '10');
-      if (m[1] === '9.5') return buildSlab('CGC', '9.5');
-      if (m[1] === '9') return buildSlab('CGC', '9');
-      return buildSlab('CGC', '≤ 8.5');
-    }
-
-    // 4. PCA (PCA 10+, PCA 10, PCA 9.5, PCA 9, PCA 8)
-    m = clean.match(/\bPCA\s*(10\+|10|9\.5|9|8)\b/i);
-    if (m) {
-      if (m[1] === '10+') return buildSlab('PCA', '10+');
-      if (m[1] === '10') return buildSlab('PCA', '10');
-      if (m[1] === '9.5') return buildSlab('PCA', '9.5');
-      if (m[1] === '9') return buildSlab('PCA', '9');
-      return buildSlab('PCA', '≤ 8');
-    }
-
-    // 5. ARS (ARS 10+, ARS 10, ARS 9, Grade 10+, Grade 10)
-    m = clean.match(/\b(?:ARS|GRADE)\s*(10\+|10|9|8)\b/i);
-    if (m) {
-      if (m[1] === '10+') return buildSlab('ARS', '10+');
-      if (m[1] === '10') return buildSlab('ARS', '10');
-      if (m[1] === '9') return buildSlab('ARS', '9');
-      return buildSlab('ARS', '≤ 8');
-    }
+    if (/\bPSA\s*7\b/i.test(clean)) return buildSlab('PSA', '≤ 7');
+    const beckett = clean.match(/\bBECKETT\s*(10|9\.5|9|8\.5|8)\b/i);
+    if (beckett) return buildSlab('BGS', beckett[1] === '10' ? '10 Pr' : (beckett[1] === '8.5' || beckett[1] === '8' ? '≤ 8.5' : beckett[1]));
+    const arsGrade = clean.match(/\bGRADE\s*(10\+|10|9|8)\b/i);
+    if (arsGrade) return buildSlab('ARS', arsGrade[1] === '8' ? '≤ 8' : arsGrade[1]);
 
     return null;
   },
 
-  // Parse card serial / local ID (e.g. 201/165, 120/119, 025/165, SV2a #201)
+  // Extract serial numbers matching (\d{1,3})\s*/\s*(\d{1,3}) (e.g. 120/119, 201/165) or set IDs (sv2a, xy4)
   parseSerialFromText(text) {
     if (!text) return null;
     const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!clean) return null;
 
-    // Optional set code hint (e.g. SV2a, SV4a, SV6, SV7, S12a, SWSH7, SV03.5)
-    const setMatch = clean.match(/\b(sv\d+[a-z]?|sv0?\d\.\d|swsh\d+|s\d+[a-z])\b/i);
+    // Optional set ID hint across all Pokémon TCG eras (sv2a, xy4, swsh7, sm12, base1, etc.)
+    const setMatch = clean.match(/\b(sv\d+[a-z]?|sv0?\d\.\d|swsh\d+(?:\.\d)?|sm\d+|xy\d+|bw\d+|dp\d+|ex\d+|base\d+|s\d+[a-z])\b/i);
     const setHint = setMatch ? setMatch[1].toLowerCase() : null;
 
-    // Primary pattern: explicit fraction serial "201/165", "120/119", "025/165"
-    const fracMatch = clean.match(/\b([0-9O]{1,3})\s*[\/|Il!]\s*([0-9O]{2,3})\b/);
+    // Primary pattern: explicit card serial fraction (\d{1,3})\s*/\s*(\d{1,3})
+    const fracMatch = clean.match(/\b([0-9O]{1,3})\s*[\/|!]\s*([0-9O]{1,3})\b/);
     if (fracMatch) {
       const localId = fracMatch[1].replace(/O/g, '0');
       const total = fracMatch[2].replace(/O/g, '0');
-      // Sanity check: total set size is typically between 20 and 300
       const totalInt = parseInt(total, 10);
-      if (totalInt >= 15 && totalInt <= 350) {
+      if (totalInt >= 10 && totalInt <= 400) {
         return {
           serial: `${localId}/${total}`,
           localId,
@@ -4073,7 +3671,7 @@ const CardOCR = {
       }
     }
 
-    // Secondary pattern: slab-label hash card number "#201", "#025", "No. 201"
+    // Secondary pattern: slab-label card number ("#201", "#120", "No. 201")
     const hashMatch = clean.match(/(?:#|No\.?\s*)([0-9]{1,3})\b/i);
     if (hashMatch) {
       const localId = hashMatch[1];
@@ -4088,63 +3686,41 @@ const CardOCR = {
       };
     }
 
+    // Tertiary pattern: explicit set ID + standalone card number (e.g. "sv2a 201")
+    if (setHint) {
+      const afterSet = clean.match(new RegExp(`${setHint}\\s+0*([0-9]{1,3})\\b`, 'i'));
+      if (afterSet) {
+        const localId = afterSet[1];
+        return {
+          serial: `${setHint} ${localId}`,
+          localId,
+          cleanLocalId: localId.replace(/^0+/, '') || localId,
+          total: null,
+          setHint,
+          exactFraction: false,
+          rawText: clean
+        };
+      }
+    }
+
     return null;
   }
 };
 
-// Software sharpening & contrast boost on canvas snapshot for crisp matching
-function enhanceCanvasSnapshot(canvas) {
-  if (!canvas || !canvas.width || !canvas.height) return canvas;
+// Automatically switch global app UI to Graded mode when OCR detects a slab label
+function applyDetectedSlabToGlobalUI(detectedSlab) {
+  if (!detectedSlab || !detectedSlab.company) return;
   try {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const w = canvas.width;
-    const h = canvas.height;
-    const srcData = ctx.getImageData(0, 0, w, h);
-    const src = srcData.data;
-    const outData = ctx.createImageData(w, h);
-    const dst = outData.data;
-
-    // Fast 3x3 unsharp mask sharpening + dynamic contrast expansion
-    const sharpen = 0.35;
-    const centerWeight = 1.0 + (4.0 * sharpen); // 2.4
-    const neighborWeight = -sharpen;            // -0.35
-    const contrast = 1.22;                      // +22% contrast boost
-
-    for (let y = 0; y < h; y++) {
-      const yOffset = y * w * 4;
-      const yTop = (y > 0 ? y - 1 : 0) * w * 4;
-      const yBottom = (y < h - 1 ? y + 1 : h - 1) * w * 4;
-
-      for (let x = 0; x < w; x++) {
-        const idx = yOffset + (x * 4);
-        const xLeft = (x > 0 ? x - 1 : 0) * 4;
-        const xRight = (x < w - 1 ? x + 1 : w - 1) * 4;
-
-        const topIdx = yTop + (x * 4);
-        const bottomIdx = yBottom + (x * 4);
-        const leftIdx = yOffset + xLeft;
-        const rightIdx = yOffset + xRight;
-
-        for (let c = 0; c < 3; c++) {
-          // 3x3 Convolution Sharpening
-          const sharpVal = src[idx + c] * centerWeight +
-            (src[topIdx + c] + src[bottomIdx + c] + src[leftIdx + c] + src[rightIdx + c]) * neighborWeight;
-
-          // Dynamic Contrast Boost around midpoint 128
-          const contrastVal = ((sharpVal - 128) * contrast) + 128;
-
-          // Clamp [0..255]
-          dst[idx + c] = contrastVal < 0 ? 0 : (contrastVal > 255 ? 255 : contrastVal);
-        }
-        dst[idx + 3] = src[idx + 3]; // Preserve alpha
-      }
-    }
-
-    ctx.putImageData(outData, 0, 0);
-  } catch (err) {
-    console.debug('Snapshot enhancement skipped:', err);
+    state.condition.mode = 'graded';
+    state.condition.companies = [detectedSlab.company];
+    state.condition.grades = [detectedSlab.grade];
+    if (typeof updateConditionTriggerLabels === 'function') updateConditionTriggerLabels();
+    if (typeof renderConditionPopovers === 'function') renderConditionPopovers();
+    if (typeof renderAllColumns === 'function') renderAllColumns();
+    if (typeof renderMobileColumn === 'function') renderMobileColumn();
+  } catch (e) {
+    console.warn('[CardOCR] Failed switching UI to graded mode:', e);
   }
-  return canvas;
 }
 
 function resetScannerPreview() {
@@ -4164,7 +3740,7 @@ function resetScannerPreview() {
   if (camInput) camInput.value = '';
   if (fileFallback) fileFallback.value = '';
   if (resultsEl) {
-    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Prenez une photo nette de la carte entière avec l\'appareil photo</p>';
+    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Prenez une photo nette de la carte ou du slab (numéro visible en bas)</p>';
   }
 }
 
@@ -4173,14 +3749,7 @@ function openScanner() {
   if (!overlay) return;
   overlay.style.display = 'flex';
   if (typeof lucide !== 'undefined') lucide.createIcons();
-
-  // Update edition indicator pill
   updateScannerEditionPill();
-
-  // Preload catalog signatures
-  CardRecognizer.init(CARDS);
-
-  // Reset UI
   resetScannerPreview();
 }
 
@@ -4194,7 +3763,7 @@ function updateScannerEditionPill() {
     }).join(', ');
     pillText.textContent = `Édition : ${flags} (Prioritaire)`;
   } else {
-    pillText.textContent = 'Édition : Toutes (Auto-détection)';
+    pillText.textContent = 'Édition : Toutes (Catalogue mondial TCGdex)';
   }
 }
 
@@ -4204,14 +3773,13 @@ function closeScanner() {
   resetScannerPreview();
 }
 
-// Process snapped photo or gallery image through Advanced OCR (Serial + Slab) & 4x4 structural matcher
+// Pure Tesseract.js OCR + TCGdex API Scanner (Raw Cards & Graded Slabs — Zero Visual Guesswork)
 async function processCapturedPhoto(file) {
   if (!file) return;
   const resultsEl = document.getElementById('scanner-results');
   const previewImg = document.getElementById('scanner-captured-preview');
   const placeholder = document.getElementById('scanner-guide-placeholder');
 
-  // Immediately display preview in the card frame
   const objectUrl = URL.createObjectURL(file);
   if (previewImg) {
     previewImg.src = objectUrl;
@@ -4221,20 +3789,19 @@ async function processCapturedPhoto(file) {
     placeholder.classList.add('hidden');
   }
 
-  // Smooth loading card with animated spinner and progress step
   if (resultsEl) {
     resultsEl.innerHTML = `
       <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
         <div class="flex items-center gap-3">
           <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
           <div class="text-left flex-1 min-w-0">
-            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse OCR & Slab...</div>
+            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse OCR Tesseract.js...</div>
             <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Lecture du n° de série & détection PSA / BGS / CGC / PCA / ARS</div>
           </div>
-          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">25%</span>
+          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">30%</span>
         </div>
         <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 25%;"></div>
+          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 30%;"></div>
         </div>
       </div>
     `;
@@ -4255,50 +3822,35 @@ async function processCapturedPhoto(file) {
   const img = new Image();
   img.onload = async () => {
     try {
-      // 1. Crop to central card proportion for structural analysis & bottom serial extraction
-      const crop = CardRecognizer.getDefaultCropRect(img.naturalWidth || img.width, img.naturalHeight || img.height);
-      const cropCanvas = document.createElement('canvas');
-      cropCanvas.width = crop.sw;
-      cropCanvas.height = crop.sh;
-      const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
-      cropCtx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, crop.sw, crop.sh);
-
-      // Enhance canvas snapshot (sharpening + contrast boost)
-      enhanceCanvasSnapshot(cropCanvas);
-
-      // 2. Multi-Region Tesseract OCR: Serial Number + Graded Slab Recognition
+      // 1. Direct Tesseract.js OCR extraction (serial number + slab marker)
       updateProgress(
-        "OCR Tesseract (Numéro & Boîtier)...",
-        "Extraction du n° officiel et du grade (PSA, BGS, CGC, PCA, ARS)",
-        40
+        "Extraction OCR (Numéro & Boîtier)...",
+        "Recherche du n° (ex: 120/119) et du grade (PSA/BGS/CGC/PCA/ARS)",
+        50
       );
 
       let ocrData = { serial: null, slab: null, rawText: '' };
       try {
-        ocrData = await CardOCR.extractCardAndSlabData(img, cropCanvas);
+        ocrData = await CardOCR.extractFromPhoto(file, img);
       } catch (ocrErr) {
-        console.warn('OCR execution warning:', ocrErr);
+        console.warn('[Scanner] OCR pass warning:', ocrErr);
       }
 
       const detectedSlab = ocrData.slab || null;
       const detectedSerial = ocrData.serial || null;
 
-      // 3. 4x4 Structural Artwork Signature Step
-      updateProgress(
-        "Analyse des contrastes de l'artwork...",
-        detectedSlab
-          ? `Slab ${detectedSlab.displayLabel} détecté — calcul structurel`
-          : "Calcul de la grille structurelle 4x4",
-        65
-      );
+      // 2. Automatically switch UI to Graded mode & apply historical grade multiplier if slab detected
+      if (detectedSlab) {
+        applyDetectedSlabToGlobalUI(detectedSlab);
+      }
 
-      const scanSignature = CardRecognizer.extractArtworkSignature(cropCanvas);
-
-      // 4. Instant 100% Confidence Lookup via Extracted Serial Number (Local Index + Live TCGdex API)
+      // 3. Instant 100% accurate TCGdex API lookup by extracted serial / localId
       if (detectedSerial && detectedSerial.cleanLocalId) {
         updateProgress(
-          `Numéro ${detectedSerial.serial} extrait par OCR...`,
-          "Vérification instantanée dans le catalogue dynamique TCGdex",
+          `Numéro ${detectedSerial.serial} détecté par OCR...`,
+          detectedSlab
+            ? `Mode Gradé (${detectedSlab.displayLabel}) activé — requête TCGdex`
+            : "Interrogation directe de l'API TCGdex...",
           85
         );
 
@@ -4309,69 +3861,47 @@ async function processCapturedPhoto(file) {
             detectedSerial.setHint
           );
         } catch (lookupErr) {
-          console.warn('Dynamic serial lookup warning:', lookupErr);
+          console.warn('[Scanner] TCGdex serial lookup warning:', lookupErr);
         }
 
         if (serialCandidates && serialCandidates.length > 0) {
-          let ordered = serialCandidates.map(c => ({ card: c, score: 100, scoreVisual: 100 }));
-          if (serialCandidates.length > 1 && scanSignature && !scanSignature.isPoorQuality) {
-            const visualRanked = await CardRecognizer.rankCardsFromSignature(scanSignature, serialCandidates);
-            if (visualRanked && visualRanked.length > 0) {
-              ordered = visualRanked;
-            }
+          // Prioritize active country filter if multiple editions share the exact serial
+          const activeCountries = state.filters?.countries || [];
+          if (activeCountries.length > 0 && serialCandidates.length > 1) {
+            serialCandidates = [...serialCandidates].sort((a, b) => {
+              const am = activeCountries.includes(a.edition) ? 1 : 0;
+              const bm = activeCountries.includes(b.edition) ? 1 : 0;
+              return bm - am;
+            });
           }
 
+          // On-demand native TCGdex JA→FR translation if needed
+          const topCard = await LocalizationService.translateCardViaTCGdex(serialCandidates[0]);
+
           const bestMatch = {
-            ...ordered[0],
+            card: topCard,
             score: 100,
             ocrVerified: true,
             ocrSerial: detectedSerial.serial,
             detectedSlab
           };
-          const runnerUps = ordered.slice(1, 4).map(r => ({
-            ...r,
+          const runnerUps = serialCandidates.slice(1, 4).map(c => ({
+            card: c,
+            score: 95,
+            ocrVerified: true,
+            ocrSerial: detectedSerial.serial,
             detectedSlab
           }));
+
           showScannerResult(bestMatch, runnerUps, resultsEl);
           return;
         }
       }
 
-      // 5. Fallback to 4x4 Structural Grayscale Matcher when OCR found no catalog serial
-      if (!scanSignature || scanSignature.isPoorQuality) {
-        showNoMatchResult(scanSignature?.score || 10, resultsEl, detectedSlab);
-        return;
-      }
-
-      updateProgress(
-        "Comparaison avec le catalogue...",
-        "Aucun texte détecté — recherche structurelle 4x4",
-        85
-      );
-
-      const ranked = await CardRecognizer.rankCardsFromSignature(scanSignature, CARDS);
-      if (!ranked || ranked.length === 0) {
-        showNoMatchResult(0, resultsEl, detectedSlab);
-        return;
-      }
-
-      const bestMatch = {
-        ...ranked[0],
-        detectedSlab
-      };
-
-      // Enforce strict confidence thresholds:
-      // - Score >= 75%: Confirmed match
-      // - 50% <= Score < 75%: Warning state
-      // - Score < 50%: Honest rejection with smooth manual fallback
-      if (bestMatch.score < 50) {
-        showNoMatchResult(bestMatch.score, resultsEl, detectedSlab);
-      } else {
-        const runnerUps = ranked.slice(1, 4).map(r => ({ ...r, detectedSlab }));
-        showScannerResult(bestMatch, runnerUps, resultsEl);
-      }
+      // 4. Clean manual fallback when OCR could not read a catalog serial number
+      showNoMatchResult(0, resultsEl, detectedSlab);
     } catch (e) {
-      console.error('Scan processing error:', e);
+      console.error('[Scanner] OCR processing error:', e);
       showNoMatchResult(0, resultsEl);
     } finally {
       URL.revokeObjectURL(objectUrl);
@@ -4379,7 +3909,6 @@ async function processCapturedPhoto(file) {
   };
 
   img.onerror = () => {
-    console.error('Image load error for captured photo');
     URL.revokeObjectURL(objectUrl);
     showNoMatchResult(0, resultsEl);
   };
@@ -4405,8 +3934,8 @@ function showNoMatchResult(score = 0, resultsEl = null, detectedSlab = null) {
       </div>
       ${slabHintHtml}
       <div class="space-y-1">
-        <div class="text-sm font-bold text-amber-300">Photo non concluante — Réessayez ou tapez le n°</div>
-        <p class="text-xs text-white/60">Aucun numéro de série lisible et similarité insuffisante (${Math.round(score)}% &lt; 50%). Cadrez le bas de carte ou tapez directement le numéro.</p>
+        <div class="text-sm font-bold text-amber-300">Numéro de série non détecté — Réessayez ou tapez le n°</div>
+        <p class="text-xs text-white/60">L'OCR n'a pas pu lire le numéro en bas de carte (ex: 120/119, 201/165). Rapprochez-vous du numéro ou saisissez-le ci-dessous.</p>
       </div>
 
       <div class="flex gap-2">
@@ -4611,7 +4140,7 @@ function showScannerResult(matchedResult, runnerUps = [], resultsEl = null, acti
     <div class="mt-1 flex items-center">
       <span class="price-pending-badge">
         <span class="price-pending-dot"></span>
-        Prix non disponible (Pas de ventes récentes)
+        Prix non disponible / En cours d'actualisation
       </span>
     </div>
   `;
@@ -4811,6 +4340,9 @@ async function runScannerManualLookup(rawQuery, resultsEl = null, detectedSlab =
 
   // Detect any inline slab marker typed by the user (e.g. "201/165 PSA 10" or "120/119 ARS 10+")
   const typedSlab = detectedSlab || CardOCR.parseSlabFromText(raw);
+  if (typedSlab) {
+    applyDetectedSlabToGlobalUI(typedSlab);
+  }
   const queryNoSlab = raw
     .replace(/\b(?:PSA|BGS|BECKETT|CGC|PCA|ARS|GRADE)\s*(?:10\+|10\s*(?:BL|BLACK\s*LABEL|PRISTINE)?|9\.5|9|8\.5|8|7)\b/ig, '')
     .trim() || raw;
@@ -5635,15 +5167,6 @@ function initApp() {
     }
   } catch (err) {
     console.warn('[PokéSpread] PriceService error:', err);
-  }
-
-  // Step 7: Preload CardRecognizer color signatures for loaded catalog
-  try {
-    if (typeof CardRecognizer !== 'undefined' && CardRecognizer.init) {
-      CardRecognizer.init(CARDS);
-    }
-  } catch (err) {
-    console.warn('[PokéSpread] CardRecognizer init warning:', err);
   }
 }
 
