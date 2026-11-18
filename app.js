@@ -27,6 +27,7 @@ const state = {
     priceMin: null,
     priceMax: null,
     priceUnit: 'EUR',                                  // 'EUR' | 'JPY'
+    pricedOnly: false                                  // Only show cards with verified market prices
   }
 };
 
@@ -757,7 +758,7 @@ const PriceService = {
       const jpSmooth = entry.jp?.smoothed_avg;
       card.frPrice = frSmooth != null ? frSmooth : null;
       card.jpPrice = jpSmooth != null ? jpSmooth : null;
-      card.hasPrice = (card.frPrice != null && card.jpPrice != null);
+      card.hasPrice = (card.frPrice != null || card.jpPrice != null);
 
       if (entry.fr) {
         card.platforms = {
@@ -796,40 +797,41 @@ const PriceService = {
     const { frMult, jpMult } = resolveConditionMultiplier(custom, card);
 
     const entry = this.findPriceEntry(card);
-    if (entry && entry.fr && entry.jp && card.hasPrice) {
-      const cm = entry.fr.cardmarket || {};
-      return {
-        fr: {
-          ebay: {
-            last: entry.fr.ebay_fr?.sold_prices?.[0] ? Math.round(entry.fr.ebay_fr.sold_prices[0] * frMult * 10) / 10 : null,
-            avg7: cm.avg7 ? Math.round(cm.avg7 * frMult * 10) / 10 : null,
-            avg30: (entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) ? Math.round((entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) * frMult * 10) / 10 : null,
-            avg90: cm.avg30 ? Math.round(cm.avg30 * frMult * 10) / 10 : null
-          },
-          vinted: { last: null, avg7: null, avg30: null, avg90: null },
-          lbc: { last: null, avg7: null, avg30: null, avg90: null }
+    if (entry && (entry.fr || entry.jp) && card.hasPrice) {
+      const cm = entry.fr?.cardmarket || {};
+      const frData = entry.fr ? {
+        ebay: {
+          last: entry.fr.ebay_fr?.sold_prices?.[0] ? Math.round(entry.fr.ebay_fr.sold_prices[0] * frMult * 10) / 10 : null,
+          avg7: cm.avg7 ? Math.round(cm.avg7 * frMult * 10) / 10 : null,
+          avg30: (entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) ? Math.round((entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) * frMult * 10) / 10 : null,
+          avg90: cm.avg30 ? Math.round(cm.avg30 * frMult * 10) / 10 : null
         },
-        jp: {
-          mercari: {
-            last: entry.jp.mercari?.sold_prices?.[0] ? Math.round(entry.jp.mercari.sold_prices[0] * jpMult) : null,
-            avg7: null,
-            avg30: entry.jp.mercari?.avg ? Math.round(entry.jp.mercari.avg * jpMult) : (entry.jp.mercari?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-            avg90: null
-          },
-          yahoo: {
-            last: entry.jp.yahoo_auctions?.sold_prices?.[0] ? Math.round(entry.jp.yahoo_auctions.sold_prices[0] * jpMult) : null,
-            avg7: null,
-            avg30: entry.jp.yahoo_auctions?.avg ? Math.round(entry.jp.yahoo_auctions.avg * jpMult) : (entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-            avg90: null
-          },
-          cardrush: {
-            last: entry.jp.card_rush?.sold_prices?.[0] ? Math.round(entry.jp.card_rush.sold_prices[0] * jpMult) : null,
-            avg7: null,
-            avg30: entry.jp.card_rush?.avg ? Math.round(entry.jp.card_rush.avg * jpMult) : (entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-            avg90: null
-          }
+        vinted: { last: null, avg7: null, avg30: null, avg90: null },
+        lbc: { last: null, avg7: null, avg30: null, avg90: null }
+      } : null;
+
+      const jpData = entry.jp ? {
+        mercari: {
+          last: entry.jp.mercari?.sold_prices?.[0] ? Math.round(entry.jp.mercari.sold_prices[0] * jpMult) : null,
+          avg7: null,
+          avg30: entry.jp.mercari?.avg ? Math.round(entry.jp.mercari.avg * jpMult) : (entry.jp.mercari?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
+          avg90: null
+        },
+        yahoo: {
+          last: entry.jp.yahoo_auctions?.sold_prices?.[0] ? Math.round(entry.jp.yahoo_auctions.sold_prices[0] * jpMult) : null,
+          avg7: null,
+          avg30: entry.jp.yahoo_auctions?.avg ? Math.round(entry.jp.yahoo_auctions.avg * jpMult) : (entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
+          avg90: null
+        },
+        cardrush: {
+          last: entry.jp.card_rush?.sold_prices?.[0] ? Math.round(entry.jp.card_rush.sold_prices[0] * jpMult) : null,
+          avg7: null,
+          avg30: entry.jp.card_rush?.avg ? Math.round(entry.jp.card_rush.avg * jpMult) : (entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
+          avg90: null
         }
-      };
+      } : null;
+
+      return { fr: frData, jp: jpData };
     }
 
     // Price not available: zero fabricated numbers
@@ -1380,9 +1382,18 @@ function cardMatchesFilters(card) {
   }
 
   // 3. Price Filter (min / max)
+  // If getActiveJpPrice is null, fall back to getActiveFrPrice (converted to JPY if priceUnit === 'JPY')
+  let buyPrice = null;
   const rawJp = getActiveJpPrice(card);
+  const rawFr = getActiveFrPrice(card);
+
   if (rawJp !== null) {
-    const buyPrice = state.filters.priceUnit === 'EUR' ? jpToEur(rawJp) : rawJp;
+    buyPrice = state.filters.priceUnit === 'EUR' ? jpToEur(rawJp) : rawJp;
+  } else if (rawFr !== null) {
+    buyPrice = state.filters.priceUnit === 'JPY' ? Math.round(rawFr * state.rate) : rawFr;
+  }
+
+  if (buyPrice !== null) {
     if (state.filters.priceMin !== null && !isNaN(state.filters.priceMin)) {
       if (buyPrice < state.filters.priceMin) return false;
     }
@@ -1391,6 +1402,11 @@ function cardMatchesFilters(card) {
     }
   } else if (state.filters.priceMin !== null || state.filters.priceMax !== null) {
     return false;
+  }
+
+  // 4. "Priced Only" filter
+  if (state.filters.pricedOnly) {
+    if (rawFr === null && rawJp === null) return false;
   }
 
   return true;
@@ -1417,12 +1433,15 @@ function renderCardTile(card, rank) {
   const roi = netROI(card);
   const jpActive = getActiveJpPrice(card);
   const frActive = getActiveFrPrice(card);
-  const hasPrices = (margin !== null && roi !== null && jpActive !== null && frActive !== null);
+
+  const hasBothPrices = (margin !== null && roi !== null && jpActive !== null && frActive !== null);
+  const hasFrOnly = (frActive !== null && (jpActive === null || isNaN(jpActive)));
+  const hasJpOnly = (jpActive !== null && (frActive === null || isNaN(frActive)));
 
   const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
   const vel = velocityLabel(card.velocityScore || 6);
-  const profitClass = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
-  const marginSign = hasPrices && margin >= 0 ? '+' : '';
+  const profitClass = hasBothPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
+  const marginSign = hasBothPrices && margin >= 0 ? '+' : '';
   const hasSubName = card.subName && card.subName !== card.name;
 
   let condBadge = '';
@@ -1447,21 +1466,47 @@ function renderCardTile(card, rank) {
     condBadge = `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5">📦 Raw ${rawStr}</span>`;
   }
 
-  const pricingBlock = hasPrices ? `
-    <div class="text-[10px] text-slate-600">JP: ¥${jpActive.toLocaleString('fr-FR')} (${(jpToEur(jpActive) || 0).toFixed(2)}€) → FR: ${frActive.toFixed(2)}€</div>
-    <div class="flex items-center gap-1 mt-0.5">
-      <span class="${profitClass} text-xs font-semibold">${marginSign}${margin.toFixed(2)}€</span>
-      <span class="text-[10px] text-slate-400">|</span>
-      <span class="${profitClass} text-xs font-semibold">${marginSign}${roi.toFixed(0)}%</span>
-    </div>
-  ` : `
-    <div class="mt-1 flex items-center">
-      <span class="price-pending-badge">
-        <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
-      </span>
-    </div>
-  `;
+  let pricingBlock = '';
+  if (hasBothPrices) {
+    pricingBlock = `
+      <div class="text-[10px] text-slate-600">JP: ¥${jpActive.toLocaleString('fr-FR')} (${(jpToEur(jpActive) || 0).toFixed(2)}€) → FR: ${frActive.toFixed(2)}€</div>
+      <div class="flex items-center gap-1 mt-0.5">
+        <span class="${profitClass} text-xs font-semibold">${marginSign}${margin.toFixed(2)}€</span>
+        <span class="text-[10px] text-slate-400">|</span>
+        <span class="${profitClass} text-xs font-semibold">${marginSign}${roi.toFixed(0)}%</span>
+      </div>
+    `;
+  } else if (hasFrOnly) {
+    const frSource = card.platforms?.cardmarket ? 'Cardmarket' : (card.platforms?.ebay ? 'eBay FR' : 'Marché FR');
+    pricingBlock = `
+      <div class="text-[10px] text-slate-600"><span class="font-semibold text-emerald-700">FR: ${frActive.toFixed(2)}€</span> <span class="text-[9px] text-slate-400">(${frSource})</span></div>
+      <div class="flex items-center gap-1.5 mt-0.5">
+        <span class="text-[10px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded px-1 py-0.2">JP: En attente</span>
+        <span class="text-[10px] text-slate-400">|</span>
+        <span class="text-[10px] text-slate-500 font-medium">Arbitrage en attente</span>
+      </div>
+    `;
+  } else if (hasJpOnly) {
+    pricingBlock = `
+      <div class="text-[10px] text-slate-600"><span class="font-semibold text-sky-700">JP: ¥${jpActive.toLocaleString('fr-FR')}</span> <span class="text-[9px] text-slate-400">(${(jpToEur(jpActive) || 0).toFixed(2)}€)</span></div>
+      <div class="flex items-center gap-1.5 mt-0.5">
+        <span class="text-[10px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded px-1 py-0.2">FR: En attente</span>
+        <span class="text-[10px] text-slate-400">|</span>
+        <span class="text-[10px] text-slate-500 font-medium">Arbitrage en attente</span>
+      </div>
+    `;
+  } else {
+    pricingBlock = `
+      <div class="mt-1 flex items-center">
+        <span class="price-pending-badge">
+          <span class="price-pending-dot"></span>
+          Prix non disponible / En cours d'actualisation
+        </span>
+      </div>
+    `;
+  }
+
+  const hasHistory = (card.priceHistory && card.priceHistory.length > 1);
 
   return `
     <div class="card-tile fade-in" data-id="${card.id}">
@@ -1477,10 +1522,10 @@ function renderCardTile(card, rank) {
           ${condBadge}
         </div>
         ${pricingBlock}
-        ${hasPrices && card.priceHistory && card.priceHistory.length > 1 ? buildSparkline(card.priceHistory) : ''}
+        ${hasBothPrices && hasHistory ? buildSparkline(card.priceHistory) : ''}
         <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] text-slate-500">${hasPrices && card.salesPerMonth ? `${card.salesPerMonth} ventes/mois` : 'Catalogue TCGdex'}</span>
-          ${hasPrices && card.velocityScore ? `<span class="${vel.cls}">${vel.text}</span>` : ''}
+          <span class="text-[10px] text-slate-500">${hasBothPrices && card.salesPerMonth ? `${card.salesPerMonth} ventes/mois` : (hasFrOnly ? 'Vente FR confirmée' : 'Catalogue TCGdex')}</span>
+          ${hasBothPrices && card.velocityScore ? `<span class="${vel.cls}">${vel.text}</span>` : ''}
         </div>
       </div>
     </div>
@@ -1489,60 +1534,108 @@ function renderCardTile(card, rank) {
 
 // ── FAST O(N) PARTITIONED SORTED ARRAYS (SCALES TO 50,000+ CARDS) ──
 function getSortedByMargin(filter = false) {
-  const priced = [];
+  const fullPriced = [];
+  const partialFrPriced = [];
+  const partialJpPriced = [];
   const unpriced = [];
+
   for (let i = 0; i < CARDS.length; i++) {
     const c = CARDS[i];
     if (filter && !cardMatchesFilters(c)) continue;
-    if (c.hasPrice) {
-      const m = netMargin(c);
-      if (m !== null) {
-        priced.push({ card: c, val: m });
-        continue;
-      }
+
+    const m = netMargin(c);
+    if (m !== null) {
+      fullPriced.push({ card: c, val: m });
+    } else if (c.frPrice !== null) {
+      partialFrPriced.push({ card: c, val: c.frPrice });
+    } else if (c.jpPrice !== null) {
+      partialJpPriced.push({ card: c, val: c.jpPrice });
+    } else {
+      unpriced.push(c);
     }
-    unpriced.push(c);
   }
-  priced.sort((a, b) => b.val - a.val);
-  return [...priced.map(x => x.card), ...unpriced];
+
+  // 1. Full arbitrage (FR+JP) sorted by margin descending
+  fullPriced.sort((a, b) => b.val - a.val);
+  // 2. Partial FR-only sorted by highest frPrice descending (high-value chase cards at top)
+  partialFrPriced.sort((a, b) => b.val - a.val);
+  // 3. Partial JP-only sorted by highest jpPrice descending
+  partialJpPriced.sort((a, b) => b.val - a.val);
+
+  return [
+    ...fullPriced.map(x => x.card),
+    ...partialFrPriced.map(x => x.card),
+    ...partialJpPriced.map(x => x.card),
+    ...unpriced
+  ];
 }
 
 function getSortedByROI(filter = false) {
-  const priced = [];
+  const fullPriced = [];
+  const partialFrPriced = [];
+  const partialJpPriced = [];
   const unpriced = [];
+
   for (let i = 0; i < CARDS.length; i++) {
     const c = CARDS[i];
     if (filter && !cardMatchesFilters(c)) continue;
-    if (c.hasPrice) {
-      const r = netROI(c);
-      if (r !== null) {
-        priced.push({ card: c, val: r });
-        continue;
-      }
+
+    const r = netROI(c);
+    if (r !== null) {
+      fullPriced.push({ card: c, val: r });
+    } else if (c.frPrice !== null) {
+      partialFrPriced.push({ card: c, val: c.frPrice });
+    } else if (c.jpPrice !== null) {
+      partialJpPriced.push({ card: c, val: c.jpPrice });
+    } else {
+      unpriced.push(c);
     }
-    unpriced.push(c);
   }
-  priced.sort((a, b) => b.val - a.val);
-  return [...priced.map(x => x.card), ...unpriced];
+
+  fullPriced.sort((a, b) => b.val - a.val);
+  partialFrPriced.sort((a, b) => b.val - a.val);
+  partialJpPriced.sort((a, b) => b.val - a.val);
+
+  return [
+    ...fullPriced.map(x => x.card),
+    ...partialFrPriced.map(x => x.card),
+    ...partialJpPriced.map(x => x.card),
+    ...unpriced
+  ];
 }
 
 function getSortedByVelocity(filter = false) {
-  const priced = [];
+  const fullPriced = [];
+  const partialFrPriced = [];
+  const partialJpPriced = [];
   const unpriced = [];
+
   for (let i = 0; i < CARDS.length; i++) {
     const c = CARDS[i];
     if (filter && !cardMatchesFilters(c)) continue;
-    if (c.hasPrice) {
-      const r = netROI(c);
-      if (r !== null) {
-        priced.push({ card: c, vel: c.velocityScore || 0, roi: r });
-        continue;
-      }
+
+    const r = netROI(c);
+    if (r !== null) {
+      fullPriced.push({ card: c, vel: c.velocityScore || 0, roi: r });
+    } else if (c.frPrice !== null) {
+      partialFrPriced.push({ card: c, vel: 0, val: c.frPrice });
+    } else if (c.jpPrice !== null) {
+      partialJpPriced.push({ card: c, vel: 0, val: c.jpPrice });
+    } else {
+      unpriced.push(c);
     }
-    unpriced.push(c);
   }
-  priced.sort((a, b) => (b.vel !== a.vel ? b.vel - a.vel : b.roi - a.roi));
-  return [...priced.map(x => x.card), ...unpriced];
+
+  fullPriced.sort((a, b) => (b.vel !== a.vel ? b.vel - a.vel : b.roi - a.roi));
+  partialFrPriced.sort((a, b) => b.val - a.val);
+  partialJpPriced.sort((a, b) => b.val - a.val);
+
+  return [
+    ...fullPriced.map(x => x.card),
+    ...partialFrPriced.map(x => x.card),
+    ...partialJpPriced.map(x => x.card),
+    ...unpriced
+  ];
 }
 
 function getCardsForTab(tabKey, filter = isFilterModeActive()) {
@@ -2621,7 +2714,7 @@ function renderCardDetailModal() {
   const fr7j = platforms.fr?.ebay?.avg7;
   const fr30j = platforms.fr?.ebay?.avg30;
   const fr90j = platforms.fr?.ebay?.avg90;
-  const frHist = hasPrices ? [
+  const frHist = frActive !== null ? [
     Math.round((fr90j || frActive) * 0.98 * 10) / 10,
     Math.round((fr90j || frActive) * 10) / 10,
     Math.round((fr30j || frActive) * 0.99 * 10) / 10,
@@ -2633,7 +2726,7 @@ function renderCardDetailModal() {
   const jp7j = platforms.jp?.mercari?.avg7;
   const jp30j = platforms.jp?.mercari?.avg30;
   const jp90j = platforms.jp?.mercari?.avg90;
-  const jpHist = hasPrices ? [
+  const jpHist = jpActive !== null ? [
     Math.round((jp90j || jpActive) * 1.02),
     Math.round(jp90j || jpActive),
     Math.round((jp30j || jpActive) * 1.01),
@@ -2803,35 +2896,65 @@ function renderCardDetailModal() {
     `;
   }
 
-  const pricingHeaderHtml = hasPrices ? `
-    <div class="text-sm text-slate-700 mb-1">
-      Achat JP : <strong class="text-slate-900">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)
-      → Revente FR : <strong class="text-slate-900">${frActive.toFixed(2)} €</strong>
-    </div>
-    <div class="text-sm mb-3">
-      Marge nette : <span class="${profitClass} font-bold">${marginSign}${margin.toFixed(2)} €</span>
-      &nbsp;|&nbsp; ROI : <span class="${profitClass} font-bold">${marginSign}${roi.toFixed(0)} %</span>
-    </div>
-  ` : `
-    <div class="my-2">
-      <span class="price-pending-badge text-xs py-1 px-3">
-        <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
-      </span>
-    </div>
-    <div class="text-xs text-slate-500 mb-3">
-      Aucune vente finalisée enregistrée pour cette référence. Consultez les plateformes ci-dessous pour les ventes en direct.
-    </div>
-  `;
+  const hasBothPrices = (frActive !== null && jpActive !== null && margin !== null && roi !== null);
+  const hasFrOnly = (frActive !== null && (jpActive === null || isNaN(jpActive)));
+  const hasJpOnly = (jpActive !== null && (frActive === null || isNaN(frActive)));
 
-  const chartsHtml = hasPrices ? `
+  let pricingHeaderHtml = '';
+  if (hasBothPrices) {
+    pricingHeaderHtml = `
+      <div class="text-sm text-slate-700 mb-1">
+        Achat JP : <strong class="text-slate-900">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)
+        → Revente FR : <strong class="text-slate-900">${frActive.toFixed(2)} €</strong>
+      </div>
+      <div class="text-sm mb-3">
+        Marge nette : <span class="${profitClass} font-bold">${marginSign}${margin.toFixed(2)} €</span>
+        &nbsp;|&nbsp; ROI : <span class="${profitClass} font-bold">${marginSign}${roi.toFixed(0)} %</span>
+      </div>
+    `;
+  } else if (hasFrOnly) {
+    const frSource = card.platforms?.cardmarket ? 'Cardmarket' : (card.platforms?.ebay ? 'eBay FR' : 'Marché FR');
+    pricingHeaderHtml = `
+      <div class="text-sm text-slate-700 mb-1 flex items-center gap-2 flex-wrap">
+        <span>Revente FR : <strong class="text-emerald-700 font-bold">${frActive.toFixed(2)} €</strong> <span class="text-xs text-slate-400">(${frSource})</span></span>
+        <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 font-medium">Achat JP : En attente</span>
+      </div>
+      <div class="text-xs text-slate-500 mb-3">
+        Le prix européen / français est confirmé par ${frSource}. Le prix d'achat japonais est en attente d'actualisation.
+      </div>
+    `;
+  } else if (hasJpOnly) {
+    pricingHeaderHtml = `
+      <div class="text-sm text-slate-700 mb-1 flex items-center gap-2 flex-wrap">
+        <span>Achat JP : <strong class="text-sky-700 font-bold">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)</span>
+        <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 font-medium">Revente FR : En attente</span>
+      </div>
+      <div class="text-xs text-slate-500 mb-3">
+        Le prix d'acquisition japonais est confirmé. Le prix de revente européen / français est en attente d'actualisation.
+      </div>
+    `;
+  } else {
+    pricingHeaderHtml = `
+      <div class="my-2">
+        <span class="price-pending-badge text-xs py-1 px-3">
+          <span class="price-pending-dot"></span>
+          Prix non disponible / En cours d'actualisation
+        </span>
+      </div>
+      <div class="text-xs text-slate-500 mb-3">
+        Aucune vente finalisée enregistrée pour cette référence. Consultez les plateformes ci-dessous pour les ventes en direct.
+      </div>
+    `;
+  }
+
+  const chartsHtml = (frHist.length > 0 || jpHist.length > 0) ? `
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
       <div class="price-chart-wrap">
         <div class="flex items-center justify-between mb-1">
           <span class="price-chart-title">📈 Évolution Prix FR (€)</span>
-          <span class="text-[10px] font-bold text-slate-600">${frActive.toFixed(2)} €</span>
+          <span class="text-[10px] font-bold text-slate-600">${frActive !== null ? `${frActive.toFixed(2)} €` : 'En attente'}</span>
         </div>
-        ${buildPriceChartSVG(frHist)}
+        ${frHist.length > 0 ? buildPriceChartSVG(frHist) : '<div class="h-[60px] flex items-center justify-center text-xs text-slate-400">Prix FR en cours d\'actualisation</div>'}
         <div class="price-chart-axis">
           <span>Lissée 90j</span>
           <span>Lissée 30j</span>
@@ -2841,9 +2964,9 @@ function renderCardDetailModal() {
       <div class="price-chart-wrap">
         <div class="flex items-center justify-between mb-1">
           <span class="price-chart-title">📉 Évolution Prix JP (¥)</span>
-          <span class="text-[10px] font-bold text-slate-600">¥${jpActive.toLocaleString('fr-FR')}</span>
+          <span class="text-[10px] font-bold text-slate-600">${jpActive !== null ? `¥${jpActive.toLocaleString('fr-FR')}` : 'En attente'}</span>
         </div>
-        ${buildPriceChartSVG(jpHist)}
+        ${jpHist.length > 0 ? buildPriceChartSVG(jpHist) : '<div class="h-[60px] flex items-center justify-center text-xs text-slate-400">Prix JP en cours d\'actualisation</div>'}
         <div class="price-chart-axis">
           <span>Lissée 90j</span>
           <span>Lissée 30j</span>
@@ -3334,6 +3457,7 @@ let libraryState = {
   platformFr: 'avg',
   platformJp: 'min',
   year: 'all',
+  pricedOnly: false,
 };
 
 function renderLibrary() {
@@ -3396,6 +3520,21 @@ function renderLibrary() {
     });
   }
 
+  // 5. Priced Only filter
+  if (libraryState.pricedOnly) {
+    cards = cards.filter(c => getActiveFrPrice(c) !== null || getActiveJpPrice(c) !== null);
+  }
+
+  // Sort: Cards with real prices first, then sorted by highest FR price descending
+  cards.sort((a, b) => {
+    const aPriced = (getActiveFrPrice(a) !== null || getActiveJpPrice(a) !== null) ? 1 : 0;
+    const bPriced = (getActiveFrPrice(b) !== null || getActiveJpPrice(b) !== null) ? 1 : 0;
+    if (bPriced !== aPriced) return bPriced - aPriced;
+    const aFr = getActiveFrPrice(a) || 0;
+    const bFr = getActiveFrPrice(b) || 0;
+    return bFr - aFr;
+  });
+
   // Live counter
   if (counter) {
     counter.textContent = `${cards.length} carte${cards.length > 1 ? 's' : ''} trouvée${cards.length > 1 ? 's' : ''}`;
@@ -3423,21 +3562,42 @@ function renderLibrary() {
     const frPrice = getActiveFrPrice(card);
     const jpPrice = getActiveJpPrice(card);
     const margin = netMargin(card);
-    const hasPrices = (frPrice !== null && jpPrice !== null && margin !== null);
-    const profitCls = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
-    const marginSign = hasPrices && margin >= 0 ? '+' : '';
+    const hasBoth = (frPrice !== null && jpPrice !== null && margin !== null);
+    const hasFrOnly = (frPrice !== null && jpPrice === null);
+    const hasJpOnly = (jpPrice !== null && frPrice === null);
+    const profitCls = hasBoth && margin >= 0 ? 'profit-positive' : 'profit-negative';
+    const marginSign = hasBoth && margin >= 0 ? '+' : '';
     const hasSubName = card.subName && card.subName !== card.name;
 
-    const priceRowHtml = hasPrices ? `
-      <div class="flex items-center justify-between mt-1">
-        <span class="text-[10px] text-slate-500">${frPrice.toFixed(2)} €</span>
-        <span class="${profitCls} text-xs font-bold">${marginSign}${margin.toFixed(2)} €</span>
-      </div>
-    ` : `
-      <div class="mt-1">
-        <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix non disponible / En cours d'actualisation</span>
-      </div>
-    `;
+    let priceRowHtml = '';
+    if (hasBoth) {
+      priceRowHtml = `
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[10px] text-slate-500">${frPrice.toFixed(2)} €</span>
+          <span class="${profitCls} text-xs font-bold">${marginSign}${margin.toFixed(2)} €</span>
+        </div>
+      `;
+    } else if (hasFrOnly) {
+      priceRowHtml = `
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[10px] font-semibold text-emerald-700">${frPrice.toFixed(2)} €</span>
+          <span class="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-1">JP en attente</span>
+        </div>
+      `;
+    } else if (hasJpOnly) {
+      priceRowHtml = `
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[10px] font-semibold text-sky-700">¥${jpPrice.toLocaleString('fr-FR')}</span>
+          <span class="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-1">FR en attente</span>
+        </div>
+      `;
+    } else {
+      priceRowHtml = `
+        <div class="mt-1">
+          <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix non disponible</span>
+        </div>
+      `;
+    }
 
     return `
       <div class="library-card-mini fade-in" data-id="${card.id}">
@@ -4768,6 +4928,10 @@ function bindEvents() {
       state.filters.priceMin = null;
       state.filters.priceMax = null;
       state.filters.priceUnit = 'EUR';
+      state.filters.pricedOnly = false;
+
+      const togglePriced = document.getElementById('toggle-priced-only');
+      if (togglePriced) togglePriced.checked = false;
 
       const inputSearch = document.getElementById('input-search-country');
       if (inputSearch) inputSearch.value = '';
@@ -4789,6 +4953,15 @@ function bindEvents() {
       closeAllPopovers();
       applyFilters();
       showToast('Filtres réinitialisés');
+    });
+  }
+
+  // Priced Only Toggle (Main Focus Filter Bar)
+  const togglePricedOnly = document.getElementById('toggle-priced-only');
+  if (togglePricedOnly) {
+    togglePricedOnly.addEventListener('change', () => {
+      state.filters.pricedOnly = togglePricedOnly.checked;
+      applyFilters();
     });
   }
 
@@ -5014,6 +5187,15 @@ function bindEvents() {
   if (libYear) {
     libYear.addEventListener('change', () => {
       libraryState.year = libYear.value;
+      renderLibrary();
+    });
+  }
+
+  // Priced Only Toggle (Library Modal)
+  const libTogglePricedOnly = document.getElementById('lib-toggle-priced-only');
+  if (libTogglePricedOnly) {
+    libTogglePricedOnly.addEventListener('change', () => {
+      libraryState.pricedOnly = libTogglePricedOnly.checked;
       renderLibrary();
     });
   }

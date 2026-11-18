@@ -10,14 +10,15 @@ OPTIMIZED ARBITRAGE ARCHITECTURE:
      SR, UR, AR, CHR, CSR, Shiny, Radiant, Mega, etc.
    - Sorted by newest sets first (SV, SWSH, SM...) for maximal arbitrage liquidity.
 
-2. Reliable Anti-Bot-Free European Pricing (Cardmarket via Pokémon TCG API):
+2. Reliable European & International Pricing (Cardmarket & TCGplayer via Pokémon TCG API):
    - Dynamically indexes English card names from TCGdex (/v2/en/cards) mapped
      by raw_id (e.g. 'xy4-120' -> 'Manectric-EX', 'sv2a-201' -> 'Charizard ex').
    - Resolves real Cardmarket trendPrice, avg30, and avg7 in EUR.
+   - Extracts secondary TCGplayer market prices (USD) benchmark.
 
-3. Concurrent Multi-Threaded Execution:
+3. Anti-Bot Circuit Breakers & Concurrency:
+   - Automatic circuit breaker (disables a scraper after 8 consecutive zero-item/blocked hits).
    - ThreadPoolExecutor(max_workers=6) with thread-local HTTP sessions and polite pacing.
-   - Anti-bot diagnostic counters detecting datacenter IP blocks (consecutive 0 items).
    - Incremental atomic checkpoint saves preserving previous verified records.
    - Strict safeguard: Zero fabricated fallback prices. Real sales or null.
 """
@@ -121,15 +122,21 @@ RE_CHASE_KEYWORDS = re.compile(
 )
 
 # ---------------------------------------------------------------------------
-# Thread-Safe State & Session Management
+# Thread-Safe State & Session Management + Circuit Breakers
 # ---------------------------------------------------------------------------
 _thread_local = threading.local()
 db_lock = threading.Lock()
 anti_bot_lock = threading.Lock()
 save_lock = threading.Lock()
 
-consecutive_zero_ebay_fr = 0
-consecutive_zero_mercari_jp = 0
+CIRCUIT_BREAKER_THRESHOLD = 8
+
+CIRCUIT_BREAKERS: Dict[str, Dict[str, Any]] = {
+    "ebay_fr": {"consecutive_zeros": 0, "tripped": False},
+    "mercari_jp": {"consecutive_zeros": 0, "tripped": False},
+    "yahoo_jp": {"consecutive_zeros": 0, "tripped": False},
+    "cardrush_jp": {"consecutive_zeros": 0, "tripped": False},
+}
 
 
 def create_http_session() -> Optional[requests.Session]:
@@ -468,11 +475,13 @@ def scrape_ebay_fr_sold(
 ) -> dict:
     """Scrapes actual finalized sales on eBay France (LH_Sold=1&LH_Complete=1)."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "ebay_fr_sold"}
+    if CIRCUIT_BREAKERS["ebay_fr"]["tripped"]:
+        return empty
+
     sess = session or get_thread_session()
     if not sess or not HAS_BS4:
         return empty
 
-    global consecutive_zero_ebay_fr
     try:
         url = "https://www.ebay.fr/sch/i.html"
         params = {
@@ -486,11 +495,13 @@ def scrape_ebay_fr_sold(
         resp = sess.get(url, params=params, timeout=12)
         if resp.status_code != 200:
             with anti_bot_lock:
-                consecutive_zero_ebay_fr += 1
-                if consecutive_zero_ebay_fr >= 10 and consecutive_zero_ebay_fr % 10 == 0:
+                cb = CIRCUIT_BREAKERS["ebay_fr"]
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
                     logger.warning(
-                        f"🚨 [ANTI-BOT WARNING] eBay FR has returned HTTP {resp.status_code} / 0 items "
-                        f"across {consecutive_zero_ebay_fr} consecutive requests! Possible datacenter IP block."
+                        f"⚡ [CIRCUIT BREAKER] eBay FR disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive error/empty responses / IP block)."
                     )
             return empty
 
@@ -546,14 +557,16 @@ def scrape_ebay_fr_sold(
         agg = aggregate_sold_metrics(raw_sold, is_jpy=False)
 
         with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["ebay_fr"]
             if agg["count"] > 0:
-                consecutive_zero_ebay_fr = 0
+                cb["consecutive_zeros"] = 0
             else:
-                consecutive_zero_ebay_fr += 1
-                if consecutive_zero_ebay_fr >= 10 and consecutive_zero_ebay_fr % 10 == 0:
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
                     logger.warning(
-                        f"🚨 [ANTI-BOT WARNING] eBay FR returned 0 sold items across "
-                        f"{consecutive_zero_ebay_fr} consecutive requests! Possible IP block or captcha."
+                        f"⚡ [CIRCUIT BREAKER] eBay FR disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive zero-item responses / possible IP block)."
                     )
 
         graded_summary = {}
@@ -573,12 +586,19 @@ def scrape_ebay_fr_sold(
     except Exception as e:
         logger.debug(f"eBay FR sold error: {e}")
         with anti_bot_lock:
-            consecutive_zero_ebay_fr += 1
+            cb = CIRCUIT_BREAKERS["ebay_fr"]
+            cb["consecutive_zeros"] += 1
+            if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                cb["tripped"] = True
+                logger.warning(
+                    f"⚡ [CIRCUIT BREAKER] eBay FR disabled for remainder of run "
+                    f"({cb['consecutive_zeros']} consecutive errors / possible IP block)."
+                )
         return empty
 
 
 # ---------------------------------------------------------------------------
-# European Cardmarket Completed Metrics (via Pokémon TCG API)
+# European Cardmarket & TCGplayer Completed Metrics (via Pokémon TCG API)
 # ---------------------------------------------------------------------------
 def fetch_cardmarket_metrics(
     card_name: str,
@@ -589,7 +609,7 @@ def fetch_cardmarket_metrics(
 ) -> Optional[dict]:
     """
     Fetches real Cardmarket completed trendPrice / avg30 / avg7 metrics via api.pokemontcg.io.
-    Uses the exact English name (or set/number mapping) since api.pokemontcg.io indexes English names.
+    Also extracts secondary TCGplayer market prices (USD) benchmark from the exact same response.
     Reliable anti-bot-free pricing source.
     """
     sess = session or get_thread_session()
@@ -657,20 +677,50 @@ def fetch_cardmarket_metrics(
                 if not best_card:
                     best_card = cards_data[0]
 
+            # 1. Extract Cardmarket prices (EUR)
             cm = best_card.get("cardmarket", {}).get("prices", {})
-            metrics = {}
+            cm_metrics = {}
             for k in ("trendPrice", "avg30", "avg7", "avg1", "lowPrice", "averageSellPrice", "reverseHoloTrend"):
                 v = cm.get(k)
                 if v is not None:
                     try:
                         fv = float(v)
                         if fv > 0:
-                            metrics[k] = round(fv, 2)
+                            cm_metrics[k] = round(fv, 2)
                     except (ValueError, TypeError):
                         pass
 
-            if metrics:
-                return metrics
+            # 2. Extract TCGplayer prices (USD) as secondary verified market benchmark
+            tcg_obj = best_card.get("tcgplayer", {}).get("prices", {})
+            tcg_metrics = {}
+            primary_usd = None
+            if isinstance(tcg_obj, dict):
+                for r_key, p_dict in tcg_obj.items():
+                    if isinstance(p_dict, dict):
+                        m_val = p_dict.get("market") or p_dict.get("mid")
+                        if m_val is not None:
+                            try:
+                                fm = float(m_val)
+                                if fm > 0:
+                                    tcg_metrics[r_key] = {
+                                        "market": round(fm, 2),
+                                        "low": round(float(p_dict.get("low", 0)), 2) if p_dict.get("low") else None,
+                                        "mid": round(float(p_dict.get("mid", 0)), 2) if p_dict.get("mid") else None,
+                                    }
+                                    if primary_usd is None:
+                                        primary_usd = round(fm, 2)
+                            except (ValueError, TypeError):
+                                pass
+
+            if cm_metrics or tcg_metrics:
+                return {
+                    "cardmarket": cm_metrics if cm_metrics else None,
+                    "tcgplayer": tcg_metrics if tcg_metrics else None,
+                    "trendPrice": cm_metrics.get("trendPrice") if cm_metrics else None,
+                    "avg30": cm_metrics.get("avg30") if cm_metrics else None,
+                    "avg7": cm_metrics.get("avg7") if cm_metrics else None,
+                    "tcgplayer_usd": primary_usd,
+                }
         except Exception as e:
             logger.debug(f"Cardmarket query error for '{q}': {e}")
             continue
@@ -688,11 +738,13 @@ def scrape_mercari_jp_sold(
 ) -> dict:
     """Scrapes finalized sold items on Mercari Japan (STATUS_SOLD_OUT)."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "mercari_jp_sold"}
+    if CIRCUIT_BREAKERS["mercari_jp"]["tripped"]:
+        return empty
+
     sess = session or get_thread_session()
     if not sess:
         return empty
 
-    global consecutive_zero_mercari_jp
     jp_headers = {
         **HEADERS,
         "Accept": "application/json",
@@ -761,14 +813,16 @@ def scrape_mercari_jp_sold(
         agg = aggregate_sold_metrics(raw_sold, is_jpy=True)
 
         with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["mercari_jp"]
             if agg["count"] > 0:
-                consecutive_zero_mercari_jp = 0
+                cb["consecutive_zeros"] = 0
             else:
-                consecutive_zero_mercari_jp += 1
-                if consecutive_zero_mercari_jp >= 10 and consecutive_zero_mercari_jp % 10 == 0:
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
                     logger.warning(
-                        f"🚨 [ANTI-BOT WARNING] Mercari JP returned 0 sold items across "
-                        f"{consecutive_zero_mercari_jp} consecutive requests! Possible datacenter IP block."
+                        f"⚡ [CIRCUIT BREAKER] Mercari JP disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive zero-item responses / datacenter IP block)."
                     )
 
         graded_summary = {}
@@ -788,7 +842,14 @@ def scrape_mercari_jp_sold(
     except Exception as e:
         logger.debug(f"Mercari JP sold error: {e}")
         with anti_bot_lock:
-            consecutive_zero_mercari_jp += 1
+            cb = CIRCUIT_BREAKERS["mercari_jp"]
+            cb["consecutive_zeros"] += 1
+            if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                cb["tripped"] = True
+                logger.warning(
+                    f"⚡ [CIRCUIT BREAKER] Mercari JP disabled for remainder of run "
+                    f"({cb['consecutive_zeros']} consecutive errors / datacenter IP block)."
+                )
         return empty
 
 
@@ -802,6 +863,9 @@ def scrape_yahoo_auctions_jp_sold(
 ) -> dict:
     """Scrapes closed winning auctions on Yahoo! Auctions Japan."""
     empty = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "yahoo_jp_sold"}
+    if CIRCUIT_BREAKERS["yahoo_jp"]["tripped"]:
+        return empty
+
     sess = session or get_thread_session()
     if not sess or not HAS_BS4:
         return empty
@@ -814,6 +878,15 @@ def scrape_yahoo_auctions_jp_sold(
             timeout=12,
         )
         if resp.status_code != 200:
+            with anti_bot_lock:
+                cb = CIRCUIT_BREAKERS["yahoo_jp"]
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
+                    logger.warning(
+                        f"⚡ [CIRCUIT BREAKER] Yahoo! Auctions JP disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive error/empty responses / datacenter IP block)."
+                    )
             return empty
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -847,6 +920,20 @@ def scrape_yahoo_auctions_jp_sold(
                 raw_sold.append(val)
 
         agg = aggregate_sold_metrics(raw_sold, is_jpy=True)
+
+        with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["yahoo_jp"]
+            if agg["count"] > 0:
+                cb["consecutive_zeros"] = 0
+            else:
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
+                    logger.warning(
+                        f"⚡ [CIRCUIT BREAKER] Yahoo! Auctions JP disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive zero-item responses / datacenter IP block)."
+                    )
+
         graded_summary = {}
         for g_key, g_prices in graded_sold.items():
             g_agg = aggregate_sold_metrics(g_prices, is_jpy=True)
@@ -863,6 +950,15 @@ def scrape_yahoo_auctions_jp_sold(
         }
     except Exception as e:
         logger.debug(f"Yahoo! Auctions JP closed error: {e}")
+        with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["yahoo_jp"]
+            cb["consecutive_zeros"] += 1
+            if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                cb["tripped"] = True
+                logger.warning(
+                    f"⚡ [CIRCUIT BREAKER] Yahoo! Auctions JP disabled for remainder of run "
+                    f"({cb['consecutive_zeros']} consecutive errors / datacenter IP block)."
+                )
         return empty
 
 
@@ -876,6 +972,9 @@ def scrape_card_rush_jp(
 ) -> dict:
     """Scrapes single-card retail acquisition prices from Card Rush Japan."""
     empty = {"sold_prices": [], "count": 0, "avg": None, "median": None, "source": "cardrush_jp"}
+    if CIRCUIT_BREAKERS["cardrush_jp"]["tripped"]:
+        return empty
+
     sess = session or get_thread_session()
     if not sess or not HAS_BS4:
         return empty
@@ -888,6 +987,15 @@ def scrape_card_rush_jp(
             timeout=12,
         )
         if resp.status_code != 200:
+            with anti_bot_lock:
+                cb = CIRCUIT_BREAKERS["cardrush_jp"]
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
+                    logger.warning(
+                        f"⚡ [CIRCUIT BREAKER] Card Rush JP disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive error/empty responses / datacenter IP block)."
+                    )
             return empty
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -911,6 +1019,20 @@ def scrape_card_rush_jp(
                 pass
 
         agg = aggregate_sold_metrics(prices, is_jpy=True)
+
+        with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["cardrush_jp"]
+            if agg["count"] > 0:
+                cb["consecutive_zeros"] = 0
+            else:
+                cb["consecutive_zeros"] += 1
+                if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                    cb["tripped"] = True
+                    logger.warning(
+                        f"⚡ [CIRCUIT BREAKER] Card Rush JP disabled for remainder of run "
+                        f"({cb['consecutive_zeros']} consecutive zero-item responses / datacenter IP block)."
+                    )
+
         return {
             "sold_prices": agg["sold_prices"],
             "count": agg["count"],
@@ -920,6 +1042,15 @@ def scrape_card_rush_jp(
         }
     except Exception as e:
         logger.debug(f"Card Rush JP error: {e}")
+        with anti_bot_lock:
+            cb = CIRCUIT_BREAKERS["cardrush_jp"]
+            cb["consecutive_zeros"] += 1
+            if not cb["tripped"] and cb["consecutive_zeros"] >= CIRCUIT_BREAKER_THRESHOLD:
+                cb["tripped"] = True
+                logger.warning(
+                    f"⚡ [CIRCUIT BREAKER] Card Rush JP disabled for remainder of run "
+                    f"({cb['consecutive_zeros']} consecutive errors / datacenter IP block)."
+                )
         return empty
 
 
@@ -983,10 +1114,13 @@ def scrape_single_card(
         query_jp = f"{clean_fr} {local_id}".strip()
 
     # --- A. French / European Resale Market ---
-    ebay_fr = scrape_ebay_fr_sold(query_fr, local_id, session=sess)
-    time.sleep(random.uniform(0.12, 0.25))
+    if not CIRCUIT_BREAKERS["ebay_fr"]["tripped"]:
+        ebay_fr = scrape_ebay_fr_sold(query_fr, local_id, session=sess)
+        time.sleep(random.uniform(0.08, 0.15))
+    else:
+        ebay_fr = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "ebay_fr_sold"}
 
-    cm_metrics = fetch_cardmarket_metrics(
+    api_metrics = fetch_cardmarket_metrics(
         card_name=(linked_fr_name or name),
         local_id=local_id,
         en_name=linked_en_name,
@@ -994,24 +1128,41 @@ def scrape_single_card(
         session=sess,
     )
 
+    cm_metrics = api_metrics.get("cardmarket") if api_metrics else None
+    tcg_metrics = api_metrics.get("tcgplayer") if api_metrics else None
+    tcg_usd = api_metrics.get("tcgplayer_usd") if api_metrics else None
+
     all_fr_sold = list(ebay_fr.get("sold_prices", []))
     if cm_metrics:
         if cm_metrics.get("trendPrice"):
             all_fr_sold.append(cm_metrics["trendPrice"])
         if cm_metrics.get("avg30"):
             all_fr_sold.append(cm_metrics["avg30"])
+    elif tcg_usd:
+        # Fallback benchmark: TCGplayer USD converted to EUR (~0.92 EUR/USD)
+        eur_est = round(tcg_usd * 0.92, 2)
+        all_fr_sold.append(eur_est)
 
     fr_metrics = aggregate_sold_metrics(all_fr_sold, is_jpy=False)
     fr_graded = ebay_fr.get("graded_prices", {})
 
     # --- B. Japanese Acquisition Market ---
-    mercari_jp = scrape_mercari_jp_sold(query_jp, local_id, session=sess)
-    time.sleep(random.uniform(0.12, 0.25))
+    if not CIRCUIT_BREAKERS["mercari_jp"]["tripped"]:
+        mercari_jp = scrape_mercari_jp_sold(query_jp, local_id, session=sess)
+        time.sleep(random.uniform(0.08, 0.15))
+    else:
+        mercari_jp = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "mercari_jp_sold"}
 
-    yahoo_jp = scrape_yahoo_auctions_jp_sold(query_jp, local_id, session=sess)
-    time.sleep(random.uniform(0.12, 0.25))
+    if not CIRCUIT_BREAKERS["yahoo_jp"]["tripped"]:
+        yahoo_jp = scrape_yahoo_auctions_jp_sold(query_jp, local_id, session=sess)
+        time.sleep(random.uniform(0.08, 0.15))
+    else:
+        yahoo_jp = {"sold_prices": [], "graded_prices": {}, "count": 0, "avg": None, "median": None, "source": "yahoo_jp_sold"}
 
-    cardrush_jp = scrape_card_rush_jp(query_jp, local_id, session=sess)
+    if not CIRCUIT_BREAKERS["cardrush_jp"]["tripped"]:
+        cardrush_jp = scrape_card_rush_jp(query_jp, local_id, session=sess)
+    else:
+        cardrush_jp = {"sold_prices": [], "count": 0, "avg": None, "median": None, "source": "cardrush_jp"}
 
     all_jp_sold = (
         mercari_jp.get("sold_prices", [])
@@ -1054,6 +1205,8 @@ def scrape_single_card(
             },
             "cardmarket": cm_metrics,
             "cardmarket_trend": cm_metrics.get("trendPrice") if cm_metrics else None,
+            "tcgplayer": tcg_metrics,
+            "tcgplayer_usd": tcg_usd,
             "graded": fr_graded,
         },
         "jp": {
@@ -1132,10 +1285,11 @@ def save_database_checkpoint(
                 "card_count": len(prices_db),
                 "priced_cards": total_priced,
                 "processed_this_run": processed,
+                "circuit_breakers": {
+                    k: v["tripped"] for k, v in CIRCUIT_BREAKERS.items()
+                },
                 "observed_grade_spreads": observed_grade_spreads,
-                "consecutive_zero_ebay_fr": consecutive_zero_ebay_fr,
-                "consecutive_zero_mercari_jp": consecutive_zero_mercari_jp,
-                "version": "3.1.0",
+                "version": "3.2.0",
             },
             "prices": prices_db,
         }
@@ -1170,7 +1324,7 @@ def main():
         except Exception as e:
             logger.warning(f"Ignoring unreadable previous prices.json: {e}")
 
-    # 2. Dynamically fetch English catalog mapping for Cardmarket
+    # 2. Dynamically fetch English catalog mapping for Cardmarket & TCGplayer
     en_name_by_raw_id = fetch_tcgdex_en_cards()
 
     # 3. Dynamically fetch ALL official sets & cards from TCGdex (FR + JP)
