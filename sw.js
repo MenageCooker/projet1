@@ -1,6 +1,6 @@
-// PokéSpread Service Worker v10
-const CACHE_NAME = 'pokespread-cache-v10';
-const IMAGE_CACHE_NAME = 'pokespread-images-v10';
+// PokéSpread Service Worker v12 — Network-First Production Strategy
+const CACHE_NAME = 'pokespread-cache-v12';
+const IMAGE_CACHE_NAME = 'pokespread-images-v12';
 
 const PRECACHE_ASSETS = [
   './',
@@ -13,7 +13,38 @@ const PRECACHE_ASSETS = [
   './icon.svg'
 ];
 
-// Install: precache application shell
+const APP_SHELL_FILES = [
+  'index.html',
+  'app.js',
+  'styles.css',
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png',
+  'icon.svg'
+];
+
+// Helper: Network-First with cache fallback
+function networkFirstWithCacheFallback(req, cacheName) {
+  return fetch(req)
+    .then(networkResp => {
+      if (networkResp && networkResp.status === 200) {
+        const clone = networkResp.clone();
+        caches.open(cacheName).then(cache => cache.put(req, clone));
+      }
+      return networkResp;
+    })
+    .catch(() => {
+      return caches.match(req).then(cached => {
+        if (cached) return cached;
+        if (req.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+        return undefined;
+      });
+    });
+}
+
+// Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -22,13 +53,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: clean up older caches
+// Activate Event: Purge old cache generations
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME && key !== IMAGE_CACHE_NAME) {
+            console.log('Clearing legacy cache:', key);
             return caches.delete(key);
           }
         })
@@ -37,31 +69,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Strategy depending on request type
+// Fetch Event
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle GET requests
+  // 1. Only handle GET requests
   if (req.method !== 'GET') return;
 
-  // Bypass SW cache on localhost and 127.0.0.1 for instant development feedback
+  // 2. Bypass SW on localhost for instant development feedback
   if (self.location.hostname === '127.0.0.1' || self.location.hostname === 'localhost') {
     event.respondWith(fetch(req));
     return;
   }
 
-  // 0. Live Market Prices: Strictly network-only (never stale-cached)
+  // 3. Live Prices Data (prices.json): Strictly Network-First
   if (url.pathname.endsWith('prices.json') || url.pathname.includes('prices.json')) {
-    event.respondWith(fetch(req));
+    event.respondWith(networkFirstWithCacheFallback(req, CACHE_NAME));
     return;
   }
 
-  // 1. External Card Images (TCGdex, Wikimedia, PokéTCG): Cache-first with runtime caching
+  // 4. App Shell (index.html, app.js, styles.css): Strictly Network-First
+  const isAppShell =
+    url.pathname === '/' ||
+    url.pathname.endsWith('/') ||
+    APP_SHELL_FILES.some(f => url.pathname.endsWith(f));
+
+  if (isAppShell) {
+    event.respondWith(networkFirstWithCacheFallback(req, CACHE_NAME));
+    return;
+  }
+
+  // 5. Card Images: Cache-First runtime caching
   if (
-    url.hostname.includes('tcgdex.net') && (url.pathname.endsWith('.webp') || url.pathname.endsWith('.png') || url.pathname.includes('/logo') || url.pathname.includes('/symbol')) ||
+    url.hostname.includes('tcgdex.net') ||
     url.hostname.includes('pokemontcg.io') ||
-    url.hostname.includes('wikimedia.org')
+    url.hostname.includes('wikimedia.org') ||
+    url.hostname.includes('pricecharting.com')
   ) {
     event.respondWith(
       caches.open(IMAGE_CACHE_NAME).then((cache) => {
@@ -79,41 +123,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. TCGdex API & Exchange Rate API: Network-first, fallback to cache
+  // 6. External APIs (TCGdex catalog, Exchange Rates): Network-First
   if (url.hostname.includes('api.tcgdex.net') || url.hostname.includes('open.er-api.com')) {
-    event.respondWith(
-      fetch(req).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const resClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
-        }
-        return networkResponse;
-      }).catch(() => caches.match(req))
-    );
+    event.respondWith(networkFirstWithCacheFallback(req, CACHE_NAME));
     return;
   }
 
-  // 3. Static App Shell (index.html, styles.css, app.js, icons): Cache-first, network fallback
+  // 7. General fallback
   event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache (Stale-While-Revalidate for app assets)
-        fetch(req).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkResponse));
-          }
-        }).catch(() => {/* offline */});
-        return cachedResponse;
-      }
-      return fetch(req).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const resClone = networkResponse.clone();
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        if (res && res.status === 200) {
+          const resClone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));
         }
-        return networkResponse;
+        return res;
       });
     }).catch(() => {
-      // Offline fallback for navigation requests
       if (req.mode === 'navigate') {
         return caches.match('./index.html');
       }

@@ -1,71 +1,90 @@
 {
   "_meta": {
-    "generated_at": "2026-11-18T15:14:25.737807+00:00",
-    "source": "real_sold_pipeline_v2.1",
-    "card_count": 78,
-    "priced_cards": 11,
-    "processed_this_run": 46,
-    "observed_grade_spreads": {
-      "fr": {},
-      "jp": {}
+    "generated_at": "2026-11-19T19:32:06.808614+00:00",
+    "version": "4.0.0",
+    "source": "pokespread_verified_sold_pipeline_v4",
+    "fx_rates": {
+      "EUR_JPY": 174.8869,
+      "EUR_USD": 1.0974,
+      "USD_JPY": 159.3661,
+      "JPY_EUR": 0.005718,
+      "USD_EUR": 0.911252
     },
-    "version": "2.1.0"
+    "card_count": 115,
+    "total_priced": 80,
+    "total_priced_both": 52,
+    "fr_only": 9,
+    "jp_only": 19,
+    "processed_this_run": 10,
+    "circuit_breakers": {
+      "ebay_fr": true,
+      "yuyutei": false,
+      "snkrdunk": false,
+      "pricecharting": false,
+      "pokemontcg_api": false
+    }
   },
   "prices": {
-    "sv2a 166/165": {
-      "ref": "sv2a 166/165",
-      "name": "フシギダネ",
+    "SV2a 166/165": {
+      "ref": "SV2a 166/165",
+      "card_id": "ja-SV2a-166",
+      "set_id": "SV2a",
+      "local_id": "166",
+      "official_count": "165",
+      "name_ja": "フシギダネ",
+      "name_fr": "Bulbizarre",
+      "name_en": "Bulbasaur",
       "edition": "JP",
       "lang": "ja",
-      "local_id": "166",
-      "fetched_at": "2026-11-18T00:24:45.237195+00:00",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/166",
+      "fetched_at": "2026-11-19T19:32:04.216939+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
-        "ebay_fr": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "ebay_fr_sold"
-        },
-        "cardmarket": null,
+        "smoothed_avg": 16.43,
+        "raw_eur": 16.43,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/bulbasaur-166",
+        "matched_title": "Bulbasaur #166 | Pokemon Japanese Scarlet & Violet 151",
         "cardmarket_trend": null,
-        "graded": {}
+        "graded": {
+          "PSA 10": {
+            "price": 73.9,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 29.38,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
       },
       "jp": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
-        "mercari": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "mercari_jp_sold"
+        "smoothed_avg": 2676,
+        "raw_jpy": 2676,
+        "raw_eur": 15.3,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/bulbasaur-166",
+        "matched_title": "Bulbasaur #166 | Pokemon Japanese Scarlet & Violet 151",
+        "graded": {
+          "PSA 10": {
+            "price": 73.9,
+            "price_usd": 81.1,
+            "price_eur": 73.9,
+            "price_jpy": 12925,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 29.38,
+            "price_usd": 32.24,
+            "price_eur": 29.38,
+            "price_jpy": 5138,
+            "source": "PriceCharting"
+          }
         },
-        "yahoo_auctions": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "yahoo_jp_sold"
-        },
-        "card_rush": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "cardrush_jp"
-        },
-        "graded": {}
+        "data_type": "sold"
       }
     },
     "sv2a 167/165": {
@@ -2004,68 +2023,66 @@
         "graded": {}
       }
     },
-    "sv2a 201/165": {
-      "ref": "sv2a 201/165",
-      "name": "リザードンex",
+    "SV2a 201/165": {
+      "ref": "SV2a 201/165",
+      "card_id": "ja-SV2a-201",
+      "set_id": "SV2a",
+      "local_id": "201",
+      "official_count": "165",
+      "name_ja": "リザードンex",
+      "name_fr": "Dracaufeu ex",
+      "name_en": "Charizard ex",
       "edition": "JP",
       "lang": "ja",
-      "local_id": "201",
-      "fetched_at": "2026-11-18T14:59:23.036991+00:00",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/201",
+      "fetched_at": "2026-11-19T19:32:04.787248+00:00",
       "fr": {
-        "smoothed_avg": 53.73,
-        "median": 53.73,
-        "min": 53.05,
-        "max": 54.42,
-        "count": 2,
-        "sold_samples": [
-          53.05,
-          54.42
-        ],
-        "ebay_fr": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "ebay_fr_sold"
+        "smoothed_avg": 282.1,
+        "raw_eur": 282.1,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/charizard-ex-201",
+        "matched_title": "Charizard EX #201 | Pokemon Japanese Scarlet & Violet 151",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 472.03,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 300.71,
+            "source": "PriceCharting",
+            "volume": ""
+          }
         },
-        "cardmarket": {
-          "trendPrice": 53.05,
-          "avg30": 54.42,
-          "avg7": 52.51,
-          "lowPrice": 33.9
-        },
-        "cardmarket_trend": 53.05,
-        "graded": {}
+        "data_type": "sold"
       },
       "jp": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
-        "mercari": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "mercari_jp_sold"
+        "smoothed_avg": 54568,
+        "raw_jpy": 54568,
+        "raw_eur": 312.02,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/charizard-ex-201",
+        "matched_title": "Charizard EX #201 | Pokemon Japanese Scarlet & Violet 151",
+        "graded": {
+          "PSA 10": {
+            "price": 472.03,
+            "price_usd": 518.0,
+            "price_eur": 472.03,
+            "price_jpy": 82552,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 300.71,
+            "price_usd": 330.0,
+            "price_eur": 300.71,
+            "price_jpy": 52591,
+            "source": "PriceCharting"
+          }
         },
-        "yahoo_auctions": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "yahoo_jp_sold"
-        },
-        "card_rush": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "cardrush_jp"
-        },
-        "graded": {}
+        "data_type": "sold"
       }
     },
     "sv2a 202/165": {
@@ -2236,68 +2253,66 @@
         "graded": {}
       }
     },
-    "sv2a 205/165": {
-      "ref": "sv2a 205/165",
-      "name": "ミュウex",
+    "SV2a 205/165": {
+      "ref": "SV2a 205/165",
+      "card_id": "ja-SV2a-205",
+      "set_id": "SV2a",
+      "local_id": "205",
+      "official_count": "165",
+      "name_ja": "ミュウex",
+      "name_fr": "Mew ex",
+      "name_en": "Mew ex",
       "edition": "JP",
       "lang": "ja",
-      "local_id": "205",
-      "fetched_at": "2026-11-18T15:01:41.012347+00:00",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/205",
+      "fetched_at": "2026-11-19T19:32:04.419031+00:00",
       "fr": {
-        "smoothed_avg": 16.75,
-        "median": 16.75,
-        "min": 16.63,
-        "max": 16.88,
-        "count": 2,
-        "sold_samples": [
-          16.63,
-          16.88
-        ],
-        "ebay_fr": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "ebay_fr_sold"
+        "smoothed_avg": 166.3,
+        "raw_eur": 166.3,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/mew-ex-205",
+        "matched_title": "Mew EX #205 | Pokemon Japanese Scarlet & Violet 151",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 387.5,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 128.39,
+            "source": "PriceCharting",
+            "volume": ""
+          }
         },
-        "cardmarket": {
-          "trendPrice": 16.63,
-          "avg30": 16.88,
-          "avg7": 16.19,
-          "lowPrice": 8.95
-        },
-        "cardmarket_trend": 16.63,
-        "graded": {}
+        "data_type": "sold"
       },
       "jp": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
-        "mercari": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "mercari_jp_sold"
+        "smoothed_avg": 34442,
+        "raw_jpy": 34442,
+        "raw_eur": 196.94,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/mew-ex-205",
+        "matched_title": "Mew EX #205 | Pokemon Japanese Scarlet & Violet 151",
+        "graded": {
+          "PSA 10": {
+            "price": 387.5,
+            "price_usd": 425.24,
+            "price_eur": 387.5,
+            "price_jpy": 67769,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 128.39,
+            "price_usd": 140.89,
+            "price_eur": 128.39,
+            "price_jpy": 22453,
+            "source": "PriceCharting"
+          }
         },
-        "yahoo_auctions": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "yahoo_jp_sold"
-        },
-        "card_rush": {
-          "sold_prices": [],
-          "avg": null,
-          "median": null,
-          "count": 0,
-          "source": "cardrush_jp"
-        },
-        "graded": {}
+        "data_type": "sold"
       }
     },
     "sv2a 206/165": {
@@ -4466,6 +4481,1824 @@
           "source": "cardrush_jp"
         },
         "graded": {}
+      }
+    },
+    "SV7a 065/64": {
+      "ref": "SV7a 065/64",
+      "card_id": "ja-SV7a-065",
+      "set_id": "SV7a",
+      "local_id": "065",
+      "official_count": "64",
+      "name_ja": "タマタマ",
+      "name_fr": "Noeunoeuf",
+      "name_en": "Exeggcute",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/065",
+      "fetched_at": "2026-11-19T00:38:10.465519+00:00",
+      "fr": {
+        "smoothed_avg": 0.36,
+        "raw_eur": 0.36,
+        "sample_count": 20,
+        "source_name": "Cardmarket (via PokéTCG API)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Holon%20Phantoms/Exeggcute%20%CE%B4",
+        "matched_title": "Exeggcute δ (Holon Phantoms) #65",
+        "cardmarket_trend": 0.36,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 435,
+        "raw_jpy": 435,
+        "raw_eur": 2.49,
+        "sample_count": 8,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv07a/10065",
+        "matched_title": " #65",
+        "graded": {}
+      }
+    },
+    "SV3a 063/62": {
+      "ref": "SV3a 063/62",
+      "card_id": "ja-SV3a-063",
+      "set_id": "SV3a",
+      "local_id": "063",
+      "official_count": "62",
+      "name_ja": "ユキワラシ",
+      "name_fr": "Stalgamin",
+      "name_en": "Snorunt",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/063",
+      "fetched_at": "2026-11-19T00:38:10.576681+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 850,
+        "raw_jpy": 850,
+        "raw_eur": 4.86,
+        "sample_count": 4,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10063",
+        "matched_title": " #63",
+        "graded": {}
+      }
+    },
+    "SV9a 064/63": {
+      "ref": "SV9a 064/63",
+      "card_id": "ja-SV9a-064",
+      "set_id": "SV9a",
+      "local_id": "064",
+      "official_count": "63",
+      "name_ja": "ヤンヤンマ",
+      "name_fr": "Yanma",
+      "name_en": "Yanma",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/064",
+      "fetched_at": "2026-11-19T00:38:12.650390+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 420,
+        "raw_jpy": 420,
+        "raw_eur": 2.4,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10064",
+        "matched_title": " #64",
+        "graded": {}
+      }
+    },
+    "SV9a 065/63": {
+      "ref": "SV9a 065/63",
+      "card_id": "ja-SV9a-065",
+      "set_id": "SV9a",
+      "local_id": "065",
+      "official_count": "63",
+      "name_ja": "シロナのロズレイド",
+      "name_fr": "Roserade シロナの",
+      "name_en": "Roserade シロナの",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/065",
+      "fetched_at": "2026-11-19T00:38:12.992489+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 1280,
+        "raw_jpy": 1280,
+        "raw_eur": 7.32,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10065",
+        "matched_title": " #65",
+        "graded": {}
+      }
+    },
+    "SV6a 065/64": {
+      "ref": "SV6a 065/64",
+      "card_id": "ja-SV6a-065",
+      "set_id": "SV6a",
+      "local_id": "065",
+      "official_count": "64",
+      "name_ja": "カプ・ブルル",
+      "name_fr": "Tokotoro",
+      "name_en": "Tapu Bulu",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV6a/065",
+      "fetched_at": "2026-11-19T00:38:13.189354+00:00",
+      "fr": {
+        "smoothed_avg": 5.09,
+        "raw_eur": 5.09,
+        "sample_count": 20,
+        "source_name": "Cardmarket (via PokéTCG API)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Shrouded%20Fable/Tapu%20Bulu",
+        "matched_title": "Tapu Bulu (Shrouded Fable) #65",
+        "cardmarket_trend": 5.09,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 320,
+        "raw_jpy": 320,
+        "raw_eur": 1.83,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv06a/10065",
+        "matched_title": " #65",
+        "graded": {}
+      }
+    },
+    "SV3a 065/62": {
+      "ref": "SV3a 065/62",
+      "card_id": "ja-SV3a-065",
+      "set_id": "SV3a",
+      "local_id": "065",
+      "official_count": "62",
+      "name_ja": "プラスル",
+      "name_fr": "Posipi",
+      "name_en": "Plusle",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/065",
+      "fetched_at": "2026-11-19T00:38:14.034660+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 1980,
+        "raw_jpy": 1980,
+        "raw_eur": 11.32,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10065",
+        "matched_title": " #65",
+        "graded": {}
+      }
+    },
+    "SV7a 066/64": {
+      "ref": "SV7a 066/64",
+      "card_id": "ja-SV7a-066",
+      "set_id": "SV7a",
+      "local_id": "066",
+      "official_count": "64",
+      "name_ja": "マシェード",
+      "name_fr": "Lampignon",
+      "name_en": "Shiinotic",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/066",
+      "fetched_at": "2026-11-19T00:38:14.956399+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 320,
+        "raw_jpy": 320,
+        "raw_eur": 1.83,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv07a/10066",
+        "matched_title": " #66",
+        "graded": {}
+      }
+    },
+    "SV3a 064/62": {
+      "ref": "SV3a 064/62",
+      "card_id": "ja-SV3a-064",
+      "set_id": "SV3a",
+      "local_id": "064",
+      "official_count": "62",
+      "name_ja": "タマンタ",
+      "name_fr": "Babimanta",
+      "name_en": "Mantyke",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/064",
+      "fetched_at": "2026-11-19T00:39:10.028699+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 1280,
+        "raw_jpy": 1280,
+        "raw_eur": 7.32,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10064",
+        "matched_title": " #64",
+        "graded": {}
+      }
+    },
+    "SV3a 066/62": {
+      "ref": "SV3a 066/62",
+      "card_id": "ja-SV3a-066",
+      "set_id": "SV3a",
+      "local_id": "066",
+      "official_count": "62",
+      "name_ja": "マイナン",
+      "name_fr": "Négapi",
+      "name_en": "Minun",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/066",
+      "fetched_at": "2026-11-19T00:39:15.367868+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 1980,
+        "raw_jpy": 1980,
+        "raw_eur": 11.32,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10066",
+        "matched_title": " #66",
+        "graded": {}
+      }
+    },
+    "SV7a 067/64": {
+      "ref": "SV7a 067/64",
+      "card_id": "ja-SV7a-067",
+      "set_id": "SV7a",
+      "local_id": "067",
+      "official_count": "64",
+      "name_ja": "ポワルン たいようのすがた",
+      "name_fr": "Morphéo たいようのすがた",
+      "name_en": "Castform たいようのすがた",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/067",
+      "fetched_at": "2026-11-19T00:46:16.624690+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 420,
+        "raw_jpy": 420,
+        "raw_eur": 2.4,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv07a/10067",
+        "matched_title": " #67",
+        "graded": {}
+      }
+    },
+    "SV4M 067/66": {
+      "ref": "SV4M 067/66",
+      "card_id": "ja-SV4M-067",
+      "set_id": "SV4M",
+      "local_id": "067",
+      "official_count": "66",
+      "name_ja": "レドームシ",
+      "name_fr": "Coléodôme",
+      "name_en": "Dottler",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4M/067",
+      "fetched_at": "2026-11-19T00:46:17.364392+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 175,
+        "raw_jpy": 175,
+        "raw_eur": 1.0,
+        "sample_count": 4,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv04m/10067",
+        "matched_title": " #67",
+        "graded": {}
+      }
+    },
+    "SV3a 067/62": {
+      "ref": "SV3a 067/62",
+      "card_id": "ja-SV3a-067",
+      "set_id": "SV3a",
+      "local_id": "067",
+      "official_count": "62",
+      "name_ja": "バチュル",
+      "name_fr": "Statitik",
+      "name_en": "Joltik",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/067",
+      "fetched_at": "2026-11-19T00:46:18.587507+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 580,
+        "raw_jpy": 580,
+        "raw_eur": 3.32,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10067",
+        "matched_title": " #67",
+        "graded": {}
+      }
+    },
+    "SV9a 067/63": {
+      "ref": "SV9a 067/63",
+      "card_id": "ja-SV9a-067",
+      "set_id": "SV9a",
+      "local_id": "067",
+      "official_count": "63",
+      "name_ja": "イワパレス",
+      "name_fr": "Crabaraque",
+      "name_en": "Crustle",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/067",
+      "fetched_at": "2026-11-19T00:46:20.126332+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 370,
+        "raw_jpy": 370,
+        "raw_eur": 2.12,
+        "sample_count": 4,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10067",
+        "matched_title": " #67",
+        "graded": {}
+      }
+    },
+    "SV5a 067/66": {
+      "ref": "SV5a 067/66",
+      "card_id": "ja-SV5a-067",
+      "set_id": "SV5a",
+      "local_id": "067",
+      "official_count": "66",
+      "name_ja": "カイロス",
+      "name_fr": "Scarabrute",
+      "name_en": "Pinsir",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV5a/067",
+      "fetched_at": "2026-11-19T00:46:20.570371+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 500,
+        "raw_jpy": 500,
+        "raw_eur": 2.86,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv05a/10067",
+        "matched_title": " #67",
+        "graded": {}
+      }
+    },
+    "SV6a 066/64": {
+      "ref": "SV6a 066/64",
+      "card_id": "ja-SV6a-066",
+      "set_id": "SV6a",
+      "local_id": "066",
+      "official_count": "64",
+      "name_ja": "ヘルガー",
+      "name_fr": "Démolosse",
+      "name_en": "Houndoom",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV6a/066",
+      "fetched_at": "2026-11-19T00:47:14.934225+00:00",
+      "fr": {
+        "smoothed_avg": 21.98,
+        "raw_eur": 21.98,
+        "sample_count": 20,
+        "source_name": "Cardmarket (via PokéTCG API)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Shrouded+Fable/Houndoom",
+        "matched_title": "Houndoom (Shrouded Fable) #66",
+        "cardmarket_trend": 21.98,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 680,
+        "raw_jpy": 680,
+        "raw_eur": 3.89,
+        "sample_count": 2,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv06a/10066",
+        "matched_title": " #66",
+        "graded": {}
+      }
+    },
+    "SV9a 066/63": {
+      "ref": "SV9a 066/63",
+      "card_id": "ja-SV9a-066",
+      "set_id": "SV9a",
+      "local_id": "066",
+      "official_count": "63",
+      "name_ja": "シェイミ",
+      "name_fr": "Shaymin",
+      "name_en": "Shaymin",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/066",
+      "fetched_at": "2026-11-19T00:47:15.908799+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "raw_eur": null,
+        "sample_count": 0,
+        "source_name": "N/A",
+        "source_url": "",
+        "matched_title": "",
+        "cardmarket_trend": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": 298,
+        "raw_jpy": 298,
+        "raw_eur": 1.7,
+        "sample_count": 6,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10066",
+        "matched_title": " #66",
+        "graded": {}
+      }
+    },
+    "SV4K 067/66": {
+      "ref": "SV4K 067/66",
+      "card_id": "ja-SV4K-067",
+      "set_id": "SV4K",
+      "local_id": "067",
+      "official_count": "66",
+      "name_ja": "イワパレス",
+      "name_fr": "Crabaraque",
+      "name_en": "Crustle",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4K/067",
+      "fetched_at": "2026-11-19T00:56:53.574627+00:00",
+      "fr": {
+        "smoothed_avg": 2.72,
+        "raw_eur": 2.72,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-ancient-roar/crustle-67",
+        "matched_title": "Crustle #67 | Pokemon Japanese Ancient Roar",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 27.33,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 20.05,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 424,
+        "raw_jpy": 424,
+        "raw_eur": 2.42,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10067",
+        "matched_title": " #67",
+        "graded": {
+          "PSA 10": {
+            "price": 27.33,
+            "price_usd": 29.99,
+            "price_eur": 27.33,
+            "price_jpy": 4779,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 20.05,
+            "price_usd": 22.0,
+            "price_eur": 20.05,
+            "price_jpy": 3506,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV4M 068/66": {
+      "ref": "SV4M 068/66",
+      "card_id": "ja-SV4M-068",
+      "set_id": "SV4M",
+      "local_id": "068",
+      "official_count": "66",
+      "name_ja": "リククラゲ",
+      "name_fr": "Terracruel",
+      "name_en": "Toedscruel",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4M/068",
+      "fetched_at": "2026-11-19T00:56:56.070907+00:00",
+      "fr": {
+        "smoothed_avg": 2.2,
+        "raw_eur": 2.2,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-future-flash/toedscruel-68",
+        "matched_title": "Toedscruel #68 | Pokemon Japanese Future Flash",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 21.41,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 16.8,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 442,
+        "raw_jpy": 442,
+        "raw_eur": 2.53,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv04m/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 21.41,
+            "price_usd": 23.5,
+            "price_eur": 21.41,
+            "price_jpy": 3745,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 16.8,
+            "price_usd": 18.44,
+            "price_eur": 16.8,
+            "price_jpy": 2939,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV3a 068/62": {
+      "ref": "SV3a 068/62",
+      "card_id": "ja-SV3a-068",
+      "set_id": "SV3a",
+      "local_id": "068",
+      "official_count": "62",
+      "name_ja": "コレクレー",
+      "name_fr": "Mordudor",
+      "name_en": "Gimmighoul",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/068",
+      "fetched_at": "2026-11-19T00:56:59.783965+00:00",
+      "fr": {
+        "smoothed_avg": 4.55,
+        "raw_eur": 4.55,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-raging-surf/gimmighoul-68",
+        "matched_title": "Gimmighoul #68 | Pokemon Japanese Raging Surf",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 45.56,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 14.38,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 672,
+        "raw_jpy": 672,
+        "raw_eur": 3.84,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 45.56,
+            "price_usd": 50.0,
+            "price_eur": 45.56,
+            "price_jpy": 7968,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 14.38,
+            "price_usd": 15.78,
+            "price_eur": 14.38,
+            "price_jpy": 2515,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV6a 067/64": {
+      "ref": "SV6a 067/64",
+      "card_id": "ja-SV6a-067",
+      "set_id": "SV6a",
+      "local_id": "067",
+      "official_count": "64",
+      "name_ja": "タッツー",
+      "name_fr": "Hypotrempe",
+      "name_en": "Horsea",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV6a/067",
+      "fetched_at": "2026-11-19T00:57:53.133586+00:00",
+      "fr": {
+        "smoothed_avg": 6.17,
+        "raw_eur": 6.17,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-night-wanderer/horsea-67",
+        "matched_title": "Horsea #67 | Pokemon Japanese Night Wanderer",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 48.75,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 15.35,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 880,
+        "raw_jpy": 880,
+        "raw_eur": 5.03,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv06a/10067",
+        "matched_title": " #67",
+        "graded": {
+          "PSA 10": {
+            "price": 48.75,
+            "price_usd": 53.5,
+            "price_eur": 48.75,
+            "price_jpy": 8526,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 15.35,
+            "price_usd": 16.84,
+            "price_eur": 15.35,
+            "price_jpy": 2684,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV5a 068/66": {
+      "ref": "SV5a 068/66",
+      "card_id": "ja-SV5a-068",
+      "set_id": "SV5a",
+      "local_id": "068",
+      "official_count": "66",
+      "name_ja": "チャデス",
+      "name_fr": "Poltchageist",
+      "name_en": "Poltchageist",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV5a/068",
+      "fetched_at": "2026-11-19T00:57:54.947584+00:00",
+      "fr": {
+        "smoothed_avg": 2.42,
+        "raw_eur": 2.42,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-crimson-haze/poltchageist-68",
+        "matched_title": "Poltchageist #68 | Pokemon Japanese Crimson Haze",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 23.46,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 9.57,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 462,
+        "raw_jpy": 462,
+        "raw_eur": 2.64,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv05a/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 23.46,
+            "price_usd": 25.74,
+            "price_eur": 23.46,
+            "price_jpy": 4102,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 9.57,
+            "price_usd": 10.5,
+            "price_eur": 9.57,
+            "price_jpy": 1673,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV7a 068/64": {
+      "ref": "SV7a 068/64",
+      "card_id": "ja-SV7a-068",
+      "set_id": "SV7a",
+      "local_id": "068",
+      "official_count": "64",
+      "name_ja": "ハギギシリ",
+      "name_fr": "Denticrisse",
+      "name_en": "Bruxish",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/068",
+      "fetched_at": "2026-11-19T00:57:57.287423+00:00",
+      "fr": {
+        "smoothed_avg": 1.8,
+        "raw_eur": 1.8,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-paradise-dragona/bruxish-68",
+        "matched_title": "Bruxish #68 | Pokemon Japanese Paradise Dragona",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 25.96,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 8.19,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 408,
+        "raw_jpy": 408,
+        "raw_eur": 2.33,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv07a/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 25.96,
+            "price_usd": 28.49,
+            "price_eur": 25.96,
+            "price_jpy": 4540,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 8.19,
+            "price_usd": 8.99,
+            "price_eur": 8.19,
+            "price_jpy": 1433,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV9a 068/63": {
+      "ref": "SV9a 068/63",
+      "card_id": "ja-SV9a-068",
+      "set_id": "SV9a",
+      "local_id": "068",
+      "official_count": "63",
+      "name_ja": "カミツオロチ",
+      "name_fr": "Pomdorochi",
+      "name_en": "Hydrapple",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/068",
+      "fetched_at": "2026-11-19T00:58:02.934097+00:00",
+      "fr": {
+        "smoothed_avg": 2.72,
+        "raw_eur": 2.72,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-heat-wave-arena/hydrapple-68",
+        "matched_title": "Hydrapple #68 | Pokemon Japanese Heat Wave Arena",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 33.78,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 12.76,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 514,
+        "raw_jpy": 514,
+        "raw_eur": 2.94,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 33.78,
+            "price_usd": 37.07,
+            "price_eur": 33.78,
+            "price_jpy": 5908,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 12.76,
+            "price_usd": 14.0,
+            "price_eur": 12.76,
+            "price_jpy": 2231,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV4K 068/66": {
+      "ref": "SV4K 068/66",
+      "card_id": "ja-SV4K-068",
+      "set_id": "SV4K",
+      "local_id": "068",
+      "official_count": "66",
+      "name_ja": "ブビィ",
+      "name_fr": "Magby",
+      "name_en": "Magby",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4K/068",
+      "fetched_at": "2026-11-19T01:05:55.430336+00:00",
+      "fr": {
+        "smoothed_avg": 6.01,
+        "raw_eur": 6.01,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-ancient-roar/magby-68",
+        "matched_title": "Magby #68 | Pokemon Japanese Ancient Roar",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 37.81,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 10.2,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 820,
+        "raw_jpy": 820,
+        "raw_eur": 4.69,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv04k/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 37.81,
+            "price_usd": 41.49,
+            "price_eur": 37.81,
+            "price_jpy": 6612,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 10.2,
+            "price_usd": 11.19,
+            "price_eur": 10.2,
+            "price_jpy": 1783,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV6a 068/64": {
+      "ref": "SV6a 068/64",
+      "card_id": "ja-SV6a-068",
+      "set_id": "SV6a",
+      "local_id": "068",
+      "official_count": "64",
+      "name_ja": "ヨマワル",
+      "name_fr": "Skelénox",
+      "name_en": "Duskull",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV6a/068",
+      "fetched_at": "2026-11-19T01:05:55.742185+00:00",
+      "fr": {
+        "smoothed_avg": 13.82,
+        "raw_eur": 13.82,
+        "sample_count": 35,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-night-wanderer/duskull-68",
+        "matched_title": "Duskull #68 | Pokemon Japanese Night Wanderer",
+        "cardmarket_trend": 19.46,
+        "graded": {
+          "PSA 10": {
+            "price": 41.58,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 13.65,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 1030,
+        "raw_jpy": 1030,
+        "raw_eur": 5.89,
+        "sample_count": 19,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv06a/10068",
+        "matched_title": " #68",
+        "graded": {
+          "PSA 10": {
+            "price": 41.58,
+            "price_usd": 45.63,
+            "price_eur": 41.58,
+            "price_jpy": 7272,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 13.65,
+            "price_usd": 14.98,
+            "price_eur": 13.65,
+            "price_jpy": 2387,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV7a 069/64": {
+      "ref": "SV7a 069/64",
+      "card_id": "ja-SV7a-069",
+      "set_id": "SV7a",
+      "local_id": "069",
+      "official_count": "64",
+      "name_ja": "ハルクジラ",
+      "name_fr": "Balbalèze",
+      "name_en": "Cetitan",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/069",
+      "fetched_at": "2026-11-19T01:05:56.934035+00:00",
+      "fr": {
+        "smoothed_avg": 2.15,
+        "raw_eur": 2.15,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-paradise-dragona/cetitan-69",
+        "matched_title": "Cetitan #69 | Pokemon Japanese Paradise Dragona",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 27.76,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 9.11,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 348,
+        "raw_jpy": 348,
+        "raw_eur": 1.99,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv07a/10069",
+        "matched_title": " #69",
+        "graded": {
+          "PSA 10": {
+            "price": 27.76,
+            "price_usd": 30.46,
+            "price_eur": 27.76,
+            "price_jpy": 4854,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 9.11,
+            "price_usd": 10.0,
+            "price_eur": 9.11,
+            "price_jpy": 1594,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV4M 069/66": {
+      "ref": "SV4M 069/66",
+      "card_id": "ja-SV4M-069",
+      "set_id": "SV4M",
+      "local_id": "069",
+      "official_count": "66",
+      "name_ja": "テツノドクガ",
+      "name_fr": "Mite-de-Fer",
+      "name_en": "Iron Moth",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4M/069",
+      "fetched_at": "2026-11-19T01:05:57.885675+00:00",
+      "fr": {
+        "smoothed_avg": 2.81,
+        "raw_eur": 2.81,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-future-flash/iron-moth-69",
+        "matched_title": "Iron Moth #69 | Pokemon Japanese Future Flash",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 32.81,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 8.2,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 406,
+        "raw_jpy": 406,
+        "raw_eur": 2.32,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv04m/10069",
+        "matched_title": " #69",
+        "graded": {
+          "PSA 10": {
+            "price": 32.81,
+            "price_usd": 36.0,
+            "price_eur": 32.81,
+            "price_jpy": 5737,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 8.2,
+            "price_usd": 9.0,
+            "price_eur": 8.2,
+            "price_jpy": 1434,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV9a 069/63": {
+      "ref": "SV9a 069/63",
+      "card_id": "ja-SV9a-069",
+      "set_id": "SV9a",
+      "local_id": "069",
+      "official_count": "63",
+      "name_ja": "ギャロップ",
+      "name_fr": "Galopa",
+      "name_en": "Rapidash",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/069",
+      "fetched_at": "2026-11-19T01:05:58.584649+00:00",
+      "fr": {
+        "smoothed_avg": 5.1,
+        "raw_eur": 5.1,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-heat-wave-arena/rapidash-69",
+        "matched_title": "Rapidash #69 | Pokemon Japanese Heat Wave Arena",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 24.05,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 12.99,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 696,
+        "raw_jpy": 696,
+        "raw_eur": 3.98,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv09a/10069",
+        "matched_title": " #69",
+        "graded": {
+          "PSA 10": {
+            "price": 24.05,
+            "price_usd": 26.39,
+            "price_eur": 24.05,
+            "price_jpy": 4206,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 12.99,
+            "price_usd": 14.25,
+            "price_eur": 12.99,
+            "price_jpy": 2271,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV5a 069/66": {
+      "ref": "SV5a 069/66",
+      "card_id": "ja-SV5a-069",
+      "set_id": "SV5a",
+      "local_id": "069",
+      "official_count": "66",
+      "name_ja": "コータス",
+      "name_fr": "Chartor",
+      "name_en": "Torkoal",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV5a/069",
+      "fetched_at": "2026-11-19T01:05:59.502923+00:00",
+      "fr": {
+        "smoothed_avg": 3.08,
+        "raw_eur": 3.08,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-crimson-haze/torkoal-69",
+        "matched_title": "Torkoal #69 | Pokemon Japanese Crimson Haze",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 25.52,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 11.71,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 430,
+        "raw_jpy": 430,
+        "raw_eur": 2.46,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv05a/10069",
+        "matched_title": " #69",
+        "graded": {
+          "PSA 10": {
+            "price": 25.52,
+            "price_usd": 28.01,
+            "price_eur": 25.52,
+            "price_jpy": 4464,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 11.71,
+            "price_usd": 12.85,
+            "price_eur": 11.71,
+            "price_jpy": 2048,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV3a 069/62": {
+      "ref": "SV3a 069/62",
+      "card_id": "ja-SV3a-069",
+      "set_id": "SV3a",
+      "local_id": "069",
+      "official_count": "62",
+      "name_ja": "グラードン",
+      "name_fr": "Groudon",
+      "name_en": "Groudon",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/069",
+      "fetched_at": "2026-11-19T01:06:58.179748+00:00",
+      "fr": {
+        "smoothed_avg": 21.55,
+        "raw_eur": 21.55,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-raging-surf/groudon-69",
+        "matched_title": "Groudon #69 | Pokemon Japanese Raging Surf",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 74.24,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 36.81,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        }
+      },
+      "jp": {
+        "smoothed_avg": 3624,
+        "raw_jpy": 3624,
+        "raw_eur": 20.72,
+        "sample_count": 17,
+        "source_name": "Yuyu-tei (Japan)",
+        "source_url": "https://yuyu-tei.jp/sell/poc/card/sv03a/10069",
+        "matched_title": " #69",
+        "graded": {
+          "PSA 10": {
+            "price": 74.24,
+            "price_usd": 81.47,
+            "price_eur": 74.24,
+            "price_jpy": 12984,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 36.81,
+            "price_usd": 40.39,
+            "price_eur": 36.81,
+            "price_jpy": 6437,
+            "source": "PriceCharting"
+          }
+        }
+      }
+    },
+    "SV6a 069/64": {
+      "ref": "SV6a 069/64",
+      "card_id": "ja-SV6a-069",
+      "set_id": "SV6a",
+      "local_id": "069",
+      "official_count": "64",
+      "name_ja": "サマヨール",
+      "name_fr": "Téraclope",
+      "name_en": "Dusclops",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV6a/069",
+      "fetched_at": "2026-11-19T19:32:04.217307+00:00",
+      "fr": {
+        "smoothed_avg": 5.23,
+        "raw_eur": 5.23,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-night-wanderer/dusclops-69",
+        "matched_title": "Dusclops #69 | Pokemon Japanese Night Wanderer",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 36.45,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 17.08,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 668,
+        "raw_jpy": 668,
+        "raw_eur": 3.82,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-night-wanderer/dusclops-69",
+        "matched_title": "Dusclops #69 | Pokemon Japanese Night Wanderer",
+        "graded": {
+          "PSA 10": {
+            "price": 36.45,
+            "price_usd": 40.0,
+            "price_eur": 36.45,
+            "price_jpy": 6375,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 17.08,
+            "price_usd": 18.74,
+            "price_eur": 17.08,
+            "price_jpy": 2987,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV4K 069/66": {
+      "ref": "SV4K 069/66",
+      "card_id": "ja-SV4K-069",
+      "set_id": "SV4K",
+      "local_id": "069",
+      "official_count": "66",
+      "name_ja": "コソクムシ",
+      "name_fr": "Sovkipou",
+      "name_en": "Wimpod",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4K/069",
+      "fetched_at": "2026-11-19T19:32:04.772646+00:00",
+      "fr": {
+        "smoothed_avg": 2.92,
+        "raw_eur": 2.92,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-ancient-roar/wimpod-69",
+        "matched_title": "Wimpod #69 | Pokemon Japanese Ancient Roar",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 16.86,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 16.4,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 415,
+        "raw_jpy": 415,
+        "raw_eur": 2.37,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-ancient-roar/wimpod-69",
+        "matched_title": "Wimpod #69 | Pokemon Japanese Ancient Roar",
+        "graded": {
+          "PSA 10": {
+            "price": 16.86,
+            "price_usd": 18.5,
+            "price_eur": 16.86,
+            "price_jpy": 2948,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 16.4,
+            "price_usd": 18.0,
+            "price_eur": 16.4,
+            "price_jpy": 2869,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV7a 070/64": {
+      "ref": "SV7a 070/64",
+      "card_id": "ja-SV7a-070",
+      "set_id": "SV7a",
+      "local_id": "070",
+      "official_count": "64",
+      "name_ja": "ラティオス",
+      "name_fr": "Latios",
+      "name_en": "Latios",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV7a/070",
+      "fetched_at": "2026-11-19T19:32:05.932155+00:00",
+      "fr": {
+        "smoothed_avg": 12.99,
+        "raw_eur": 12.99,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-paradise-dragona/latios-70",
+        "matched_title": "Latios #70 | Pokemon Japanese Paradise Dragona",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 50.03,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 38.27,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 2026,
+        "raw_jpy": 2026,
+        "raw_eur": 11.58,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-paradise-dragona/latios-70",
+        "matched_title": "Latios #70 | Pokemon Japanese Paradise Dragona",
+        "graded": {
+          "PSA 10": {
+            "price": 50.03,
+            "price_usd": 54.9,
+            "price_eur": 50.03,
+            "price_jpy": 8749,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 38.27,
+            "price_usd": 42.0,
+            "price_eur": 38.27,
+            "price_jpy": 6693,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV9a 070/63": {
+      "ref": "SV9a 070/63",
+      "card_id": "ja-SV9a-070",
+      "set_id": "SV9a",
+      "local_id": "070",
+      "official_count": "63",
+      "name_ja": "ヒビキのバクフーン",
+      "name_fr": "Typhlosion ヒビキの",
+      "name_en": "Typhlosion ヒビキの",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9a/070",
+      "fetched_at": "2026-11-19T19:32:06.119192+00:00",
+      "fr": {
+        "smoothed_avg": 12.18,
+        "raw_eur": 12.18,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-heat-wave-arena/ethan-s-typhlosion-70",
+        "matched_title": "Ethan's Typhlosion #70 | Pokemon Japanese Heat Wave Arena",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 56.38,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 22.33,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 2056,
+        "raw_jpy": 2056,
+        "raw_eur": 11.76,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-heat-wave-arena/ethan-s-typhlosion-70",
+        "matched_title": "Ethan's Typhlosion #70 | Pokemon Japanese Heat Wave Arena",
+        "graded": {
+          "PSA 10": {
+            "price": 56.38,
+            "price_usd": 61.87,
+            "price_eur": 56.38,
+            "price_jpy": 9860,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 22.33,
+            "price_usd": 24.51,
+            "price_eur": 22.33,
+            "price_jpy": 3906,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV3a 070/62": {
+      "ref": "SV3a 070/62",
+      "card_id": "ja-SV3a-070",
+      "set_id": "SV3a",
+      "local_id": "070",
+      "official_count": "62",
+      "name_ja": "メテノ",
+      "name_fr": "Météno",
+      "name_en": "Minior",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV3a/070",
+      "fetched_at": "2026-11-19T19:32:06.176671+00:00",
+      "fr": {
+        "smoothed_avg": 7.05,
+        "raw_eur": 7.05,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-raging-surf/minior-70",
+        "matched_title": "Minior #70 | Pokemon Japanese Raging Surf",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 51.03,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 13.24,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 1006,
+        "raw_jpy": 1006,
+        "raw_eur": 5.75,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-raging-surf/minior-70",
+        "matched_title": "Minior #70 | Pokemon Japanese Raging Surf",
+        "graded": {
+          "PSA 10": {
+            "price": 51.03,
+            "price_usd": 56.0,
+            "price_eur": 51.03,
+            "price_jpy": 8925,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 13.24,
+            "price_usd": 14.53,
+            "price_eur": 13.24,
+            "price_jpy": 2316,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV4M 070/66": {
+      "ref": "SV4M 070/66",
+      "card_id": "ja-SV4M-070",
+      "set_id": "SV4M",
+      "local_id": "070",
+      "official_count": "66",
+      "name_ja": "バニリッチ",
+      "name_fr": "Sorboul",
+      "name_en": "Vanillish",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV4M/070",
+      "fetched_at": "2026-11-19T19:32:06.389473+00:00",
+      "fr": {
+        "smoothed_avg": 5.01,
+        "raw_eur": 5.01,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-future-flash/vanillish-70",
+        "matched_title": "Vanillish #70 | Pokemon Japanese Future Flash",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 36.44,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 17.79,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 688,
+        "raw_jpy": 688,
+        "raw_eur": 3.93,
+        "sample_count": 17,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-future-flash/vanillish-70",
+        "matched_title": "Vanillish #70 | Pokemon Japanese Future Flash",
+        "graded": {
+          "PSA 10": {
+            "price": 36.44,
+            "price_usd": 39.99,
+            "price_eur": 36.44,
+            "price_jpy": 6373,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 17.79,
+            "price_usd": 19.52,
+            "price_eur": 17.79,
+            "price_jpy": 3111,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
+      }
+    },
+    "SV5a 070/66": {
+      "ref": "SV5a 070/66",
+      "card_id": "ja-SV5a-070",
+      "set_id": "SV5a",
+      "local_id": "070",
+      "official_count": "66",
+      "name_ja": "ゴウカザル",
+      "name_fr": "Simiabraz",
+      "name_en": "Infernape",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV5a/070",
+      "fetched_at": "2026-11-19T19:32:06.539453+00:00",
+      "fr": {
+        "smoothed_avg": 4.16,
+        "raw_eur": 4.16,
+        "sample_count": 15,
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-crimson-haze/infernape-70",
+        "matched_title": "Infernape #70 | Pokemon Japanese Crimson Haze",
+        "cardmarket_trend": null,
+        "graded": {
+          "PSA 10": {
+            "price": 45.11,
+            "source": "PriceCharting",
+            "volume": ""
+          },
+          "PSA 9": {
+            "price": 18.74,
+            "source": "PriceCharting",
+            "volume": ""
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 544,
+        "raw_jpy": 544,
+        "raw_eur": 3.11,
+        "sample_count": 19,
+        "source_name": "PriceCharting (JP Sold)",
+        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-crimson-haze/infernape-70",
+        "matched_title": "Infernape #70 | Pokemon Japanese Crimson Haze",
+        "graded": {
+          "PSA 10": {
+            "price": 45.11,
+            "price_usd": 49.5,
+            "price_eur": 45.11,
+            "price_jpy": 7889,
+            "source": "PriceCharting"
+          },
+          "PSA 9": {
+            "price": 18.74,
+            "price_usd": 20.56,
+            "price_eur": 18.74,
+            "price_jpy": 3277,
+            "source": "PriceCharting"
+          }
+        },
+        "data_type": "sold"
       }
     }
   }

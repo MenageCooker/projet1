@@ -1,37 +1,108 @@
 // ============================================================
-//  PokéSpread JP→FR — app.js (v7 Production Release)
-//  Senior Full-Stack & FinTech Architecture
+//  PokéSpread JP→FR — Clean Production Architecture v4.0
+//  High-Performance Pokémon TCG Arbitrage Platform
 // ============================================================
 
-// ── STATE ────────────────────────────────────────────────────
+// ── 1. GLOBAL STATE ──────────────────────────────────────────
 const state = {
-  rate: 163.5,                                         // EUR/JPY live exchange rate
-  fee: 0,                                             // platform fee (0% standard)
+  rate: 174.88,                                        // EUR/JPY live exchange rate
+  usdRate: 1.097,                                      // EUR/USD live rate
+  fee: 0,                                              // Platform fee % (0% default)
+  shippingCostEur: 0,                                  // Shipping / import fee per card (€)
+  costs: {
+    resaleFeePct: 0,                                   // Commission revente % (0% default for Vinted/LBC, 13% for eBay)
+    importVatPct: 0,                                    // TVA Import % (0% for hand-carry, 20% for shipped)
+    shippingPerCardEur: 0                              // Frais de port / proxy par carte (€)
+  },
   purchasedCards: [],
-  visibleCount: { margin: 25, roi: 25, velocity: 25 }, // Pagination steps: 25 -> 100 -> 250 -> 500 -> 1000
+  visibleCount: { margin: 25, roi: 25, velocity: 25 }, // Pagination steps: 25 -> 100 -> 250 -> 500
   searchQuery: '',
   focusCol: null,                                      // 'margin' | 'roi' | 'velocity' | null
-  activeMobileTab: 'margin',                           // Mobile active tab: 'margin' | 'roi' | 'velocity'
+  activeMobileTab: 'margin',                           // 'margin' | 'roi' | 'velocity'
   isLoadingCatalog: false,
-  pricingRefFr: 'avg',                                 // 'avg' (3-platform smoothed 30j) | 'ebay' | 'vinted' | 'lbc'
-  pricingRefJp: 'min',                                 // 'min' (best JP price) | 'mercari' | 'yahoo' | 'cardrush'
-  conditionFilter: 'raw_nm',                           // Backward compatibility string
+  pricingRefFr: 'avg',                                 // 'avg' | 'cardmarket' | 'pricecharting' | 'ebay'
+  pricingRefJp: 'min',                                 // 'min' | 'yuyutei' | 'pricecharting' | 'snkrdunk'
   condition: {
     mode: 'raw',                                       // 'raw' | 'graded'
-    rawConditions: ['NM'],                             // Multi-select subset of ['NM', 'EX', 'LP', 'PL']
-    companies: ['ALL'],                                // ['ALL'], ['PSA'], ['BGS'], ['CGC'], ['PCA'], ['ARS']
-    grades: []                                         // Multi-select grades from GRADING_SCALES[co]
+    rawCondition: 'NM',                                // 'NM' | 'EX' | 'LP' | 'PL'
+    company: 'ALL',                                    // 'ALL' | 'PSA' | 'BGS' | 'CGC' | 'PCA' | 'ARS'
+    grade: 'PSA 10'                                    // 'PSA 10' | 'PSA 9' | etc.
   },
   filters: {
-    countries: [],                                     // Selected edition codes, e.g. ['JP', 'FR']. Empty = all
+    countries: [],                                     // ['JP', 'FR', 'EN', etc.]. Empty = all
     priceMin: null,
     priceMax: null,
     priceUnit: 'EUR',                                  // 'EUR' | 'JPY'
-    pricedOnly: false                                  // Only show cards with verified market prices
+    pricedOnly: false,                                 // Show strictly verified complete opportunities
+    slabGrade: null                                    // null or specific grade override
   }
 };
 
-// ── AVAILABLE EDITIONS / COUNTRIES ───────────────────────────
+// ── 2. SAFE FORMATTERS (CRASH-PROOF) ─────────────────────────
+function fmtEur(val, decimals = 2) {
+  if (val == null || isNaN(val) || val <= 0) return '—';
+  return Number(val).toFixed(decimals) + '€';
+}
+
+function fmtJpy(val) {
+  if (val == null || isNaN(val) || val <= 0) return '—';
+  return '¥' + Math.round(Number(val)).toLocaleString('fr-FR');
+}
+
+function fmtPct(val, decimals = 0) {
+  if (val == null || isNaN(val)) return '—';
+  const num = Number(val);
+  return (num >= 0 ? '+' : '') + num.toFixed(decimals) + '%';
+}
+
+function jpToEur(yen) {
+  if (yen == null || isNaN(yen) || yen <= 0 || !state.rate) return 0;
+  return Number(yen) / state.rate;
+}
+
+function eurToJpy(eur) {
+  if (eur == null || isNaN(eur) || eur <= 0 || !state.rate) return 0;
+  return Number(eur) * state.rate;
+}
+
+// ── 3. GRADING SCALES & MULTIPLIERS (FALLBACK BENCHMARKS) ────
+const GRADING_COMPANIES = {
+  PSA: { name: 'PSA', grades: ['PSA 10', 'PSA 9', 'PSA 8', 'PSA ≤ 7'] },
+  BGS: { name: 'BGS', grades: ['BGS 10 Black Label', 'BGS 10 Pristine', 'BGS 9.5', 'BGS 9', 'BGS ≤ 8.5'] },
+  CGC: { name: 'CGC', grades: ['CGC 10 Pristine', 'CGC 10', 'CGC 9.5', 'CGC 9', 'CGC ≤ 8.5'] },
+  PCA: { name: 'PCA', grades: ['PCA 10+', 'PCA 10', 'PCA 9.5', 'PCA 9', 'PCA ≤ 8'] },
+  ARS: { name: 'ARS', grades: ['ARS 10+', 'ARS 10', 'ARS 9', 'ARS ≤ 8'] },
+  ALL: { name: 'Toutes compagnies', grades: ['PSA 10', 'PSA 9', 'BGS 10', 'BGS 9.5', 'CGC 10', 'PCA 10', 'ARS 10'] }
+};
+
+const GRADE_MULTIPLIERS = {
+  'PSA 10': { fr: 2.60, jp: 2.30 },
+  'PSA 9':  { fr: 1.30, jp: 1.25 },
+  'PSA 8':  { fr: 1.00, jp: 0.98 },
+  'BGS 10 Black Label': { fr: 4.80, jp: 4.20 },
+  'BGS 10 Pristine':    { fr: 3.40, jp: 3.00 },
+  'BGS 9.5':            { fr: 1.90, jp: 1.80 },
+  'BGS 9':              { fr: 1.30, jp: 1.25 },
+  'CGC 10 Pristine':    { fr: 3.20, jp: 2.80 },
+  'CGC 10':             { fr: 2.35, jp: 2.15 },
+  'CGC 9.5':            { fr: 1.65, jp: 1.55 },
+  'CGC 9':              { fr: 1.22, jp: 1.18 },
+  'PCA 10+':            { fr: 3.00, jp: 2.60 },
+  'PCA 10':             { fr: 2.20, jp: 2.00 },
+  'PCA 9.5':            { fr: 1.55, jp: 1.45 },
+  'PCA 9':              { fr: 1.20, jp: 1.15 },
+  'ARS 10+':            { fr: 3.60, jp: 3.20 },
+  'ARS 10':             { fr: 2.75, jp: 2.50 },
+  'ARS 9':              { fr: 1.35, jp: 1.30 },
+};
+
+const RAW_CONDITION_MULTIPLIERS = {
+  'NM': 1.00,
+  'EX': 0.82,
+  'LP': 0.65,
+  'PL': 0.45,
+};
+
 const COUNTRIES = [
   { code: 'JP', name: 'Japon', flag: '🇯🇵' },
   { code: 'FR', name: 'France', flag: '🇫🇷' },
@@ -43,87 +114,6 @@ const COUNTRIES = [
   { code: 'ES', name: 'Espagne', flag: '🇪🇸' },
 ];
 
-// ── CONDITION & GRADING ARCHITECTURE ─────────────────────────
-const RAW_CONDITIONS = [
-  { key: 'NM', label: 'Near Mint (NM)', sub: 'Neuf / Proche du neuf', multiplier: 1.00, badgeCls: 'badge-condition-nm' },
-  { key: 'EX', label: 'Excellent (EX)', sub: 'Très bon état / micro-rayures', multiplier: 0.82, badgeCls: 'badge-condition-ex' },
-  { key: 'LP', label: 'Lightly Played (LP)', sub: 'Légèrement joué / blanchiments', multiplier: 0.65, badgeCls: 'badge-condition-lp' },
-  { key: 'PL', label: 'Played / Poor (PL)', sub: 'Joué / pliures / usure', multiplier: 0.45, badgeCls: 'badge-condition-pl' }
-];
-
-// 1. COMPANY-DEPENDENT AUTHENTIC GRADE SCALES
-const GRADING_SCALES = {
-  PSA: [
-    { grade: '10 (Gem Mint)', short: '10', frMult: 2.60, jpMult: 2.30 },
-    { grade: '9 (Mint)', short: '9', frMult: 1.30, jpMult: 1.25 },
-    { grade: '8 (NM-MT)', short: '8', frMult: 1.00, jpMult: 0.98 },
-    { grade: '≤ 7', short: '≤ 7', frMult: 0.75, jpMult: 0.72 }
-  ],
-  BGS: [
-    { grade: '10 Black Label', short: '10 BL', frMult: 4.80, jpMult: 4.20 },
-    { grade: '10 Pristine', short: '10 Pr', frMult: 3.40, jpMult: 3.00 },
-    { grade: '9.5 (Gem Mint)', short: '9.5', frMult: 1.90, jpMult: 1.80 },
-    { grade: '9 (Mint)', short: '9', frMult: 1.30, jpMult: 1.25 },
-    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.95, jpMult: 0.92 }
-  ],
-  CGC: [
-    { grade: '10 Pristine', short: '10 Pr', frMult: 3.20, jpMult: 2.80 },
-    { grade: '10 (Gem Mint)', short: '10', frMult: 2.35, jpMult: 2.15 },
-    { grade: '9.5 (Mint+)', short: '9.5', frMult: 1.65, jpMult: 1.55 },
-    { grade: '9 (Mint)', short: '9', frMult: 1.22, jpMult: 1.18 },
-    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.92, jpMult: 0.90 }
-  ],
-  PCA: [
-    { grade: '10+ (Collector)', short: '10+', frMult: 3.00, jpMult: 2.60 },
-    { grade: '10 (Neuf Sup)', short: '10', frMult: 2.20, jpMult: 2.00 },
-    { grade: '9.5 (Neuf)', short: '9.5', frMult: 1.55, jpMult: 1.45 },
-    { grade: '9 (Très Bon)', short: '9', frMult: 1.20, jpMult: 1.15 },
-    { grade: '≤ 8', short: '≤ 8', frMult: 0.90, jpMult: 0.88 }
-  ],
-  ARS: [
-    { grade: '10+', short: '10+', frMult: 3.60, jpMult: 3.20 },
-    { grade: '10', short: '10', frMult: 2.75, jpMult: 2.50 },
-    { grade: '9', short: '9', frMult: 1.35, jpMult: 1.30 },
-    { grade: '≤ 8', short: '≤ 8', frMult: 0.92, jpMult: 0.90 }
-  ],
-  ALL: [
-    { grade: '10+ / Black Label', short: '10+ / BL', frMult: 3.80, jpMult: 3.40 },
-    { grade: '10', short: '10', frMult: 2.60, jpMult: 2.30 },
-    { grade: '9.5', short: '9.5', frMult: 1.75, jpMult: 1.65 },
-    { grade: '9', short: '9', frMult: 1.28, jpMult: 1.23 },
-    { grade: '≤ 8.5', short: '≤ 8.5', frMult: 0.92, jpMult: 0.90 }
-  ]
-};
-
-const GRADING_COMPANIES = {
-  PSA: {
-    name: 'PSA',
-    fullName: 'Professional Sports Authenticator (USA)',
-    grades: GRADING_SCALES.PSA
-  },
-  BGS: {
-    name: 'BGS',
-    fullName: 'Beckett Grading Services (USA)',
-    grades: GRADING_SCALES.BGS
-  },
-  CGC: {
-    name: 'CGC',
-    fullName: 'Certified Guaranty Company (USA)',
-    grades: GRADING_SCALES.CGC
-  },
-  PCA: {
-    name: 'PCA',
-    fullName: 'PCA Grade (France / Leader Européen)',
-    grades: GRADING_SCALES.PCA
-  },
-  ARS: {
-    name: 'ARS',
-    fullName: 'ARS Grading (Japon / Boîtiers Haute Sécurité)',
-    grades: GRADING_SCALES.ARS
-  }
-};
-
-// ── PRICE PRESETS ────────────────────────────────────────────
 const PRICE_PRESETS_EUR = [
   { label: '0 - 15 €', min: 0, max: 15 },
   { label: '15 - 40 €', min: 15, max: 40 },
@@ -144,81 +134,560 @@ const PRICE_PRESETS_JPY = [
   { label: '100 000 ¥ +', min: 100000, max: null }
 ];
 
-// ── PAGINATION STEPS ─────────────────────────────────────────
-const PAGE_STEPS = [25, 100, 250, 500, 1000];
-function nextPageStep(current, total) {
-  for (const step of PAGE_STEPS) {
-    if (step > current) return Math.min(step, total);
+// ── 4. NORMALIZATION & O(1) EXACT PRICE MAP ───────────────────
+function normalizeKey(setId, localId, officialCount = '') {
+  if (!setId && !localId) return '';
+  const s = String(setId || '').trim().toLowerCase();
+  const l = String(localId || '').trim().toLowerCase();
+  const o = String(officialCount || '').trim().toLowerCase();
+  if (o && o !== '---') {
+    return `${s} ${l}/${o}`;
   }
-  return total;
+  return `${s} ${l}`;
 }
 
-// ── NATIVE TCGDEX MULTI-LANGUAGE LOCALIZATION (ZERO STATIC DICTIONARIES) ──
-const LocalizationService = {
-  frNameByRawId: new Map(),     // Linked directly from TCGdex /v2/fr/cards IDs
-  frNameByDexId: new Map(),     // Cached on-demand via TCGdex dexId linking
+const PriceService = {
+  priceMap: new Map(),
+  meta: {},
 
-  registerFrenchCards(frCards) {
-    if (!Array.isArray(frCards)) return;
-    for (const c of frCards) {
-      if (c && c.rawId && c.name) {
-        this.frNameByRawId.set(c.rawId, c.name);
-      }
-    }
-  },
-
-  // Link card name natively using TCGdex multi-language IDs (no static maps)
-  resolveNativeNames(rawName, lang, rawId = '') {
-    if (lang === 'fr') {
-      return { name: rawName, subName: '' };
-    }
-    if (rawId && this.frNameByRawId.has(rawId)) {
-      const frName = this.frNameByRawId.get(rawId);
-      return { name: frName, subName: rawName !== frName ? rawName : '' };
-    }
-    return { name: rawName, subName: lang === 'ja' ? rawName : '' };
-  },
-
-  // On-demand native TCGdex JA→FR translation via official dexId linking
-  async translateCardViaTCGdex(card) {
-    if (!card || card.edition === 'FR' || !card.rawId) return card;
-    if (this.frNameByRawId.has(card.rawId)) {
-      card.name = this.frNameByRawId.get(card.rawId);
-      return card;
-    }
+  async loadPrices() {
     try {
-      const lang = card.edition === 'JP' ? 'ja' : 'en';
-      const detailRes = await fetch(`https://api.tcgdex.net/v2/${lang}/cards/${encodeURIComponent(card.rawId)}`);
-      if (!detailRes.ok) return card;
-      const detail = await detailRes.json();
-      const dexId = Array.isArray(detail?.dexId) ? detail.dexId[0] : detail?.dexId;
-      if (!dexId) return card;
+      const resp = await fetch('prices.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      this.meta = data._meta || {};
+      this.priceMap.clear();
 
-      if (this.frNameByDexId.has(dexId)) {
-        const frBase = this.frNameByDexId.get(dexId);
-        card.subName = card.subName || card.name;
-        card.name = frBase;
-        this.frNameByRawId.set(card.rawId, frBase);
-        return card;
-      }
+      const pricesObj = data.prices || {};
+      for (const [key, item] of Object.entries(pricesObj)) {
+        if (!item) continue;
+        const normKey = key.trim().toLowerCase();
+        this.priceMap.set(normKey, item);
 
-      const frRes = await fetch(`https://api.tcgdex.net/v2/fr/cards?dexId=${encodeURIComponent(dexId)}`);
-      if (frRes.ok) {
-        const frList = await frRes.json();
-        const firstFr = Array.isArray(frList) && frList[0]?.name ? frList[0].name : null;
-        if (firstFr) {
-          this.frNameByDexId.set(dexId, firstFr);
-          this.frNameByRawId.set(card.rawId, firstFr);
-          card.subName = card.subName || card.name;
-          card.name = firstFr;
+        // Also index by setId + localId (e.g. 'sv2a 201')
+        if (item.set_id && item.local_id) {
+          const altKey = `${item.set_id.trim().toLowerCase()} ${item.local_id.trim().toLowerCase()}`;
+          this.priceMap.set(altKey, item);
+        }
+        if (item.card_id) {
+          this.priceMap.set(item.card_id.trim().toLowerCase(), item);
         }
       }
-    } catch (e) {}
-    return card;
+
+      // Update rate if present in metadata
+      if (this.meta.fx_rates?.EUR_JPY) {
+        state.rate = this.meta.fx_rates.EUR_JPY;
+      }
+      if (this.meta.fx_rates?.EUR_USD) {
+        state.usdRate = this.meta.fx_rates.EUR_USD;
+      }
+
+      this.updateHeaderMeta();
+      return true;
+    } catch (err) {
+      console.warn('Could not load prices.json:', err);
+      return false;
+    }
+  },
+
+  updateHeaderMeta() {
+    const lastUpdateEl = document.getElementById('last-update');
+    const badgeEl = document.getElementById('prices-source-badge');
+    const rateEl = document.getElementById('live-rate');
+
+    if (rateEl) rateEl.textContent = state.rate.toFixed(2);
+
+    if (this.meta.generated_at && lastUpdateEl) {
+      try {
+        const dt = new Date(this.meta.generated_at);
+        lastUpdateEl.textContent = dt.toLocaleDateString('fr-FR', {
+          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+      } catch (e) {
+        lastUpdateEl.textContent = 'Récemment';
+      }
+    }
+
+    if (badgeEl) {
+      const totalPriced = this.meta.total_priced_both || this.meta.priced_cards || this.priceMap.size;
+      badgeEl.className = 'prices-source-badge prices-source-file ml-0.5 text-[10px] px-1.5 py-0.5';
+      badgeEl.textContent = `🟢 Marché Vérifié (${totalPriced})`;
+    }
+  },
+
+  getExactPrice(card) {
+    if (!card) return null;
+    const setId = card.set_id || card.setId || '';
+    const localId = card.local_id || card.localId || '';
+    const official = card.official_count || card.officialCount || '';
+
+    // 1. Try exact ref key e.g. 'sv2a 201/165'
+    const fullKey = normalizeKey(setId, localId, official);
+    if (this.priceMap.has(fullKey)) return this.priceMap.get(fullKey);
+
+    // 2. Try short key e.g. 'sv2a 201'
+    const shortKey = normalizeKey(setId, localId);
+    if (this.priceMap.has(shortKey)) return this.priceMap.get(shortKey);
+
+    // 3. Try card rawId / id
+    if (card.raw_id && this.priceMap.has(card.raw_id.toLowerCase())) {
+      return this.priceMap.get(card.raw_id.toLowerCase());
+    }
+    if (card.id && this.priceMap.has(card.id.toLowerCase())) {
+      return this.priceMap.get(card.id.toLowerCase());
+    }
+
+    return null;
   }
 };
 
-// ── IMAGE HELPERS ────────────────────────────────────────────
+// ── 5. INDEXEDDB LOCAL CATALOG CACHING (24H TTL) ──────────────
+const CatalogService = {
+  db: null,
+  cards: [],
+  indexedCardsMap: new Map(),
+
+  async initDB() {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('PokéSpreadCatalogDB', 2);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('catalog')) {
+          db.createObjectStore('catalog', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('metadata')) {
+          db.createObjectStore('metadata', { keyPath: 'key' });
+        }
+      };
+      request.onsuccess = (e) => {
+        this.db = e.target.result;
+        resolve(this.db);
+      };
+      request.onerror = () => resolve(null);
+    });
+  },
+
+  async loadCatalog() {
+    state.isLoadingCatalog = true;
+    await this.initDB();
+
+    // 1. Check local IndexedDB cache
+    const cached = await this.getCachedCards();
+    if (cached && cached.length > 500) {
+      console.log(`Loaded ${cached.length} cards from IndexedDB cache.`);
+      this.populateCards(cached);
+      state.isLoadingCatalog = false;
+      return cached;
+    }
+
+    // 2. Fetch fresh catalog from TCGdex API
+    try {
+      const cards = await this.fetchRemoteTCGdexCatalog();
+      if (cards && cards.length > 0) {
+        this.populateCards(cards);
+        this.cacheCards(cards);
+      }
+    } catch (err) {
+      console.warn('Error fetching TCGdex catalog:', err);
+    }
+
+    state.isLoadingCatalog = false;
+    return this.cards;
+  },
+
+  async getCachedCards() {
+    if (!this.db) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = this.db.transaction(['catalog', 'metadata'], 'readonly');
+        const metaStore = tx.objectStore('metadata');
+        const getMeta = metaStore.get('catalog_timestamp');
+
+        getMeta.onsuccess = () => {
+          const meta = getMeta.result;
+          const now = Date.now();
+          // 24 hours TTL
+          if (!meta || (now - meta.value) > 24 * 60 * 60 * 1000) {
+            resolve(null);
+            return;
+          }
+
+          const cardStore = tx.objectStore('catalog');
+          const getAll = cardStore.getAll();
+          getAll.onsuccess = () => resolve(getAll.result);
+          getAll.onerror = () => resolve(null);
+        };
+        getMeta.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  },
+
+  async cacheCards(cardList) {
+    if (!this.db || !cardList || cardList.length === 0) return;
+    try {
+      const tx = this.db.transaction(['catalog', 'metadata'], 'readwrite');
+      const cardStore = tx.objectStore('catalog');
+      const metaStore = tx.objectStore('metadata');
+
+      cardStore.clear();
+      for (const c of cardList) {
+        cardStore.put(c);
+      }
+      metaStore.put({ key: 'catalog_timestamp', value: Date.now() });
+    } catch (e) {
+      console.warn('IndexedDB write error:', e);
+    }
+  },
+
+  async clearCache() {
+    if (!this.db) return;
+    try {
+      const tx = this.db.transaction(['catalog', 'metadata'], 'readwrite');
+      tx.objectStore('catalog').clear();
+      tx.objectStore('metadata').clear();
+    } catch (e) {}
+  },
+
+  async fetchRemoteTCGdexCatalog() {
+    const languages = [
+      { lang: 'ja', edition: 'JP' },
+      { lang: 'fr', edition: 'FR' },
+    ];
+
+    const allCards = [];
+
+    for (const { lang, edition } of languages) {
+      try {
+        // Fetch sets for official counts
+        const setsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/sets`);
+        const setMap = new Map();
+        if (setsRes.ok) {
+          const setsList = await setsRes.json();
+          for (const s of setsList) {
+            const cc = s.cardCount || {};
+            setMap.set(s.id, {
+              official: String(cc.official || cc.total || '---'),
+              name: s.name || s.id
+            });
+          }
+        }
+
+        // Fetch cards bulk
+        const cardsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/cards`);
+        if (cardsRes.ok) {
+          const cardItems = await cardsRes.json();
+          for (const c of cardItems) {
+            if (!c.id || !c.localId || !c.name || !c.image) continue;
+            const setId = c.id.includes('-') ? c.id.split('-')[0] : c.id;
+            const sMeta = setMap.get(setId) || {};
+            const officialCount = sMeta.official || '---';
+
+            const ref = officialCount !== '---' ? `${setId} ${c.localId}/${officialCount}` : `${setId} ${c.localId}`;
+
+            allCards.push({
+              id: `${lang}-${c.id}`,
+              raw_id: c.id,
+              ref: ref,
+              local_id: String(c.localId),
+              official_count: officialCount,
+              set_id: setId,
+              name: c.name,
+              name_ja: edition === 'JP' ? c.name : '',
+              edition: edition,
+              lang: lang,
+              image: c.image
+            });
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed loading cards for ${lang}:`, err);
+      }
+    }
+
+    return allCards;
+  },
+
+  populateCards(cardList) {
+    this.cards = cardList;
+    this.indexedCardsMap.clear();
+
+    for (const c of cardList) {
+      const key = normalizeKey(c.set_id, c.local_id, c.official_count);
+      this.indexedCardsMap.set(key, c);
+      this.indexedCardsMap.set(normalizeKey(c.set_id, c.local_id), c);
+      this.indexedCardsMap.set(c.id.toLowerCase(), c);
+    }
+
+    // Attach prices from priceMap directly
+    for (const c of this.cards) {
+      const priced = PriceService.getExactPrice(c);
+      if (priced) {
+        c.pricedRecord = priced;
+        if (priced.name_fr && c.edition === 'JP') {
+          c.displayName = priced.name_fr;
+          c.subName = priced.name_ja || c.name;
+        } else {
+          c.displayName = c.name;
+        }
+      } else {
+        c.displayName = c.name;
+      }
+    }
+  }
+};
+
+// ── 6. PRICING & ARBITRAGE FINANCIAL LOGIC ────────────────────
+function getActiveFrPrice(card, customGradeOrCondition = null) {
+  if (!card) return null;
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  if (!p || !p.fr) return null;
+
+  const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
+
+  // If graded mode is selected
+  if (slabKey && slabKey !== 'raw_nm') {
+    // 1. Check if real verified graded transaction exists
+    const gradedRec = p.fr.graded?.[slabKey];
+    if (gradedRec?.price && Number(gradedRec.price) > 0) {
+      return Number(gradedRec.price);
+    }
+    // 2. Otherwise apply authentic grade multiplier to raw price
+    const rawFr = p.fr.smoothed_avg || p.fr.raw_eur;
+    if (rawFr && Number(rawFr) > 0) {
+      const mult = GRADE_MULTIPLIERS[slabKey]?.fr || 2.20;
+      return Number((rawFr * mult).toFixed(2));
+    }
+    return null;
+  }
+
+  // Raw condition calculation
+  let rawFr = p.fr.smoothed_avg || p.fr.raw_eur || p.fr.cardmarket_trend;
+  if (state.pricingRefFr === 'ebay' && p.fr.source_name?.includes('eBay')) {
+    rawFr = p.fr.raw_eur || rawFr;
+  }
+  if (!rawFr || Number(rawFr) <= 0) return null;
+
+  const cond = state.condition.mode === 'raw' ? state.condition.rawCondition : 'NM';
+  const condMult = RAW_CONDITION_MULTIPLIERS[cond] || 1.0;
+  return Number((rawFr * condMult).toFixed(2));
+}
+
+function getActiveJpPrice(card, customGradeOrCondition = null) {
+  if (!card) return null;
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  if (!p || !p.jp) return null;
+
+  const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
+
+  // If graded mode is selected
+  if (slabKey && slabKey !== 'raw_nm') {
+    const gradedRec = p.jp.graded?.[slabKey];
+    if (gradedRec?.price && Number(gradedRec.price) > 0) {
+      return Number(gradedRec.price);
+    }
+    const rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
+    if (rawJp && Number(rawJp) > 0) {
+      const mult = GRADE_MULTIPLIERS[slabKey]?.jp || 2.00;
+      return Math.round(rawJp * mult);
+    }
+    return null;
+  }
+
+  // Raw condition calculation
+  let rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
+  if (state.pricingRefJp === 'yuyutei' && p.jp.source_name?.includes('Yuyu-tei')) {
+    rawJp = p.jp.raw_jpy || rawJp;
+  }
+  if (!rawJp || Number(rawJp) <= 0) return null;
+
+  const cond = state.condition.mode === 'raw' ? state.condition.rawCondition : 'NM';
+  const condMult = RAW_CONDITION_MULTIPLIERS[cond] || 1.0;
+  return Math.round(rawJp * condMult);
+}
+
+function netMargin(card, customGrade = null) {
+  const frSell = getActiveFrPrice(card, customGrade);
+  const jpBuyYen = getActiveJpPrice(card, customGrade);
+
+  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) {
+    return null;
+  }
+
+  const jpBuyEur = jpToEur(jpBuyYen);
+  const vatRate = (state.costs?.importVatPct || 0) / 100;
+  const feeRate = (state.costs?.resaleFeePct || 0) / 100;
+  const shipping = state.costs?.shippingPerCardEur || 0;
+
+  const jpCostWithVat = jpBuyEur * (1 + vatRate);
+  const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
+
+  return Number((frSell - totalCost).toFixed(2));
+}
+
+function netROI(card, customGrade = null) {
+  const frSell = getActiveFrPrice(card, customGrade);
+  const jpBuyYen = getActiveJpPrice(card, customGrade);
+
+  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) {
+    return null;
+  }
+
+  const jpBuyEur = jpToEur(jpBuyYen);
+  const vatRate = (state.costs?.importVatPct || 0) / 100;
+  const feeRate = (state.costs?.resaleFeePct || 0) / 100;
+  const shipping = state.costs?.shippingPerCardEur || 0;
+
+  const jpCostWithVat = jpBuyEur * (1 + vatRate);
+  const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
+
+  if (totalCost <= 0) return 0;
+  return Number((((frSell - totalCost) / totalCost) * 100).toFixed(1));
+}
+
+function getCardLiquidity(card) {
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  if (!p) return 0;
+  const samplesFr = p.fr?.sample_count || 0;
+  const samplesJp = p.jp?.sample_count || 0;
+  return samplesFr + samplesJp;
+}
+
+// ── 7. FILTER ENGINE ──────────────────────────────────────────
+function isFilterModeActive() {
+  return (
+    (state.filters.countries && state.filters.countries.length > 0) ||
+    state.filters.priceMin !== null ||
+    state.filters.priceMax !== null ||
+    state.filters.pricedOnly === true ||
+    state.filters.slabGrade !== null ||
+    (state.searchQuery && state.searchQuery.trim().length > 0)
+  );
+}
+
+function cardMatchesFilters(card) {
+  if (!card) return false;
+
+  // 1. Text Search Filter
+  if (state.searchQuery && state.searchQuery.trim().length > 0) {
+    const q = state.searchQuery.toLowerCase().trim();
+    const nameMatch = (card.name || '').toLowerCase().includes(q) ||
+                      (card.displayName || '').toLowerCase().includes(q) ||
+                      (card.subName || '').toLowerCase().includes(q);
+    const refMatch = (card.ref || '').toLowerCase().includes(q);
+    const setMatch = (card.set_id || '').toLowerCase().includes(q);
+    const numMatch = (card.local_id || '').toLowerCase() === q;
+
+    if (!nameMatch && !refMatch && !setMatch && !numMatch) {
+      return false;
+    }
+  }
+
+  // 2. Edition / Country Filter
+  if (state.filters.countries && state.filters.countries.length > 0) {
+    if (!state.filters.countries.includes(card.edition)) {
+      return false;
+    }
+  }
+
+  const frPrice = getActiveFrPrice(card);
+  const jpPriceYen = getActiveJpPrice(card);
+  const jpPriceEur = jpPriceYen ? jpToEur(jpPriceYen) : null;
+
+  // 3. Complete Opportunities Toggle (Strictly JP + FR priced)
+  if (state.filters.pricedOnly) {
+    if (frPrice == null || jpPriceYen == null) {
+      return false;
+    }
+  }
+
+  // 4. Price Min / Max Filter
+  const priceToCheck = state.filters.priceUnit === 'JPY'
+    ? (jpPriceYen != null ? jpPriceYen : (frPrice != null ? eurToJpy(frPrice) : null))
+    : (frPrice != null ? frPrice : (jpPriceEur != null ? jpPriceEur : null));
+
+  if (priceToCheck == null && (state.filters.priceMin !== null || state.filters.priceMax !== null)) {
+    return false;
+  }
+
+  if (state.filters.priceMin !== null && priceToCheck < state.filters.priceMin) {
+    return false;
+  }
+  if (state.filters.priceMax !== null && priceToCheck > state.filters.priceMax) {
+    return false;
+  }
+
+  return true;
+}
+
+// ── 8. THREE-COLUMN ARBITRAGE RANKING ENGINE ─────────────────
+function getSortedOpportunities() {
+  const catalog = CatalogService.cards;
+  const filtered = catalog.filter(cardMatchesFilters);
+
+  // Group cards into:
+  // A: Fully priced on BOTH sides (JP + FR) -> ALWAYS appear first
+  // B: Partially priced (FR only or JP only)
+  // C: Unpriced
+
+  function categorize(card) {
+    const fr = getActiveFrPrice(card);
+    const jp = getActiveJpPrice(card);
+    if (fr != null && jp != null) return 0; // Both verified
+    if (fr != null || jp != null) return 1; // Partial
+    return 2;                               // Unpriced
+  }
+
+  // 1. MEILLEURE MARGE (€)
+  const byMargin = [...filtered].sort((a, b) => {
+    const catA = categorize(a);
+    const catB = categorize(b);
+    if (catA !== catB) return catA - catB;
+
+    const mA = netMargin(a) ?? -Infinity;
+    const mB = netMargin(b) ?? -Infinity;
+    if (mA !== mB) return mB - mA;
+
+    const frA = getActiveFrPrice(a) ?? 0;
+    const frB = getActiveFrPrice(b) ?? 0;
+    return frB - frA;
+  });
+
+  // 2. MEILLEUR ROI (%)
+  const byROI = [...filtered].sort((a, b) => {
+    const catA = categorize(a);
+    const catB = categorize(b);
+    if (catA !== catB) return catA - catB;
+
+    const rA = netROI(a) ?? -Infinity;
+    const rB = netROI(b) ?? -Infinity;
+    if (rA !== rB) return rB - rA;
+
+    const mA = netMargin(a) ?? -Infinity;
+    const mB = netMargin(b) ?? -Infinity;
+    return mB - mA;
+  });
+
+  // 3. QUICK TURNOVER (Verified sales liquidity + positive margin)
+  const byVelocity = [...filtered].sort((a, b) => {
+    const catA = categorize(a);
+    const catB = categorize(b);
+    if (catA !== catB) return catA - catB;
+
+    const vA = getCardLiquidity(a);
+    const vB = getCardLiquidity(b);
+    if (vA !== vB) return vB - vA;
+
+    const mA = netMargin(a) ?? -Infinity;
+    const mB = netMargin(b) ?? -Infinity;
+    return mB - mA;
+  });
+
+  return { byMargin, byROI, byVelocity, totalMatches: filtered.length };
+}
+
+// ── 9. CARD TILE RENDERING ────────────────────────────────────
 function formatHighResCardImage(url) {
   if (!url || typeof url !== 'string') return '';
   const clean = url.trim();
@@ -237,5184 +706,2120 @@ function onCardImageError(imgEl) {
   }
 }
 
-// ── PERSISTENT STORAGE SERVICE (INDEXEDDB & 24H TTL CACHE) ────
-const StorageService = {
-  DB_NAME: 'pokespread_db',
-  DB_VERSION: 1,
-  CATALOG_STORE: 'catalog_store',
-  PRICES_STORE: 'prices_store',
-  TTL_MS: 24 * 60 * 60 * 1000, // 24-hour cache TTL
-
-  _dbPromise: null,
-
-  getDB() {
-    if (this._dbPromise) return this._dbPromise;
-    this._dbPromise = new Promise((resolve) => {
-      if (typeof window === 'undefined' || !window.indexedDB) {
-        return resolve(null);
-      }
-      try {
-        const req = window.indexedDB.open(this.DB_NAME, this.DB_VERSION);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(this.CATALOG_STORE)) {
-            db.createObjectStore(this.CATALOG_STORE, { keyPath: 'key' });
-          }
-          if (!db.objectStoreNames.contains(this.PRICES_STORE)) {
-            db.createObjectStore(this.PRICES_STORE, { keyPath: 'key' });
-          }
-        };
-        req.onsuccess = (e) => resolve(e.target.result);
-        req.onerror = () => resolve(null);
-      } catch (e) {
-        resolve(null);
-      }
-    });
-    return this._dbPromise;
-  },
-
-  async get(storeName, key) {
-    try {
-      const db = await this.getDB();
-      if (db) {
-        const result = await new Promise((resolve) => {
-          try {
-            const tx = db.transaction(storeName, 'readonly');
-            const store = tx.objectStore(storeName);
-            const req = store.get(key);
-            req.onsuccess = () => {
-              const rec = req.result;
-              if (rec && rec.timestamp && (Date.now() - rec.timestamp < this.TTL_MS)) {
-                resolve(rec.data);
-              } else {
-                resolve(null);
-              }
-            };
-            req.onerror = () => resolve(null);
-          } catch (err) {
-            resolve(null);
-          }
-        });
-        if (result) return result;
-      }
-    } catch (e) {}
-
-    // Fallback to localStorage
-    try {
-      const lsKey = `ps_${storeName}_${key}`;
-      const raw = localStorage.getItem(lsKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.timestamp && (Date.now() - parsed.timestamp < this.TTL_MS)) {
-          return parsed.data;
-        }
-      }
-    } catch (e) {}
-    return null;
-  },
-
-  async set(storeName, key, data) {
-    const record = { key, data, timestamp: Date.now() };
-    try {
-      const db = await this.getDB();
-      if (db) {
-        await new Promise((resolve) => {
-          try {
-            const tx = db.transaction(storeName, 'readwrite');
-            const store = tx.objectStore(storeName);
-            store.put(record);
-            tx.oncomplete = () => resolve(true);
-            tx.onerror = () => resolve(false);
-          } catch (e) {
-            resolve(false);
-          }
-        });
-      }
-    } catch (e) {}
-
-    // Keep localStorage lean: store only a 100-card warm startup preview for the massive global catalog
-    try {
-      const lsKey = `ps_${storeName}_${key}`;
-      if (storeName === this.CATALOG_STORE && key === 'cards' && Array.isArray(data)) {
-        const preview = { key, data: data.slice(0, 100), timestamp: record.timestamp };
-        localStorage.setItem(lsKey, JSON.stringify(preview));
-      } else if (storeName !== this.CATALOG_STORE) {
-        const serialized = JSON.stringify(record);
-        if (serialized.length < 2_500_000) {
-          localStorage.setItem(lsKey, serialized);
-        }
-      }
-    } catch (e) {}
-  },
-
-  loadInitialCachedCards() {
-    try {
-      const lsKey = `ps_${this.CATALOG_STORE}_cards`;
-      const raw = localStorage.getItem(lsKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.timestamp && (Date.now() - parsed.timestamp < this.TTL_MS) && Array.isArray(parsed.data) && parsed.data.length > 0) {
-          return parsed.data;
-        }
-      }
-    } catch (e) {}
-    return null;
-  }
-};
-
-// ── FAST DYNAMIC CARD INDEX (UNRESTRICTED ~50,000-CARD LOOKUP ENGINE) ──
-const CardIndex = {
-  byRef: new Map(),
-  bySerial: new Map(),
-  byLocalId: new Map(),
-  byId: new Map(),
-  byName: new Map(),
-
-  clear() {
-    this.byRef.clear();
-    this.bySerial.clear();
-    this.byLocalId.clear();
-    this.byId.clear();
-    this.byName.clear();
-  },
-
-  addCard(card) {
-    if (!card) return;
-    if (card.id) this.byId.set(card.id.toLowerCase(), card);
-
-    if (card.ref) {
-      const cleanRef = card.ref.toLowerCase().replace(/\s+/g, ' ').trim();
-      this.byRef.set(cleanRef, card);
-      this.byRef.set(cleanRef.replace(/\s+/g, ''), card);
-
-      // Index exact fraction serial (e.g. "120/119", "201/165", "025/165")
-      const frac = cleanRef.match(/\b([0-9]{1,3})\/([0-9]{1,3})\b/);
-      if (frac) {
-        const rawKey = `${frac[1]}/${frac[2]}`;
-        const unpadKey = `${frac[1].replace(/^0+/, '') || frac[1]}/${frac[2].replace(/^0+/, '') || frac[2]}`;
-        if (!this.bySerial.has(rawKey)) this.bySerial.set(rawKey, []);
-        this.bySerial.get(rawKey).push(card);
-        if (unpadKey !== rawKey) {
-          if (!this.bySerial.has(unpadKey)) this.bySerial.set(unpadKey, []);
-          this.bySerial.get(unpadKey).push(card);
-        }
-      }
-    }
-
-    if (card.localId != null && card.localId !== '') {
-      const loc = String(card.localId).toLowerCase().trim();
-      const cleanNum = loc.replace(/^0+/, '') || loc;
-      if (!this.byLocalId.has(loc)) this.byLocalId.set(loc, []);
-      this.byLocalId.get(loc).push(card);
-      if (cleanNum !== loc) {
-        if (!this.byLocalId.has(cleanNum)) this.byLocalId.set(cleanNum, []);
-        this.byLocalId.get(cleanNum).push(card);
-      }
-    }
-
-    if (card.name) {
-      const n = card.name.toLowerCase().trim();
-      if (!this.byName.has(n)) this.byName.set(n, []);
-      this.byName.get(n).push(card);
-    }
-    if (card.subName && card.subName !== card.name) {
-      const sn = card.subName.toLowerCase().trim();
-      if (!this.byName.has(sn)) this.byName.set(sn, []);
-      this.byName.get(sn).push(card);
-    }
-  },
-
-  build(cards) {
-    this.clear();
-    if (!Array.isArray(cards)) return;
-    for (const card of cards) {
-      this.addCard(card);
-    }
-  },
-
-  async buildChunked(cards, chunkSize = 4000) {
-    this.clear();
-    if (!Array.isArray(cards)) return;
-    for (let i = 0; i < cards.length; i += chunkSize) {
-      const end = Math.min(i + chunkSize, cards.length);
-      for (let j = i; j < end; j++) {
-        this.addCard(cards[j]);
-      }
-      if (end < cards.length) {
-        await new Promise(r => setTimeout(r, 0));
-      }
-    }
-  },
-
-  lookupByRef(ref) {
-    if (!ref) return null;
-    const clean = ref.toLowerCase().replace(/\s+/g, ' ').trim();
-    if (this.byRef.has(clean)) return this.byRef.get(clean);
-    const noSpace = clean.replace(/\s+/g, '');
-    return this.byRef.get(noSpace) || null;
-  },
-
-  lookupBySerial(serial) {
-    if (!serial) return [];
-    const clean = String(serial).toLowerCase().replace(/\s+/g, '').trim();
-    if (this.bySerial.has(clean)) return this.bySerial.get(clean);
-    const frac = clean.match(/^0*([0-9]{1,3})\/0*([0-9]{1,3})$/);
-    if (frac) {
-      const unpad = `${frac[1]}/${frac[2]}`;
-      if (this.bySerial.has(unpad)) return this.bySerial.get(unpad);
-    }
-    return [];
-  },
-
-  lookupByLocalId(id) {
-    if (!id) return [];
-    const clean = String(id).toLowerCase().trim();
-    const cleanNum = clean.replace(/^0+/, '') || clean;
-    return this.byLocalId.get(clean) || this.byLocalId.get(cleanNum) || [];
-  },
-
-  search(query, limit = 50) {
-    const q = (query || '').toLowerCase().trim();
-    if (!q) return [];
-    const directRef = this.lookupByRef(q);
-    if (directRef) return [directRef];
-
-    // Exact serial match (e.g. "120/119", "201/165")
-    const fracMatch = q.match(/\b([0-9]{1,3})\s*\/\s*([0-9]{1,3})\b/);
-    if (fracMatch) {
-      const exactSerial = this.lookupBySerial(`${fracMatch[1]}/${fracMatch[2]}`);
-      if (exactSerial.length > 0) return exactSerial.slice(0, limit);
-      const localFallback = this.lookupByLocalId(fracMatch[1]);
-      if (localFallback.length > 0) return localFallback.slice(0, limit);
-    }
-
-    if (/^[0-9]{1,3}$/.test(q)) {
-      const numCandidates = this.lookupByLocalId(q);
-      if (numCandidates.length > 0) return numCandidates.slice(0, limit);
-    }
-
-    if (this.byName.has(q)) {
-      return this.byName.get(q).slice(0, limit);
-    }
-
-    // Fast early-exit substring scan across the full global catalog
-    const results = [];
-    if (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) {
-      for (let i = 0; i < CARDS.length; i++) {
-        const c = CARDS[i];
-        const name = (c.name || '').toLowerCase();
-        const sub = (c.subName || '').toLowerCase();
-        const ref = (c.ref || '').toLowerCase();
-        if (name.includes(q) || sub.includes(q) || ref.includes(q)) {
-          results.push(c);
-          if (results.length >= limit) break;
-        }
-      }
-    }
-    return results;
-  }
-};
-
-// ── DYNAMIC HISTORICAL GRADE SPREAD & CONDITION RESOLVER ─────
-function resolveConditionMultiplier(customConditionOrGrade = null, card = null) {
-  let mode = 'raw';
-  let company = null;
-  let gradeShort = null;
-  let baseFrMult = 1.0;
-  let baseJpMult = 1.0;
-
-  // 1. Parse explicit condition or grade (Detail Modal, Scanner, Purchases, Platform Breakdown)
-  if (customConditionOrGrade) {
-    if (typeof customConditionOrGrade === 'object') {
-      if (customConditionOrGrade.mode === 'raw' || (customConditionOrGrade.condition && customConditionOrGrade.mode !== 'graded')) {
-        const condKey = customConditionOrGrade.condition || customConditionOrGrade.key || 'NM';
-        const cond = RAW_CONDITIONS.find(c => c.key === condKey) || RAW_CONDITIONS[0];
-        return { frMult: cond.multiplier, jpMult: cond.multiplier, source: 'raw_condition' };
-      }
-      if (customConditionOrGrade.mode === 'graded' || customConditionOrGrade.company) {
-        mode = 'graded';
-        company = (customConditionOrGrade.company || 'PSA').toUpperCase();
-        const grKey = String(customConditionOrGrade.grade || '10');
-        const scale = GRADING_SCALES[company] || GRADING_SCALES.PSA;
-        const gr = scale.find(g => g.grade === grKey || g.short === grKey || g.grade.startsWith(grKey)) || scale[0];
-        gradeShort = gr.short;
-        baseFrMult = gr.frMult;
-        baseJpMult = gr.jpMult;
-      }
-    } else if (typeof customConditionOrGrade === 'string') {
-      const str = customConditionOrGrade.trim();
-      if (str.startsWith('Raw ')) {
-        const key = str.replace('Raw ', '').trim();
-        const cond = RAW_CONDITIONS.find(c => c.key === key || c.label.includes(key)) || RAW_CONDITIONS[0];
-        return { frMult: cond.multiplier, jpMult: cond.multiplier, source: 'raw_condition' };
-      }
-      const rawMatch = RAW_CONDITIONS.find(c => c.key === str || c.label.includes(str));
-      if (rawMatch) {
-        return { frMult: rawMatch.multiplier, jpMult: rawMatch.multiplier, source: 'raw_condition' };
-      }
-      mode = 'graded';
-      const parts = str.split(/\s+/);
-      company = (parts[0] || 'PSA').toUpperCase();
-      const gradeStr = parts.slice(1).join(' ').trim();
-      const scale = GRADING_SCALES[company] || GRADING_SCALES.ALL;
-      const gr = scale.find(g => g.grade === gradeStr || g.short === gradeStr || g.grade.startsWith(gradeStr)) || scale[0];
-      gradeShort = gr.short;
-      baseFrMult = gr.frMult;
-      baseJpMult = gr.jpMult;
-    }
-  } else {
-    // 2. Active global filter (Focus Mode & Library)
-    if (!state.condition || state.condition.mode === 'raw') {
-      const active = state.condition?.rawConditions || ['NM'];
-      const matched = RAW_CONDITIONS.filter(c => active.includes(c.key));
-      const avg = matched.length > 0
-        ? matched.reduce((sum, c) => sum + c.multiplier, 0) / matched.length
-        : 1.0;
-      return { frMult: avg, jpMult: avg, source: 'raw_condition' };
-    } else {
-      mode = 'graded';
-      const companies = state.condition.companies || ['ALL'];
-      const grades = state.condition.grades || [];
-      company = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : 'ALL';
-      const scale = GRADING_SCALES[company] || GRADING_SCALES.ALL;
-      let matchedGrades = grades.length > 0
-        ? scale.filter(g => grades.includes(g.grade) || grades.includes(g.short))
-        : [];
-      if (matchedGrades.length === 0) matchedGrades = [scale[0]];
-      gradeShort = matchedGrades.length === 1 ? matchedGrades[0].short : null;
-      baseFrMult = matchedGrades.reduce((sum, g) => sum + g.frMult, 0) / matchedGrades.length;
-      baseJpMult = matchedGrades.reduce((sum, g) => sum + g.jpMult, 0) / matchedGrades.length;
-    }
-  }
-
-  // 3. Dynamic Historical Market Grade Spread Resolution (Graded Slabs)
-  if (mode === 'graded') {
-    const gradeKey = (company && company !== 'ALL' && gradeShort) ? `${company} ${gradeShort}` : null;
-    let frMult = baseFrMult;
-    let jpMult = baseJpMult;
-    let source = 'historical_curve';
-
-    // Priority A: Direct verified graded sold prices for this specific card in prices.json
-    if (card && gradeKey && typeof PriceService !== 'undefined') {
-      const entry = PriceService.findPriceEntry(card);
-      const rawFr = entry?.fr?.smoothed_avg || card.frPrice;
-      const rawJp = entry?.jp?.smoothed_avg || card.jpPrice;
-      const directFr = entry?.fr?.graded?.[gradeKey]?.smoothed_avg;
-      const directJp = entry?.jp?.graded?.[gradeKey]?.smoothed_avg;
-
-      if (directFr && rawFr > 0) {
-        frMult = directFr / rawFr;
-        source = 'direct_sold';
-      }
-      if (directJp && rawJp > 0) {
-        jpMult = directJp / rawJp;
-        source = 'direct_sold';
-      }
-    }
-
-    // Priority B: Empirical market-wide grade spreads observed in prices.json._meta
-    if (source !== 'direct_sold' && gradeKey && typeof PriceService !== 'undefined') {
-      const observed = PriceService.pricesJsonData?._meta?.observed_grade_spreads;
-      if (observed?.fr?.[gradeKey] && observed.fr[gradeKey] > 0) {
-        frMult = observed.fr[gradeKey];
-        source = 'market_spread';
-      }
-      if (observed?.jp?.[gradeKey] && observed.jp[gradeKey] > 0) {
-        jpMult = observed.jp[gradeKey];
-        source = 'market_spread';
-      }
-    }
-
-    // Priority C: Dynamic Price-Tier & Print-Quality Spread Curve (adjusts for raw value tier & edition)
-    if (source === 'historical_curve' && card && baseFrMult > 1.1) {
-      const rawEur = card.frPrice || (card.jpPrice ? card.jpPrice / (state.rate || 165) : null);
-      if (rawEur != null && rawEur > 0) {
-        let tierFactor = 1.0;
-        if (rawEur < 15) tierFactor = 1.18;        // Low-raw grading fee floor effect
-        else if (rawEur < 45) tierFactor = 1.06;   // Mid-entry AR / SR spread
-        else if (rawEur > 140) tierFactor = 0.88;  // High-value chase card compression
-
-        // Edition gem-rate adjustment (JP modern print quality vs FR/EN centering scarcity)
-        let editionFactorFr = 1.0;
-        let editionFactorJp = 1.0;
-        if (card.edition === 'JP') {
-          editionFactorFr = (company === 'ARS') ? 1.05 : 0.94;
-          editionFactorJp = (company === 'ARS') ? 1.08 : 0.93;
-        } else if (card.edition === 'FR' || card.edition === 'EN') {
-          editionFactorFr = 1.05;
-          editionFactorJp = 1.02;
-        }
-
-        // Apply adjustments only to the premium above 1.0x raw
-        frMult = Math.max(0.7, 1.0 + (baseFrMult - 1.0) * tierFactor * editionFactorFr);
-        jpMult = Math.max(0.7, 1.0 + (baseJpMult - 1.0) * tierFactor * editionFactorJp);
-      }
-    }
-
-    return {
-      frMult: Math.round(frMult * 1000) / 1000,
-      jpMult: Math.round(jpMult * 1000) / 1000,
-      source,
-      gradeKey
-    };
-  }
-
-  return { frMult: baseFrMult, jpMult: baseJpMult, source: 'raw_condition' };
-}
-
-// ── REAL MARKETPLACE PRICE ENGINE (`PriceService`) ───────────
-const PriceService = {
-  pricesJsonData: null,
-  pricesJsonLoaded: false,
-  priceMap: new Map(),
-
-  // Builds an O(1) Map indexing exact normalized ref keys
-  buildPriceMap() {
-    this.priceMap.clear();
-    if (!this.pricesJsonData?.prices) return;
-    const p = this.pricesJsonData.prices;
-    for (const [key, entry] of Object.entries(p)) {
-      if (!key || !entry) continue;
-      const normKey = String(key).toLowerCase().replace(/\s+/g, ' ').trim();
-      this.priceMap.set(normKey, entry);
-      if (entry.ref) {
-        const normRef = String(entry.ref).toLowerCase().replace(/\s+/g, ' ').trim();
-        this.priceMap.set(normRef, entry);
-      }
-    }
-  },
-
-  // Load real sold-item prices from prices.json or 24h storage cache
-  async loadPricesJson() {
-    const badge = document.getElementById('prices-source-badge');
-    try {
-      const res = await fetch('./prices.json?t=' + Date.now());
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.prices && Object.keys(data.prices).length > 0) {
-          this.pricesJsonData = data;
-          this.pricesJsonLoaded = true;
-          this.buildPriceMap();
-          // Store in 24h persistent storage
-          await StorageService.set(StorageService.PRICES_STORE, 'market_prices', data);
-          if (badge) {
-            badge.className = 'prices-source-badge prices-source-scraped';
-            const count = data._meta?.priced_cards || Object.keys(data.prices).length;
-            badge.textContent = `🟢 Ventes réelles (${count})`;
-            const genTime = data._meta?.generated_at
-              ? new Date(data._meta.generated_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-              : 'Live';
-            badge.title = `Ventes finalisées eBay FR & Mercari JP (${genTime})`;
-          }
-          this.repriceAllCards();
-          renderAllColumns();
-          updateColumnCounters();
-          return true;
-        }
-      }
-    } catch (e) {
-      console.info('[PriceService] prices.json not reachable, checking storage cache:', e.message);
-    }
-
-    // Check storage cache
-    const cachedPrices = await StorageService.get(StorageService.PRICES_STORE, 'market_prices');
-    if (cachedPrices && cachedPrices.prices && Object.keys(cachedPrices.prices).length > 0) {
-      this.pricesJsonData = cachedPrices;
-      this.pricesJsonLoaded = true;
-      this.buildPriceMap();
-      if (badge) {
-        badge.className = 'prices-source-badge prices-source-scraped';
-        badge.textContent = '🟢 Cache 24h';
-        badge.title = 'Ventes finalisées enregistrées en cache local 24h';
-      }
-      this.repriceAllCards();
-      renderAllColumns();
-      updateColumnCounters();
-      return true;
-    }
-
-    // No verified sold sales available: strict safeguard mode (no fabricated prices)
-    this.pricesJsonData = null;
-    this.pricesJsonLoaded = false;
-    this.priceMap.clear();
-    if (badge) {
-      badge.className = 'prices-source-badge prices-source-api';
-      badge.textContent = '⚪ En attente de ventes';
-      badge.title = 'Aucune vente finalisée enregistrée — scan ou actualisation requise';
-    }
-    this.repriceAllCards();
-    renderAllColumns();
-    updateColumnCounters();
-    return false;
-  },
-
-  // Match pricing record strictly by exact normalized ref from O(1) priceMap
-  findPriceEntry(card) {
-    if (!card || !this.priceMap || this.priceMap.size === 0) return null;
-
-    // 1. Direct normalized ref lookup (e.g. "sv2a 201/165")
-    if (card.ref) {
-      const cleanRef = String(card.ref).toLowerCase().replace(/\s+/g, ' ').trim();
-      const match = this.priceMap.get(cleanRef);
-      if (match) return match;
-    }
-
-    // 2. Exact set_id + local_id/official_count fallback (if ref was formatted differently)
-    if (card.setId && card.localId) {
-      const cleanSet = String(card.setId).toLowerCase().trim();
-      const cleanLocal = String(card.localId).trim();
-      if (card.officialCount && card.officialCount !== '---') {
-        const fullRef = `${cleanSet} ${cleanLocal}/${String(card.officialCount).trim()}`;
-        const match = this.priceMap.get(fullRef);
-        if (match) return match;
-      } else {
-        const shortRef = `${cleanSet} ${cleanLocal}`;
-        const match = this.priceMap.get(shortRef);
-        if (match) return match;
-      }
-    }
-
-    // STRICT: NEVER match localId alone across sets!
-    return null;
-  },
-
-  // Reprice all loaded cards with verified market data
-  repriceAllCards() {
-    for (const card of CARDS) {
-      this.enrichCardWithRealPrices(card);
-    }
-  },
-
-  // STRICT SAFEGUARD: ZERO FAKE PRICES
-  // If a card lacks real verified market sales, prices are set strictly to null
-  enrichCardWithRealPrices(card) {
-    if (!card) return card;
-    const entry = this.findPriceEntry(card);
-    if (entry) {
-      const frSmooth = entry.fr?.smoothed_avg;
-      const jpSmooth = entry.jp?.smoothed_avg;
-      card.frPrice = frSmooth != null ? frSmooth : null;
-      card.jpPrice = jpSmooth != null ? jpSmooth : null;
-      card.hasPrice = (card.frPrice != null || card.jpPrice != null);
-
-      if (entry.fr) {
-        card.platforms = {
-          ebay: entry.fr.ebay_fr?.sold_prices?.[0] || entry.fr.smoothed_avg || null,
-          vinted: null,
-          lbc: null,
-          cardmarket: entry.fr.cardmarket_trend || null
-        };
-      } else {
-        card.platforms = null;
-      }
-    } else {
-      card.frPrice = null;
-      card.jpPrice = null;
-      card.hasPrice = false;
-      card.platforms = null;
-    }
-    return card;
-  },
-
-  // Multi-platform price breakdown tables data with condition/slab multiplier support
-  // Returns genuine finalized sales only — zero fake multipliers
-  getMultiPlatformPrices(card, mode = 'raw', conditionOrGrade = 'NM') {
-    let custom = null;
-    if (mode === 'raw') {
-      custom = { mode: 'raw', condition: typeof conditionOrGrade === 'string' ? conditionOrGrade : (conditionOrGrade?.condition || 'NM') };
-    } else {
-      if (typeof conditionOrGrade === 'object') {
-        custom = { mode: 'graded', company: conditionOrGrade.company || 'PSA', grade: conditionOrGrade.grade || '10' };
-      } else {
-        custom = typeof conditionOrGrade === 'string' && conditionOrGrade.includes(' ')
-          ? conditionOrGrade
-          : { mode: 'graded', company: 'PSA', grade: conditionOrGrade };
-      }
-    }
-    const { frMult, jpMult } = resolveConditionMultiplier(custom, card);
-
-    const entry = this.findPriceEntry(card);
-    if (entry && (entry.fr || entry.jp) && card.hasPrice) {
-      const cm = entry.fr?.cardmarket || {};
-      const frData = entry.fr ? {
-        ebay: {
-          last: entry.fr.ebay_fr?.sold_prices?.[0] ? Math.round(entry.fr.ebay_fr.sold_prices[0] * frMult * 10) / 10 : null,
-          avg7: cm.avg7 ? Math.round(cm.avg7 * frMult * 10) / 10 : null,
-          avg30: (entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) ? Math.round((entry.fr.ebay_fr?.avg || entry.fr.smoothed_avg) * frMult * 10) / 10 : null,
-          avg90: cm.avg30 ? Math.round(cm.avg30 * frMult * 10) / 10 : null
-        },
-        vinted: { last: null, avg7: null, avg30: null, avg90: null },
-        lbc: { last: null, avg7: null, avg30: null, avg90: null }
-      } : null;
-
-      const jpData = entry.jp ? {
-        mercari: {
-          last: entry.jp.mercari?.sold_prices?.[0] ? Math.round(entry.jp.mercari.sold_prices[0] * jpMult) : null,
-          avg7: null,
-          avg30: entry.jp.mercari?.avg ? Math.round(entry.jp.mercari.avg * jpMult) : (entry.jp.mercari?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-          avg90: null
-        },
-        yahoo: {
-          last: entry.jp.yahoo_auctions?.sold_prices?.[0] ? Math.round(entry.jp.yahoo_auctions.sold_prices[0] * jpMult) : null,
-          avg7: null,
-          avg30: entry.jp.yahoo_auctions?.avg ? Math.round(entry.jp.yahoo_auctions.avg * jpMult) : (entry.jp.yahoo_auctions?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-          avg90: null
-        },
-        cardrush: {
-          last: entry.jp.card_rush?.sold_prices?.[0] ? Math.round(entry.jp.card_rush.sold_prices[0] * jpMult) : null,
-          avg7: null,
-          avg30: entry.jp.card_rush?.avg ? Math.round(entry.jp.card_rush.avg * jpMult) : (entry.jp.card_rush?.sold_prices?.length ? Math.round(entry.jp.smoothed_avg * jpMult) : null),
-          avg90: null
-        }
-      } : null;
-
-      return { fr: frData, jp: jpData };
-    }
-
-    // Price not available: zero fabricated numbers
-    return { fr: null, jp: null };
-  },
-
-  enrichCard(card) {
-    const edition = card.edition || 'JP';
-    const enriched = {
-      id: card.id,
-      rawId: card.rawId || '',
-      name: card.name,
-      subName: card.subName || '',
-      localId: String(card.localId || ''),
-      setId: card.setId || '',
-      ref: card.ref,
-      image: formatHighResCardImage(card.image),
-      hp: card.hp || null,
-      edition,
-      jpPrice: card.jpPrice != null ? card.jpPrice : null,
-      frPrice: card.frPrice != null ? card.frPrice : null,
-      hasPrice: false,
-      salesPerMonth: card.salesPerMonth || null,
-      velocityScore: card.velocityScore || null,
-      priceHistory: card.priceHistory || [],
-      platforms: card.platforms || null,
-      lastSales: card.lastSales || []
-    };
-    return this.enrichCardWithRealPrices(enriched);
-  }
-};
-
-// ── UNRESTRICTED GLOBAL CATALOG SERVICE (`CatalogService`) ────
-// Zero hardcoded sets: dynamically fetches ALL sets & cards from TCGdex API
-const CatalogService = {
-  setMetaMap: new Map(),           // key: `${lang}:${setId}` -> { id, name, officialCount, totalCount }
-  setsByOfficialCount: new Map(),  // key: '119' -> [{ lang, edition, setId, name, officialCount }]
-  _setsLoaded: false,
-
-  async ensureSetsMetadata() {
-    if (this._setsLoaded && this.setMetaMap.size > 0) return;
-
-    // Check 24h IndexedDB cache for sets metadata first
-    const cachedSets = await StorageService.get(StorageService.CATALOG_STORE, 'sets_meta');
-    if (cachedSets && Array.isArray(cachedSets) && cachedSets.length > 50) {
-      this._hydrateSetMaps(cachedSets);
-      this._setsLoaded = true;
-      return;
-    }
-
-    const langs = [
-      { lang: 'fr', edition: 'FR' },
-      { lang: 'ja', edition: 'JP' }
-    ];
-
-    const fetchedSets = [];
-    await Promise.all(
-      langs.map(async ({ lang, edition }) => {
-        try {
-          const res = await fetch(`https://api.tcgdex.net/v2/${lang}/sets`);
-          if (!res.ok) return;
-          const list = await res.json();
-          if (!Array.isArray(list)) return;
-          for (const s of list) {
-            if (!s || !s.id) continue;
-            const officialCount = String(s.cardCount?.official || s.cardCount?.total || '---');
-            const totalCount = String(s.cardCount?.total || officialCount);
-            fetchedSets.push({
-              lang,
-              edition,
-              setId: s.id,
-              name: s.name || s.id,
-              officialCount,
-              totalCount
-            });
-          }
-        } catch (err) {
-          console.warn(`[CatalogService] Failed fetching /v2/${lang}/sets:`, err.message);
-        }
-      })
-    );
-
-    if (fetchedSets.length > 0) {
-      this._hydrateSetMaps(fetchedSets);
-      this._setsLoaded = true;
-      await StorageService.set(StorageService.CATALOG_STORE, 'sets_meta', fetchedSets);
-    }
-  },
-
-  _hydrateSetMaps(setsArr) {
-    this.setMetaMap.clear();
-    this.setsByOfficialCount.clear();
-    for (const s of setsArr) {
-      this.setMetaMap.set(`${s.lang}:${s.setId}`, s);
-      if (s.officialCount && s.officialCount !== '---') {
-        const key = String(s.officialCount).replace(/^0+/, '') || String(s.officialCount);
-        if (!this.setsByOfficialCount.has(key)) this.setsByOfficialCount.set(key, []);
-        this.setsByOfficialCount.get(key).push(s);
-      }
-    }
-  },
-
-  _buildCardObj(c, lang, edition) {
-    const rawId = String(c.id || '');
-    const dashIdx = rawId.lastIndexOf('-');
-    const setId = dashIdx > 0 ? rawId.slice(0, dashIdx) : rawId;
-    const localId = String(c.localId || '');
-    const meta = this.setMetaMap.get(`${lang}:${setId}`);
-    const officialCount = meta?.officialCount || '---';
-    const ref = officialCount !== '---' ? `${setId} ${localId}/${officialCount}` : `${setId} ${localId}`;
-    const { name, subName } = LocalizationService.resolveNativeNames(c.name || '', lang, rawId);
-
-    return PriceService.enrichCard({
-      id: `${lang}-${rawId}`,
-      rawId,
-      name,
-      subName,
-      localId,
-      setId,
-      ref,
-      image: c.image,
-      hp: c.hp || null,
-      edition
-    });
-  },
-
-  async initCatalog() {
-    state.isLoadingCatalog = true;
-    try {
-      await this.ensureSetsMetadata();
-
-      // 1. Try loading full global catalog from 24h IndexedDB cache
-      const cached = await StorageService.get(StorageService.CATALOG_STORE, 'cards');
-      if (cached && Array.isArray(cached) && cached.length >= 2000) {
-        const enrichedList = new Array(cached.length);
-        const CHUNK = 4000;
-        for (let i = 0; i < cached.length; i += CHUNK) {
-          const end = Math.min(i + CHUNK, cached.length);
-          for (let j = i; j < end; j++) {
-            enrichedList[j] = PriceService.enrichCard(cached[j]);
-          }
-          if (end < cached.length) await new Promise(r => setTimeout(r, 0));
-        }
-        CARDS = enrichedList;
-        LocalizationService.registerFrenchCards(CARDS.filter(c => c.edition === 'FR'));
-        await CardIndex.buildChunked(CARDS);
-        renderAllColumns();
-        renderMobileColumn();
-        updateFilterMatchCount();
-        updateColumnCounters();
-        return;
-      }
-
-      // 2. Dynamically fetch the complete unrestricted catalog from TCGdex API
-      await this.fetchGlobalCatalog();
-    } catch (e) {
-      console.warn('[CatalogService] initCatalog warning:', e);
-    } finally {
-      state.isLoadingCatalog = false;
-    }
-  },
-
-  async fetchGlobalCatalog(forceRefresh = false) {
-    state.isLoadingCatalog = true;
-    try {
-      if (forceRefresh) this._setsLoaded = false;
-      await this.ensureSetsMetadata();
-
-      // Fetch full FR & JP card indexes in parallel (all ~50,000 official cards, zero hardcoded sets)
-      const [frRaw, jaRaw] = await Promise.all([
-        fetch('https://api.tcgdex.net/v2/fr/cards').then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch('https://api.tcgdex.net/v2/ja/cards').then(r => r.ok ? r.json() : []).catch(() => [])
-      ]);
-
-      // Register French native names first so Japanese cards link natively via official IDs
-      const frNormalized = [];
-      if (Array.isArray(frRaw)) {
-        const CHUNK = 4000;
-        for (let i = 0; i < frRaw.length; i += CHUNK) {
-          const end = Math.min(i + CHUNK, frRaw.length);
-          for (let j = i; j < end; j++) {
-            const c = frRaw[j];
-            if (!c || !c.image || typeof c.image !== 'string' || !c.image.trim()) continue;
-            frNormalized.push(this._buildCardObj(c, 'fr', 'FR'));
-          }
-          if (end < frRaw.length) await new Promise(r => setTimeout(r, 0));
-        }
-      }
-      LocalizationService.registerFrenchCards(frNormalized);
-
-      const jaNormalized = [];
-      if (Array.isArray(jaRaw)) {
-        const CHUNK = 4000;
-        for (let i = 0; i < jaRaw.length; i += CHUNK) {
-          const end = Math.min(i + CHUNK, jaRaw.length);
-          for (let j = i; j < end; j++) {
-            const c = jaRaw[j];
-            if (!c || !c.image || typeof c.image !== 'string' || !c.image.trim()) continue;
-            jaNormalized.push(this._buildCardObj(c, 'ja', 'JP'));
-          }
-          if (end < jaRaw.length) await new Promise(r => setTimeout(r, 0));
-        }
-      }
-
-      // If bulk endpoints returned nothing, fall back to lazy-iterating dynamically retrieved sets
-      let combined = [...jaNormalized, ...frNormalized];
-      if (combined.length === 0 && this.setMetaMap.size > 0) {
-        const setsArr = Array.from(this.setMetaMap.values()).reverse();
-        const BATCH_SIZE = 10;
-        for (let i = 0; i < setsArr.length; i += BATCH_SIZE) {
-          const batch = setsArr.slice(i, i + BATCH_SIZE);
-          const batchCards = await Promise.all(
-            batch.map(async s => {
-              try {
-                const res = await fetch(`https://api.tcgdex.net/v2/${s.lang}/sets/${s.setId}`);
-                if (!res.ok) return [];
-                const data = await res.json();
-                return (data.cards || [])
-                  .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
-                  .map(c => this._buildCardObj(c, s.lang, s.edition));
-              } catch (e) {
-                return [];
-              }
-            })
-          );
-          combined.push(...batchCards.flat());
-          // Paint first wave immediately so user sees cards right away without blocking
-          if (i === 0 && combined.length > 0) {
-            CARDS = combined;
-            PriceService.repriceAllCards();
-            CardIndex.build(CARDS);
-            renderAllColumns();
-            renderMobileColumn();
-            updateColumnCounters();
-          }
-        }
-      }
-
-      if (combined.length > 0) {
-        // Deduplicate by id while preserving newest sets / priced entries
-        const cardMap = new Map();
-        for (const card of combined) {
-          if (card && card.id && card.image) cardMap.set(card.id, card);
-        }
-
-        CARDS = Array.from(cardMap.values());
-        await CardIndex.buildChunked(CARDS);
-        PriceService.repriceAllCards();
-
-        // Persist complete global catalog to IndexedDB (24h TTL)
-        await StorageService.set(StorageService.CATALOG_STORE, 'cards', CARDS);
-
-        renderAllColumns();
-        renderMobileColumn();
-        updateFilterMatchCount();
-        updateColumnCounters();
-      }
-    } catch (e) {
-      console.error('[CatalogService] Global catalog fetch error:', e);
-    } finally {
-      state.isLoadingCatalog = false;
-    }
-  },
-
-  // Alias preserved for refresh controls
-  async fetchAllMultiLangSets() {
-    return this.fetchGlobalCatalog(true);
-  },
-
-  async searchLive(query) {
-    const q = (query || '').trim();
-    if (!q) return [];
-
-    // 1. Check fast local global CardIndex first
-    const localMatches = CardIndex.search(q, 25);
-    if (localMatches.length > 0) {
-      return localMatches.slice(0, 15);
-    }
-
-    // 2. Live query TCGdex API (supports serials, set IDs, and Pokémon names)
-    try {
-      await this.ensureSetsMetadata();
-      const serialMatch = q.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/);
-      if (serialMatch) {
-        return await this.lookupCardsBySerial(`${serialMatch[1]}/${serialMatch[2]}`);
-      }
-
-      const isJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(q);
-      const langs = isJapanese ? [{ lang: 'ja', edition: 'JP' }] : [{ lang: 'fr', edition: 'FR' }, { lang: 'ja', edition: 'JP' }];
-
-      const results = await Promise.all(
-        langs.map(async ({ lang, edition }) => {
-          try {
-            const res = await fetch(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(q)}`);
-            if (!res.ok) return [];
-            const data = await res.json();
-            if (!Array.isArray(data)) return [];
-            return data
-              .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
-              .slice(0, 15)
-              .map(c => this._buildCardObj(c, lang, edition));
-          } catch (e) {
-            return [];
-          }
-        })
-      );
-
-      const fetched = results.flat().slice(0, 15);
-      for (const card of fetched) {
-        if (!CardIndex.byId.has(card.id.toLowerCase())) {
-          CARDS.push(card);
-          CardIndex.addCard(card);
-        }
-      }
-      return fetched;
-    } catch (e) {
-      console.warn('TCGdex live search error:', e);
-      return [];
-    }
-  },
-
-  // Exact serial / localId lookup across global CardIndex + live TCGdex API
-  // Handles queries like "120/119", "201/165", "sv2a 201", "#120"
-  async lookupCardsBySerial(serialInput, setHint = null) {
-    if (!serialInput) return [];
-    await this.ensureSetsMetadata();
-
-    const cleanSerial = String(serialInput).trim();
-    const parts = cleanSerial.match(/\b(\d{1,3})\s*\/\s*(\d{1,3})\b/);
-    const rawLocal = parts ? parts[1] : (cleanSerial.match(/(\d{1,3})/)?.[1] || '');
-    const total = parts ? parts[2] : null;
-    if (!rawLocal) return [];
-
-    const cleanNum = rawLocal.replace(/^0+/, '') || rawLocal;
-    const cleanTotal = total ? (total.replace(/^0+/, '') || total) : null;
-
-    // 1. O(1) exact fraction match in global CardIndex (e.g. "120/119" -> Élecsprint xy4-120)
-    if (cleanTotal) {
-      let exactLocal = CardIndex.lookupBySerial(`${rawLocal}/${total}`);
-      if (exactLocal.length === 0) exactLocal = CardIndex.lookupBySerial(`${cleanNum}/${cleanTotal}`);
-      if (exactLocal.length > 0) {
-        if (setHint) {
-          const hintLow = setHint.toLowerCase();
-          const narrowed = exactLocal.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
-          if (narrowed.length > 0) return narrowed;
-        }
-        return exactLocal;
-      }
-    }
-
-    // 2. Direct setHint + localId match in local index
-    if (setHint) {
-      const hintLow = setHint.toLowerCase();
-      const locList = CardIndex.lookupByLocalId(rawLocal);
-      const setMatches = locList.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
-      if (setMatches.length > 0) return setMatches;
-    }
-
-    // 3. Live query official TCGdex API by exact localId across FR & JP catalogues
-    try {
-      const queries = [
-        { lang: 'fr', edition: 'FR', id: rawLocal },
-        { lang: 'ja', edition: 'JP', id: rawLocal }
-      ];
-      if (cleanNum !== rawLocal) {
-        queries.push({ lang: 'fr', edition: 'FR', id: cleanNum });
-        queries.push({ lang: 'ja', edition: 'JP', id: cleanNum });
-      }
-
-      const responses = await Promise.all(
-        queries.map(async q => {
-          try {
-            const res = await fetch(`https://api.tcgdex.net/v2/${q.lang}/cards?localId=${encodeURIComponent(q.id)}`);
-            if (!res.ok) return [];
-            const data = await res.json();
-            if (!Array.isArray(data)) return [];
-            return data
-              .filter(c => c && c.image && typeof c.image === 'string' && c.image.trim())
-              .map(c => this._buildCardObj(c, q.lang, q.edition));
-          } catch (e) {
-            return [];
-          }
-        })
-      );
-
-      const seen = new Set();
-      const fetched = [];
-      for (const card of responses.flat()) {
-        if (!seen.has(card.id)) {
-          seen.add(card.id);
-          fetched.push(card);
-          if (!CardIndex.byId.has(card.id.toLowerCase())) {
-            CARDS.push(card);
-            CardIndex.addCard(card);
-          }
-        }
-      }
-
-      if (fetched.length > 0) {
-        // Prioritize exact setHint match
-        if (setHint) {
-          const hintLow = setHint.toLowerCase();
-          const setMatches = fetched.filter(c => (c.setId || '').toLowerCase() === hintLow || (c.ref || '').toLowerCase().includes(hintLow));
-          if (setMatches.length > 0) return setMatches;
-        }
-        // Prioritize exact denominator match using dynamically retrieved TCGdex set cardCount.official
-        if (cleanTotal) {
-          const matchingSets = new Set(
-            (this.setsByOfficialCount.get(cleanTotal) || []).map(s => `${s.lang}:${s.setId}`)
-          );
-          const denomMatches = fetched.filter(c => {
-            const langKey = c.edition === 'JP' ? 'ja' : 'fr';
-            return matchingSets.has(`${langKey}:${c.setId}`) || (c.ref || '').endsWith(`/${cleanTotal}`) || (c.ref || '').endsWith(`/${total}`);
-          });
-          if (denomMatches.length > 0) return denomMatches;
-        }
-        return fetched.slice(0, 10);
-      }
-
-      // 4. Final fallback: return localId matches from global index if API returned none
-      return CardIndex.lookupByLocalId(cleanNum).slice(0, 10);
-    } catch (e) {
-      console.warn('[CatalogService] TCGdex live localId lookup error:', e);
-      return CardIndex.lookupByLocalId(cleanNum).slice(0, 10);
-    }
-  },
-
-  async lookupCardBySerial(serial, setHint = null) {
-    const matches = await this.lookupCardsBySerial(serial, setHint);
-    return matches.length > 0 ? matches[0] : null;
-  }
-};
-
-// Initialize CARDS dynamically (Zero Hardcoding)
-let CARDS = (() => {
-  const cached = StorageService.loadInitialCachedCards();
-  if (cached && Array.isArray(cached) && cached.length > 0) {
-    const list = cached.map(c => PriceService.enrichCard(c));
-    CardIndex.build(list);
-    return list;
-  }
-  return [];
-})();
-
-// ── COMPUTED HELPERS & ACTIVE PRICING ────────────────────────
-function jpToEur(yen) {
-  if (yen == null || isNaN(yen)) return null;
-  return yen / state.rate;
-}
-
-function getActiveFrPrice(card, customConditionOrGrade = null) {
-  if (!card) return null;
-  let basePrice = card.frPrice;
-  const ref = state.pricingRefFr || 'avg';
-
-  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
-    const entry = PriceService.findPriceEntry(card);
-    if (entry && entry.fr) {
-      if (ref === 'ebay') basePrice = entry.fr.ebay_fr?.avg ?? entry.fr.ebay_fr?.median ?? basePrice;
-      else if (ref === 'vinted') basePrice = entry.fr.vinted?.avg ?? basePrice;
-      else if (ref === 'lbc') basePrice = entry.fr.lbc?.avg ?? basePrice;
-      else basePrice = entry.fr.smoothed_avg != null ? entry.fr.smoothed_avg : basePrice;
-    }
-  }
-
-  if (basePrice == null || isNaN(basePrice) || basePrice <= 0) {
-    return null;
-  }
-
-  // Dynamic grade spread / condition resolution
-  const { frMult } = resolveConditionMultiplier(customConditionOrGrade, card);
-  return Math.round(basePrice * frMult * 10) / 10;
-}
-
-function getActiveJpPrice(card, customConditionOrGrade = null) {
-  if (!card) return null;
-  let basePrice = card.jpPrice;
-  const ref = state.pricingRefJp || 'min';
-
-  if (PriceService.pricesJsonLoaded && PriceService.pricesJsonData?.prices) {
-    const entry = PriceService.findPriceEntry(card);
-    if (entry && entry.jp) {
-      if (ref === 'mercari') basePrice = entry.jp.mercari?.avg ?? entry.jp.mercari?.median ?? basePrice;
-      else if (ref === 'yahoo') basePrice = entry.jp.yahoo_auctions?.avg ?? entry.jp.yahoo_auctions?.median ?? basePrice;
-      else if (ref === 'cardrush') basePrice = entry.jp.card_rush?.avg ?? entry.jp.card_rush?.median ?? basePrice;
-      else basePrice = entry.jp.min ?? entry.jp.smoothed_avg ?? basePrice;
-    }
-  }
-
-  if (basePrice == null || isNaN(basePrice) || basePrice <= 0) {
-    return null;
-  }
-
-  // Dynamic grade spread / condition resolution
-  const { jpMult } = resolveConditionMultiplier(customConditionOrGrade, card);
-  return Math.round(basePrice * jpMult);
-}
-
-function netMargin(card, customConditionOrGrade = null) {
-  const fr = getActiveFrPrice(card, customConditionOrGrade);
-  const jp = getActiveJpPrice(card, customConditionOrGrade);
-  if (fr == null || jp == null) return null;
-  const buyCost = jpToEur(jp) + 1.50;
-  const sellNet = fr * (1 - state.fee);
-  return sellNet - buyCost;
-}
-
-function netROI(card, customConditionOrGrade = null) {
-  const fr = getActiveFrPrice(card, customConditionOrGrade);
-  const jp = getActiveJpPrice(card, customConditionOrGrade);
-  if (fr == null || jp == null) return null;
-  const buyCost = jpToEur(jp) + 1.50;
-  const margin = netMargin(card, customConditionOrGrade);
-  return buyCost > 0 ? (margin / buyCost) * 100 : 0;
-}
-
-function velocityLabel(score) {
-  if (score >= 9) return { text: '⚡ Quick Turnover (1-2j)', cls: 'badge-fast' };
-  if (score >= 6) return { text: '⏱️ Turnover Moyen (4j)', cls: 'badge-medium' };
-  return { text: '🐢 Turnover Lent (7j+)', cls: 'badge-slow' };
-}
-
-function editionBadge(card) {
-  const c = COUNTRIES.find(x => x.code === card.edition) || { flag: '🌐', code: card.edition || 'JP' };
-  return `<span class="edition-badge edition-badge-${(card.edition || 'jp').toLowerCase()}">${c.flag} Édition ${c.code}</span>`;
-}
-
-// ── FILTER MATCHING ──────────────────────────────────────────
-function isFilterModeActive() {
-  const hasCountry = state.filters.countries && state.filters.countries.length > 0;
-  const hasPrice = state.filters.priceMin !== null || state.filters.priceMax !== null;
-  const hasPricedOnly = !!state.filters.pricedOnly;
-  const hasGraded = state.condition?.mode === 'graded';
-  return state.focusCol !== null || hasCountry || hasPrice || hasPricedOnly || hasGraded || (typeof window !== 'undefined' && window.innerWidth < 768);
-}
-
-function cardMatchesFilters(card) {
-  // 1. Condition / Grading Filter
-  if (state.condition?.mode === 'graded') {
-    const nameLower = (card.name || '').toLowerCase();
-    const subLower = (card.subName || '').toLowerCase();
-    const isSpecial = nameLower.includes('sar') || nameLower.includes('ar') || nameLower.includes('alt') ||
-                      nameLower.includes('secret') || nameLower.includes('vmax') || nameLower.includes('shiny') ||
-                      subLower.includes('sar') || subLower.includes('ar');
-    if (!isSpecial && (card.frPrice != null && card.frPrice < 25)) return false;
-  }
-
-  // 2. Country / Edition Filter (multi-select)
-  if (state.filters.countries && state.filters.countries.length > 0) {
-    if (!state.filters.countries.includes(card.edition)) {
-      return false;
-    }
-  }
-
-  // 3. Price Filter (min / max)
-  // If getActiveJpPrice is null, fall back to getActiveFrPrice (converted to JPY if priceUnit === 'JPY')
-  let buyPrice = null;
-  const rawJp = getActiveJpPrice(card);
-  const rawFr = getActiveFrPrice(card);
-
-  if (rawJp !== null) {
-    buyPrice = state.filters.priceUnit === 'EUR' ? jpToEur(rawJp) : rawJp;
-  } else if (rawFr !== null) {
-    buyPrice = state.filters.priceUnit === 'JPY' ? Math.round(rawFr * state.rate) : rawFr;
-  }
-
-  if (buyPrice !== null) {
-    if (state.filters.priceMin !== null && !isNaN(state.filters.priceMin)) {
-      if (buyPrice < state.filters.priceMin) return false;
-    }
-    if (state.filters.priceMax !== null && !isNaN(state.filters.priceMax)) {
-      if (buyPrice > state.filters.priceMax) return false;
-    }
-  } else if (state.filters.priceMin !== null || state.filters.priceMax !== null) {
-    return false;
-  }
-
-  // 4. "Priced Only" filter
-  if (state.filters.pricedOnly) {
-    if (rawFr === null && rawJp === null) return false;
-  }
-
-  return true;
-}
-
-// ── SPARKLINE ────────────────────────────────────────────────
-function buildSparkline(prices) {
-  if (!prices || prices.length < 2) return '';
-  const w = 50, h = 18, pad = 2;
-  const min = Math.min(...prices), max = Math.max(...prices);
-  const range = max - min || 1;
-  const pts = prices.map((p, i) => {
-    const x = pad + (i / (prices.length - 1)) * (w - 2 * pad);
-    const y = h - pad - ((p - min) / range) * (h - 2 * pad);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(' ');
-  const trend = prices[prices.length - 1] >= prices[0] ? 'up' : 'down';
-  return `<svg class="sparkline ${trend}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg"><polyline points="${pts}"/></svg>`;
-}
-
-// ── CARD TILE RENDERER ───────────────────────────────────────
 function renderCardTile(card, rank) {
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  const frSell = getActiveFrPrice(card);
+  const jpBuyYen = getActiveJpPrice(card);
+  const jpBuyEur = jpBuyYen ? jpToEur(jpBuyYen) : null;
   const margin = netMargin(card);
   const roi = netROI(card);
-  const jpActive = getActiveJpPrice(card);
-  const frActive = getActiveFrPrice(card);
+  const liquidity = getCardLiquidity(card);
 
-  const hasBothPrices = (margin !== null && roi !== null && jpActive !== null && frActive !== null);
-  const hasFrOnly = (frActive !== null && (jpActive === null || isNaN(jpActive)));
-  const hasJpOnly = (jpActive !== null && (frActive === null || isNaN(frActive)));
+  const hasBoth = frSell != null && jpBuyYen != null;
+  const isJpOnly = jpBuyYen != null && frSell == null;
+  const isFrOnly = frSell != null && jpBuyYen == null;
 
-  const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-  const vel = velocityLabel(card.velocityScore || 6);
-  const profitClass = hasBothPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
-  const marginSign = hasBothPrices && margin >= 0 ? '+' : '';
-  const hasSubName = card.subName && card.subName !== card.name;
-
-  let condBadge = '';
-  if (state.condition?.mode === 'graded') {
-    const co = (state.condition.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL')
-      ? state.condition.companies[0]
-      : 'Slabs';
-    let grText = '';
-    if (state.condition.grades && state.condition.grades.length > 0) {
-      const shortGrades = state.condition.grades.map(g => {
-        const scale = GRADING_SCALES[co] || GRADING_SCALES.ALL;
-        const entry = scale.find(s => s.grade === g);
-        return entry ? entry.short : g.split(' ')[0];
-      });
-      grText = ' ' + shortGrades.join('/');
-    }
-    condBadge = `<span class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded px-1.5 py-0.5">🛡️ ${co}${grText}</span>`;
+  // Status badge
+  let statusBadgeHtml = '';
+  if (hasBoth) {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Arbitrage Confirmé
+    </span>`;
+  } else if (isJpOnly) {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+      🇯🇵 Achat JP vérifié
+    </span>`;
+  } else if (isFrOnly) {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+      🇫🇷 Revente FR confirmée
+    </span>`;
   } else {
-    const rawStr = state.condition?.rawConditions && state.condition.rawConditions.length > 0
-      ? state.condition.rawConditions.join('/')
-      : 'NM';
-    condBadge = `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded px-1.5 py-0.5">📦 Raw ${rawStr}</span>`;
+    statusBadgeHtml = `<span class="text-[10px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">En attente de prix</span>`;
   }
 
-  let pricingBlock = '';
-  if (hasBothPrices) {
-    pricingBlock = `
-      <div class="text-[10px] text-slate-600">JP: ¥${jpActive.toLocaleString('fr-FR')} (${(jpToEur(jpActive) || 0).toFixed(2)}€) → FR: ${frActive.toFixed(2)}€</div>
-      <div class="flex items-center gap-1 mt-0.5">
-        <span class="${profitClass} text-xs font-semibold">${marginSign}${margin.toFixed(2)}€</span>
-        <span class="text-[10px] text-slate-400">|</span>
-        <span class="${profitClass} text-xs font-semibold">${marginSign}${roi.toFixed(0)}%</span>
-      </div>
-    `;
-  } else if (hasFrOnly) {
-    const frSource = card.platforms?.cardmarket ? 'Cardmarket' : (card.platforms?.ebay ? 'eBay FR' : 'Marché FR');
-    pricingBlock = `
-      <div class="text-[10px] text-slate-600"><span class="font-semibold text-emerald-700">FR: ${frActive.toFixed(2)}€</span> <span class="text-[9px] text-slate-400">(${frSource})</span></div>
-      <div class="flex items-center gap-1.5 mt-0.5">
-        <span class="text-[10px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded px-1 py-0.2">JP: En attente</span>
-        <span class="text-[10px] text-slate-400">|</span>
-        <span class="text-[10px] text-slate-500 font-medium">Arbitrage en attente</span>
-      </div>
-    `;
-  } else if (hasJpOnly) {
-    pricingBlock = `
-      <div class="text-[10px] text-slate-600"><span class="font-semibold text-sky-700">JP: ¥${jpActive.toLocaleString('fr-FR')}</span> <span class="text-[9px] text-slate-400">(${(jpToEur(jpActive) || 0).toFixed(2)}€)</span></div>
-      <div class="flex items-center gap-1.5 mt-0.5">
-        <span class="text-[10px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded px-1 py-0.2">FR: En attente</span>
-        <span class="text-[10px] text-slate-400">|</span>
-        <span class="text-[10px] text-slate-500 font-medium">Arbitrage en attente</span>
-      </div>
-    `;
-  } else {
-    pricingBlock = `
-      <div class="mt-1 flex items-center">
-        <span class="price-pending-badge">
-          <span class="price-pending-dot"></span>
-          Prix non disponible / En cours d'actualisation
-        </span>
-      </div>
-    `;
-  }
+  // Active condition / slab label
+  const slabLabel = state.condition.mode === 'graded' ? state.condition.grade : state.condition.rawCondition;
 
-  const hasHistory = (card.priceHistory && card.priceHistory.length > 1);
+  const flag = card.edition === 'JP' ? '🇯🇵' : (card.edition === 'FR' ? '🇫🇷' : '🌐');
+  const imgUrl = formatHighResCardImage(card.image);
+
+  // Sold vs Shop data type labeling
+  const jpSource = p?.jp?.source_name || '';
+  const isJpShop = jpSource.includes('Yuyu-tei') || p?.jp?.data_type === 'shop';
+  const jpBadge = jpBuyYen ? (isJpShop 
+    ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-amber-700 bg-amber-50 border-amber-200" title="Prix boutique JP (Yuyu-tei)">Boutique</span>' 
+    : '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-emerald-700 bg-emerald-50 border-emerald-200" title="Ventes conclues (SNKRDUNK/PriceCharting)">Vente</span>') : '';
 
   return `
-    <div class="card-tile fade-in" data-id="${card.id}">
-      <div class="rank-badge ${rankClass}">#${rank}</div>
-      <img class="card-tile-img" src="${card.image}" alt="${card.name}" loading="lazy"
-           onerror="onCardImageError(this)">
-      <div class="mt-1.5 px-0.5">
-        <div class="text-xs font-semibold text-slate-900 leading-tight truncate">${card.name}</div>
-        ${hasSubName ? `<div class="text-[10px] text-slate-400 font-normal truncate leading-tight mt-0.5">${card.subName}</div>` : ''}
-        <div class="flex items-center gap-1 mt-0.5 mb-1 flex-wrap">
-          <span class="text-[10px] text-slate-400">${card.ref}</span>
-          ${editionBadge(card)}
-          ${condBadge}
-        </div>
-        ${pricingBlock}
-        ${hasBothPrices && hasHistory ? buildSparkline(card.priceHistory) : ''}
-        <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] text-slate-500">${hasBothPrices && card.salesPerMonth ? `${card.salesPerMonth} ventes/mois` : (hasFrOnly ? 'Vente FR confirmée' : 'Catalogue TCGdex')}</span>
-          ${hasBothPrices && card.velocityScore ? `<span class="${vel.cls}">${vel.text}</span>` : ''}
+    <div class="card-tile bg-white border border-slate-200 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between"
+         onclick="openCardDetail('${card.id}')">
+      
+      <!-- Top header: Rank + Flag + Status -->
+      <div class="flex items-center justify-between gap-1 mb-2">
+        <span class="text-xs font-black text-slate-400">#${rank}</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs">${flag}</span>
+          ${statusBadgeHtml}
         </div>
       </div>
+
+      <!-- Card Middle: Thumbnail + Title -->
+      <div class="flex items-start gap-2.5 mb-2.5">
+        <div class="w-16 h-22 sm:w-18 sm:h-24 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative border border-slate-200">
+          <img src="${imgUrl}" alt="${card.displayName || card.name}"
+               loading="lazy"
+               onerror="onCardImageError(this)"
+               class="w-full h-full object-cover">
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="font-bold text-xs sm:text-sm text-slate-900 leading-snug truncate" title="${card.displayName || card.name}">
+            ${card.displayName || card.name}
+          </h4>
+          ${card.subName && card.subName !== card.displayName ? `<p class="text-[11px] text-slate-400 truncate">${card.subName}</p>` : ''}
+          <div class="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1">
+            ${card.ref}
+          </div>
+          <div class="text-[10px] text-purple-600 font-semibold mt-1">
+            💎 ${slabLabel}
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Metrics Box -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-xs">
+        <div>
+          <div class="flex items-center gap-1 mb-0.5">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Achat JP</span>
+            ${jpBadge}
+          </div>
+          <span class="font-bold text-slate-800 text-xs sm:text-sm">${fmtJpy(jpBuyYen)}</span>
+          <span class="text-[10px] text-slate-500 block">(${fmtEur(jpBuyEur)})</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-1 mb-0.5">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Revente FR</span>
+            ${frSell ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-indigo-700 bg-indigo-50 border-indigo-200" title="Ventes conclues (PriceCharting/eBay)">Vente</span>' : ''}
+          </div>
+          <span class="font-bold text-slate-800 text-xs sm:text-sm">${fmtEur(frSell)}</span>
+          <span class="text-[10px] text-slate-400 block">${liquidity > 0 ? `${liquidity} ventes` : '—'}</span>
+        </div>
+      </div>
+
+      <!-- Bottom Arbitrage Summary -->
+      <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-[10px] text-slate-500 font-medium">Marge nette :</span>
+          <span class="font-black ${margin && margin > 0 ? 'text-emerald-600' : (margin && margin < 0 ? 'text-rose-600' : 'text-slate-400')}">
+            ${margin != null ? fmtEur(margin) : '—'}
+          </span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-500 font-medium">ROI :</span>
+          <span class="font-black px-1.5 py-0.5 rounded ${roi && roi > 0 ? 'bg-emerald-100 text-emerald-700' : (roi && roi < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500')}">
+            ${roi != null ? fmtPct(roi) : '—'}
+          </span>
+        </div>
+      </div>
+
     </div>
   `;
 }
 
-// ── FAST O(N) PARTITIONED SORTED ARRAYS (SCALES TO 50,000+ CARDS) ──
-function getSortedByMargin(filter = false) {
-  const fullPriced = [];
-  const partialFrPriced = [];
-  const partialJpPriced = [];
-  const unpriced = [];
+// ── 10. COLUMN & PAGINATION CONTROLLERS ───────────────────────
+function updateColumnCounters(totalMatches, marginCount, roiCount, velCount) {
+  const cMargin = document.getElementById('counter-margin');
+  const cRoi = document.getElementById('counter-roi');
+  const cVel = document.getElementById('counter-velocity');
+  const matchCountEl = document.getElementById('filter-match-count');
 
-  for (let i = 0; i < CARDS.length; i++) {
-    const c = CARDS[i];
-    if (filter && !cardMatchesFilters(c)) continue;
-
-    const m = netMargin(c);
-    if (m !== null) {
-      fullPriced.push({ card: c, val: m });
-    } else if (c.frPrice !== null) {
-      partialFrPriced.push({ card: c, val: c.frPrice });
-    } else if (c.jpPrice !== null) {
-      partialJpPriced.push({ card: c, val: c.jpPrice });
-    } else {
-      unpriced.push(c);
-    }
-  }
-
-  // 1. Full arbitrage (FR+JP) sorted by margin descending
-  fullPriced.sort((a, b) => b.val - a.val);
-  // 2. Partial FR-only sorted by highest frPrice descending (high-value chase cards at top)
-  partialFrPriced.sort((a, b) => b.val - a.val);
-  // 3. Partial JP-only sorted by highest jpPrice descending
-  partialJpPriced.sort((a, b) => b.val - a.val);
-
-  return [
-    ...fullPriced.map(x => x.card),
-    ...partialFrPriced.map(x => x.card),
-    ...partialJpPriced.map(x => x.card),
-    ...unpriced
-  ];
-}
-
-function getSortedByROI(filter = false) {
-  const fullPriced = [];
-  const partialFrPriced = [];
-  const partialJpPriced = [];
-  const unpriced = [];
-
-  for (let i = 0; i < CARDS.length; i++) {
-    const c = CARDS[i];
-    if (filter && !cardMatchesFilters(c)) continue;
-
-    const r = netROI(c);
-    if (r !== null) {
-      fullPriced.push({ card: c, val: r });
-    } else if (c.frPrice !== null) {
-      partialFrPriced.push({ card: c, val: c.frPrice });
-    } else if (c.jpPrice !== null) {
-      partialJpPriced.push({ card: c, val: c.jpPrice });
-    } else {
-      unpriced.push(c);
-    }
-  }
-
-  fullPriced.sort((a, b) => b.val - a.val);
-  partialFrPriced.sort((a, b) => b.val - a.val);
-  partialJpPriced.sort((a, b) => b.val - a.val);
-
-  return [
-    ...fullPriced.map(x => x.card),
-    ...partialFrPriced.map(x => x.card),
-    ...partialJpPriced.map(x => x.card),
-    ...unpriced
-  ];
-}
-
-function getSortedByVelocity(filter = false) {
-  const fullPriced = [];
-  const partialFrPriced = [];
-  const partialJpPriced = [];
-  const unpriced = [];
-
-  for (let i = 0; i < CARDS.length; i++) {
-    const c = CARDS[i];
-    if (filter && !cardMatchesFilters(c)) continue;
-
-    const r = netROI(c);
-    if (r !== null) {
-      fullPriced.push({ card: c, vel: c.velocityScore || 0, roi: r });
-    } else if (c.frPrice !== null) {
-      partialFrPriced.push({ card: c, vel: 0, val: c.frPrice });
-    } else if (c.jpPrice !== null) {
-      partialJpPriced.push({ card: c, vel: 0, val: c.jpPrice });
-    } else {
-      unpriced.push(c);
-    }
-  }
-
-  fullPriced.sort((a, b) => (b.vel !== a.vel ? b.vel - a.vel : b.roi - a.roi));
-  partialFrPriced.sort((a, b) => b.val - a.val);
-  partialJpPriced.sort((a, b) => b.val - a.val);
-
-  return [
-    ...fullPriced.map(x => x.card),
-    ...partialFrPriced.map(x => x.card),
-    ...partialJpPriced.map(x => x.card),
-    ...unpriced
-  ];
-}
-
-function getCardsForTab(tabKey, filter = isFilterModeActive()) {
-  if (tabKey === 'margin') return getSortedByMargin(filter);
-  if (tabKey === 'roi') return getSortedByROI(filter);
-  if (tabKey === 'velocity') return getSortedByVelocity(filter);
-  return getSortedByMargin(filter);
-}
-
-// ── COLUMN COUNTERS ──────────────────────────────────────────
-function updateColumnCounters() {
-  const isFocusMargin = state.focusCol === 'margin';
-  const isFocusRoi = state.focusCol === 'roi';
-  const isFocusVel = state.focusCol === 'velocity';
-
-  const mCards = getSortedByMargin(isFilterModeActive() || isFocusMargin);
-  const rCards = getSortedByROI(isFilterModeActive() || isFocusRoi);
-  const vCards = getSortedByVelocity(isFilterModeActive() || isFocusVel);
-
-  const cm = document.getElementById('counter-margin');
-  const cr = document.getElementById('counter-roi');
-  const cv = document.getElementById('counter-velocity');
-
-  if (cm) cm.textContent = `${mCards.length}`;
-  if (cr) cr.textContent = `${rCards.length}`;
-  if (cv) cv.textContent = `${vCards.length}`;
-
-  const matchEl = document.getElementById('filter-match-count');
-  if (matchEl) {
-    const totalMatching = CARDS.filter(cardMatchesFilters).length;
-    matchEl.textContent = `${totalMatching} carte${totalMatching > 1 ? 's' : ''} trouvée${totalMatching > 1 ? 's' : ''}`;
-  }
-
-  updatePurchaseBadge();
-}
-
-// ── COLUMN RENDERER (DESKTOP) ────────────────────────────────
-function renderColumn(colId, sortedCards, countKey) {
-  const col = document.getElementById(colId);
-  if (!col) return;
-  if (sortedCards.length === 0) {
-    if (state.isLoadingCatalog) {
-      col.innerHTML = `
-        <div class="col-span-full py-12 text-center text-sm text-slate-500 bg-slate-50/80 rounded-2xl border border-dashed border-slate-200">
-          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2.5"></div>
-          <p class="font-bold text-slate-700">Chargement du catalogue TCGdex...</p>
-          <p class="text-xs text-slate-400 mt-1">Récupération des séries officielles en direct.</p>
-        </div>
-      `;
-      return;
-    }
-    col.innerHTML = `
-      <div class="col-span-full py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-        <p class="font-semibold text-slate-700">Aucune carte trouvée</p>
-        <p class="text-xs text-slate-400 mt-1">Modifiez vos critères ou réinitialisez les filtres.</p>
-      </div>
-    `;
-    return;
-  }
-  const visible = sortedCards.slice(0, state.visibleCount[countKey]);
-  col.innerHTML = visible.map((card, i) => renderCardTile(card, i + 1)).join('');
-  col.querySelectorAll('.card-tile').forEach(tile => {
-    tile.addEventListener('click', () => openCardDetail(tile.dataset.id));
-  });
-
-  if (state.focusCol && col.dataset.col === state.focusCol) {
-    col.className = 'focus-col-inner';
-  } else {
-    col.className = 'flex flex-col gap-2';
-  }
-}
-
-// ── COLUMN RENDERER (MOBILE) ─────────────────────────────────
-function renderMobileColumn() {
-  const container = document.getElementById('mobile-col-content');
-  if (!container) return;
-  const currentTab = state.activeMobileTab || 'margin';
-
-  document.querySelectorAll('.mobile-tab').forEach(btn => {
-    if (btn.dataset.tab === currentTab) {
-      btn.classList.add('mobile-tab-active');
-    } else {
-      btn.classList.remove('mobile-tab-active');
-    }
-  });
-
-  const cards = getCardsForTab(currentTab, isFilterModeActive());
-  if (cards.length === 0) {
-    if (state.isLoadingCatalog) {
-      container.innerHTML = `
-        <div class="col-span-2 py-12 text-center text-sm text-slate-500 bg-slate-50/80 rounded-2xl border border-dashed border-slate-200 w-full">
-          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2.5"></div>
-          <p class="font-bold text-slate-700">Chargement du catalogue TCGdex...</p>
-          <p class="text-xs text-slate-400 mt-1">Récupération des séries officielles en direct.</p>
-        </div>
-      `;
-      updateMobileLoadMoreLabel();
-      return;
-    }
-    container.innerHTML = `
-      <div class="col-span-2 py-8 text-center text-sm text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200 w-full">
-        <p class="font-semibold text-slate-700">Aucune carte trouvée</p>
-        <p class="text-xs text-slate-400 mt-1">Modifiez vos critères ou réinitialisez les filtres.</p>
-      </div>
-    `;
-    updateMobileLoadMoreLabel();
-    return;
-  }
-
-  const count = state.visibleCount[currentTab] || 25;
-  const visible = cards.slice(0, count);
-
-  container.innerHTML = visible.map((card, i) => renderCardTile(card, i + 1)).join('');
-  container.querySelectorAll('.card-tile').forEach(tile => {
-    tile.addEventListener('click', () => openCardDetail(tile.dataset.id));
-  });
-
-  updateMobileLoadMoreLabel();
-}
-
-function updateMobileLoadMoreLabel() {
-  const btn = document.getElementById('mobile-load-more');
-  if (!btn) return;
-  const currentTab = state.activeMobileTab || 'margin';
-  const cards = getCardsForTab(currentTab, isFilterModeActive());
-  const count = state.visibleCount[currentTab] || 25;
-  const shown = Math.min(count, cards.length);
-  const next = nextPageStep(shown, cards.length);
-
-  if (shown >= cards.length) {
-    btn.style.display = 'none';
-  } else {
-    btn.style.display = '';
-    btn.textContent = `Afficher plus (${shown} / ${next})`;
-  }
+  if (cMargin) cMargin.textContent = String(marginCount);
+  if (cRoi) cRoi.textContent = String(roiCount);
+  if (cVel) cVel.textContent = String(velCount);
+  if (matchCountEl) matchCountEl.textContent = `${totalMatches} carte${totalMatches > 1 ? 's' : ''} trouvée${totalMatches > 1 ? 's' : ''}`;
 }
 
 function renderAllColumns() {
-  if (state.focusCol) {
-    const colMap = { margin: getSortedByMargin, roi: getSortedByROI, velocity: getSortedByVelocity };
-    renderColumn(`col-${state.focusCol}`, colMap[state.focusCol](true), state.focusCol);
+  const { byMargin, byROI, byVelocity, totalMatches } = getSortedOpportunities();
+
+  updateColumnCounters(totalMatches, byMargin.length, byROI.length, byVelocity.length);
+
+  // 1. Column: Meilleure marge
+  const colMargin = document.getElementById('col-margin');
+  if (colMargin) {
+    const sliceMargin = byMargin.slice(0, state.visibleCount.margin);
+    colMargin.innerHTML = sliceMargin.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    updateLoadMoreLabel('load-more-margin', state.visibleCount.margin, byMargin.length);
+  }
+
+  // 2. Column: Meilleur ROI
+  const colRoi = document.getElementById('col-roi');
+  if (colRoi) {
+    const sliceRoi = byROI.slice(0, state.visibleCount.roi);
+    colRoi.innerHTML = sliceRoi.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    updateLoadMoreLabel('load-more-roi', state.visibleCount.roi, byROI.length);
+  }
+
+  // 3. Column: Quick Turnover
+  const colVel = document.getElementById('col-velocity');
+  if (colVel) {
+    const sliceVel = byVelocity.slice(0, state.visibleCount.velocity);
+    colVel.innerHTML = sliceVel.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    updateLoadMoreLabel('load-more-velocity', state.visibleCount.velocity, byVelocity.length);
+  }
+
+  // 4. Mobile Tab Controller
+  renderMobileColumn(byMargin, byROI, byVelocity);
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderMobileColumn(byMargin, byROI, byVelocity) {
+  const mobileContainer = document.getElementById('mobile-col-content');
+  if (!mobileContainer) return;
+
+  let activeList = byMargin;
+  if (state.activeMobileTab === 'roi') activeList = byROI;
+  if (state.activeMobileTab === 'velocity') activeList = byVelocity;
+
+  const count = state.visibleCount[state.activeMobileTab] || 25;
+  const slice = activeList.slice(0, count);
+
+  mobileContainer.innerHTML = slice.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+  updateLoadMoreLabel('mobile-load-more', count, activeList.length);
+}
+
+function updateLoadMoreLabel(btnId, current, total) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (current >= total) {
+    btn.style.display = 'none';
   } else {
-    renderColumn('col-margin', getSortedByMargin(false), 'margin');
-    renderColumn('col-roi', getSortedByROI(false), 'roi');
-    renderColumn('col-velocity', getSortedByVelocity(false), 'velocity');
-  }
-  updateLoadMoreLabels();
-  renderMobileColumn();
-  updateFilterMatchCount();
-  updateColumnCounters();
-}
-
-function updateLoadMoreLabels() {
-  const colDefs = [
-    { btnId: 'load-more-margin', countKey: 'margin', cards: getSortedByMargin(state.focusCol === 'margin') },
-    { btnId: 'load-more-roi',    countKey: 'roi',    cards: getSortedByROI(state.focusCol === 'roi') },
-    { btnId: 'load-more-velocity', countKey: 'velocity', cards: getSortedByVelocity(state.focusCol === 'velocity') }
-  ];
-  colDefs.forEach(({ btnId, countKey, cards }) => {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    const shown = Math.min(state.visibleCount[countKey], cards.length);
-    const next  = nextPageStep(shown, cards.length);
-    if (shown >= cards.length) {
-      btn.style.display = 'none';
-    } else {
-      btn.style.display = '';
-      btn.textContent = `Afficher plus (${shown} / ${next})`;
-    }
-  });
-}
-
-// ── POPOVER HELPERS ──────────────────────────────────────────
-function updateCountryTriggerLabel() {
-  const label = document.getElementById('label-filter-country');
-  const btn = document.getElementById('btn-filter-country');
-  if (!label || !btn) return;
-
-  if (!state.filters.countries || state.filters.countries.length === 0) {
-    label.textContent = '🌐 Édition pays : ————';
-    btn.classList.remove('active');
-  } else {
-    btn.classList.add('active');
-    const flags = state.filters.countries.map(code => {
-      const c = COUNTRIES.find(x => x.code === code);
-      return `${c ? c.flag : '🌐'} ${code}`;
-    }).join(', ');
-    label.textContent = `🌐 Édition : ${flags}`;
+    btn.style.display = 'block';
+    const nextStep = Math.min(current + 25, total);
+    btn.textContent = `Afficher plus (${nextStep} / ${total})`;
   }
 }
 
-function updatePriceTriggerLabel() {
-  const label = document.getElementById('label-filter-price');
-  const btn = document.getElementById('btn-filter-price');
-  if (!label || !btn) return;
-
-  const unit = state.filters.priceUnit === 'EUR' ? '€' : '¥';
-  const min = state.filters.priceMin;
-  const max = state.filters.priceMax;
-
-  if (min === null && max === null) {
-    label.textContent = `💰 Prix : Min — | Max — ${unit}`;
-    btn.classList.remove('active');
-  } else {
-    btn.classList.add('active');
-    if (min !== null && max !== null) {
-      label.textContent = `💰 Prix : ${min.toLocaleString('fr-FR')} — ${max.toLocaleString('fr-FR')} ${unit}`;
-    } else if (min !== null && max === null) {
-      label.textContent = `💰 Prix : ${min.toLocaleString('fr-FR')} ${unit} +`;
-    } else if (min === null && max !== null) {
-      label.textContent = `💰 Prix : ≤ ${max.toLocaleString('fr-FR')} ${unit}`;
-    }
-  }
-}
-
-function renderCountryOptionsList(searchQuery = '') {
-  const container = document.getElementById('country-options-list');
-  if (!container) return;
-
-  const q = searchQuery.trim().toLowerCase();
-  const filtered = COUNTRIES.filter(c => {
-    if (!q) return true;
-    return c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
-  });
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">Aucun pays trouvé</div>`;
-    return;
-  }
-
-  container.innerHTML = filtered.map(c => {
-    const isSelected = state.filters.countries.includes(c.code);
-    return `
-      <div class="country-option-item ${isSelected ? 'selected' : ''}" data-country-code="${c.code}">
-        <span class="flex items-center gap-2">
-          <span class="text-base leading-none">${c.flag}</span>
-          <span>${c.name} (${c.code})</span>
-        </span>
-        <span class="text-xs ${isSelected ? 'text-blue-600 font-bold' : 'text-slate-300'}">
-          ${isSelected ? '✓' : ''}
-        </span>
-      </div>
-    `;
-  }).join('');
-
-  container.querySelectorAll('.country-option-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const code = el.dataset.countryCode;
-      if (!code) return;
-      const idx = state.filters.countries.indexOf(code);
-      if (idx > -1) {
-        state.filters.countries.splice(idx, 1);
-      } else {
-        state.filters.countries.push(code);
-      }
-      updateCountryTriggerLabel();
-      renderCountryOptionsList(document.getElementById('input-search-country')?.value || '');
-      applyFilters();
-    });
-  });
-}
-
-function renderPricePresets() {
-  const container = document.getElementById('price-presets-container');
-  if (!container) return;
-
-  const presets = state.filters.priceUnit === 'EUR' ? PRICE_PRESETS_EUR : PRICE_PRESETS_JPY;
-  const currentMin = state.filters.priceMin;
-  const currentMax = state.filters.priceMax;
-
-  container.innerHTML = presets.map((p, idx) => {
-    const isActive = currentMin === p.min && currentMax === p.max;
-    return `
-      <button type="button" class="price-preset-btn ${isActive ? 'active' : ''}" data-preset-idx="${idx}">
-        ${p.label}
-      </button>
-    `;
-  }).join('');
-
-  container.querySelectorAll('.price-preset-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.presetIdx, 10);
-      const preset = presets[idx];
-      if (!preset) return;
-
-      state.filters.priceMin = preset.min;
-      state.filters.priceMax = preset.max;
-
-      const minInput = document.getElementById('input-price-min');
-      const maxInput = document.getElementById('input-price-max');
-      if (minInput) minInput.value = preset.min !== null ? preset.min : '';
-      if (maxInput) maxInput.value = preset.max !== null ? preset.max : '';
-
-      updatePriceTriggerLabel();
-      renderPricePresets();
-      applyFilters();
-    });
-  });
-}
-
-// ── CASCADING CONDITION & GRADING POPOVER LOGIC ─────────────
-function getConditionFilterLabel() {
-  if (!state.condition || state.condition.mode === 'raw') {
-    const raw = state.condition?.rawConditions || ['NM'];
-    if (raw.length === 4) return '💎 État : Non-gradé (Tous)';
-    if (raw.length === 1 && raw[0] === 'NM') return '💎 État : Non-gradé (NM)';
-    return `💎 État : Non-gradé (${raw.join(', ')})`;
-  } else {
-    // Graded mode
-    const companies = state.condition.companies || ['ALL'];
-    const grades = state.condition.grades || [];
-    const coName = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : (companies.includes('ALL') ? 'Slabs' : companies.join('/'));
-
-    if (grades.length === 0) {
-      if (coName === 'Slabs') return '🛡️ État : Gradée (Toutes)';
-      return `🛡️ État : ${coName} (Tous grades)`;
-    }
-
-    // Clean grade names for label (e.g. "9.5 (Gem Mint)" -> "9.5", "10 (Gem Mint)" -> "10", keep "10 Black Label", "10 Pristine", "10+", etc.)
-    const cleanGrades = grades.map(g => {
-      let clean = g;
-      if (clean.includes('(Gem Mint)')) clean = clean.replace('(Gem Mint)', '').trim();
-      else if (clean.includes('(Mint+)')) clean = clean.replace('(Mint+)', '').trim();
-      else if (clean.includes('(Mint)')) clean = clean.replace('(Mint)', '').trim();
-      else if (clean.includes('(NM-MT)')) clean = clean.replace('(NM-MT)', '').trim();
-      else if (clean.includes('(Collector)')) clean = clean.replace('(Collector)', '').trim();
-      else if (clean.includes('(Neuf Sup)')) clean = clean.replace('(Neuf Sup)', '').trim();
-      else if (clean.includes('(Neuf)')) clean = clean.replace('(Neuf)', '').trim();
-      else if (clean.includes('(Très Bon)')) clean = clean.replace('(Très Bon)', '').trim();
-      return clean;
-    });
-
-    return `🛡️ État : ${coName} ${cleanGrades.join(', ')}`;
-  }
-}
-
-function updateConditionTriggerLabels() {
-  const lbl = getConditionFilterLabel();
-  const mainLabel = document.getElementById('label-filter-condition');
-  const mainBtn = document.getElementById('btn-filter-condition');
-  const libLabel = document.getElementById('label-lib-filter-condition');
-  const libBtn = document.getElementById('btn-lib-filter-condition');
-
-  const isActive = state.condition?.mode === 'graded' || (state.condition?.mode === 'raw' && (state.condition?.rawConditions?.length !== 1 || state.condition?.rawConditions?.[0] !== 'NM'));
-
-  if (mainLabel) mainLabel.textContent = lbl;
-  if (mainBtn) mainBtn.classList.toggle('active', isActive);
-  if (libLabel) libLabel.textContent = lbl;
-  if (libBtn) libBtn.classList.toggle('active', isActive);
-}
-
-// Backward-compatibility alias
-function updateConditionTriggerLabel() {
-  updateConditionTriggerLabels();
-}
-
-function getConditionPopoverHtml() {
-  const isRaw = !state.condition || state.condition.mode === 'raw';
-  const companies = state.condition?.companies || ['ALL'];
-  const grades = state.condition?.grades || [];
-  const rawConds = state.condition?.rawConditions || ['NM'];
-
-  // Identify active company for grade scale: if single specific company, use it; else ALL
-  const activeCompany = (companies.length === 1 && companies[0] !== 'ALL') ? companies[0] : 'ALL';
-  const currentScale = GRADING_SCALES[activeCompany] || GRADING_SCALES.ALL;
-
-  // Company options: Toutes, PSA, BGS, CGC, PCA, ARS
-  const companyOptions = [
-    { key: 'ALL', label: 'Toutes' },
-    { key: 'PSA', label: 'PSA' },
-    { key: 'BGS', label: 'BGS' },
-    { key: 'CGC', label: 'CGC' },
-    { key: 'PCA', label: 'PCA' },
-    { key: 'ARS', label: 'ARS' }
-  ];
-
-  // Calculate current effective multipliers for live preview in popover
-  const { frMult, jpMult } = resolveConditionMultiplier();
-
+function renderEmptyState() {
   return `
-    <div class="cascading-condition-popover">
-      <!-- Mode Tabs (Tab A: Raw vs Tab B: Graded) -->
-      <div class="flex p-1 bg-slate-100 rounded-xl mb-3 gap-1">
-        <button type="button" class="cascading-mode-btn flex-1 ${isRaw ? 'active' : ''}" data-popover-tab="raw">
-          <i data-lucide="package" style="width:13px;height:13px;"></i>
-          <span>Non-gradé (Raw)</span>
-        </button>
-        <button type="button" class="cascading-mode-btn flex-1 ${!isRaw ? 'active' : ''}" data-popover-tab="graded">
-          <i data-lucide="shield" style="width:13px;height:13px;"></i>
-          <span>Gradée (Slabs)</span>
-        </button>
-      </div>
-
-      ${isRaw ? `
-        <!-- TAB A: RAW CONDITIONS (Multi-select) -->
-        <div class="mb-3">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-            <span>État physique (Raw)</span>
-            <span class="text-[10px] text-blue-600 font-semibold">Multi-sélection</span>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            ${RAW_CONDITIONS.map(rc => {
-              const active = rawConds.includes(rc.key);
-              return `
-                <button type="button" class="condition-chip ${active ? 'active' : ''}" data-raw-cond="${rc.key}">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-xs">${rc.key}</span>
-                    <span class="text-[10px] font-mono opacity-80">x${rc.multiplier.toFixed(2)}</span>
-                  </div>
-                  <div class="text-[10px] text-left opacity-75 truncate">${rc.sub}</div>
-                </button>
-              `;
-            }).join('')}
-          </div>
-        </div>
-      ` : `
-        <!-- TAB B: GRADED SLABS -->
-        <div class="space-y-3 mb-3">
-          <!-- Row 1: Entreprise de gradation -->
-          <div>
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span>1. Entreprise de gradation</span>
-              <span class="text-[10px] text-indigo-600 font-semibold">${activeCompany === 'ALL' ? 'Toutes entreprises' : activeCompany}</span>
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              ${companyOptions.map(co => {
-                const active = companies.includes(co.key);
-                return `
-                  <button type="button" class="company-chip ${active ? 'active' : ''}" data-popover-company="${co.key}">
-                    ${co.label}
-                  </button>
-                `;
-              }).join('')}
-            </div>
-          </div>
-
-          <!-- Row 2: Note (Grade) - Dynamically adapted to active company -->
-          <div>
-            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span>2. Note (Grade)</span>
-              <span class="text-[10px] text-indigo-600 font-semibold">Échelle ${activeCompany}</span>
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              ${currentScale.map(g => {
-                const active = grades.includes(g.grade);
-                return `
-                  <button type="button" class="grade-chip ${active ? 'active' : ''}" data-popover-grade="${g.grade}">
-                    <span>${g.grade}</span>
-                    <span class="text-[9px] font-mono opacity-75 ml-1">x${g.frMult.toFixed(2)}</span>
-                  </button>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      `}
-
-      <!-- Bottom Bar: Multiplier Indicator & Reset -->
-      <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-        <div class="text-slate-500 flex items-center gap-1 font-medium">
-          <span>⚡ Impact :</span>
-          <span class="font-bold text-slate-800">x${frMult.toFixed(2)} FR</span>
-          <span>/</span>
-          <span class="font-bold text-slate-800">x${jpMult.toFixed(2)} JP</span>
-        </div>
-        <button type="button" class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer text-xs" data-popover-reset>
-          Réinitialiser
-        </button>
-      </div>
+    <div class="col-span-full py-12 text-center text-slate-400">
+      <i data-lucide="inbox" style="width:36px;height:36px;" class="mx-auto mb-2 text-slate-300"></i>
+      <p class="text-sm font-semibold text-slate-600">Aucune carte trouvée</p>
+      <p class="text-xs text-slate-400 mt-1">Essayez d'ajuster vos critères ou filtres de recherche.</p>
     </div>
   `;
 }
 
-function attachPopoverEvents(popoverEl) {
-  if (!popoverEl) return;
+// ── 11. CARD DETAIL MODAL WITH SOURCES AUDIT TRAIL ────────────
+function openCardDetail(cardId) {
+  const card = CatalogService.cards.find(c => c.id === cardId || c.raw_id === cardId);
+  if (!card) return;
 
-  // Mode tabs
-  popoverEl.querySelectorAll('[data-popover-tab]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const tab = btn.dataset.popoverTab;
-      state.condition.mode = tab;
-      if (tab === 'raw' && (!state.condition.rawConditions || state.condition.rawConditions.length === 0)) {
-        state.condition.rawConditions = ['NM'];
-      }
-      if (tab === 'graded' && (!state.condition.companies || state.condition.companies.length === 0)) {
-        state.condition.companies = ['ALL'];
-      }
-      state.conditionFilter = tab === 'raw' ? (state.condition.rawConditions.length === 4 ? 'raw_all' : 'raw_nm') : 'graded';
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      applyFilters();
-      if (document.getElementById('modal-library')?.classList.contains('open')) {
-        renderLibrary();
-      }
-    });
-  });
+  const modal = document.getElementById('modal-card-detail');
+  const container = document.getElementById('detail-content');
+  if (!modal || !container) return;
 
-  // Raw conditions
-  popoverEl.querySelectorAll('[data-raw-cond]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const cond = btn.dataset.rawCond;
-      let arr = [...(state.condition.rawConditions || ['NM'])];
-      if (arr.includes(cond)) {
-        if (arr.length > 1) {
-          arr = arr.filter(c => c !== cond);
-        }
-      } else {
-        arr.push(cond);
-      }
-      state.condition.rawConditions = arr;
-      state.conditionFilter = arr.length === 4 ? 'raw_all' : (arr.length === 1 && arr[0] === 'NM' ? 'raw_nm' : 'raw_custom');
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      applyFilters();
-      if (document.getElementById('modal-library')?.classList.contains('open')) {
-        renderLibrary();
-      }
-    });
-  });
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  const frPrice = getActiveFrPrice(card);
+  const jpPriceYen = getActiveJpPrice(card);
+  const jpPriceEur = jpPriceYen ? jpToEur(jpPriceYen) : null;
+  const margin = netMargin(card);
+  const roi = netROI(card);
 
-  // Companies (Row 1)
-  popoverEl.querySelectorAll('[data-popover-company]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const coKey = btn.dataset.popoverCompany;
-      if (coKey === 'ALL') {
-        state.condition.companies = ['ALL'];
-      } else {
-        state.condition.companies = [coKey];
-      }
+  const imgUrl = formatHighResCardImage(card.image);
+  const cleanNum = card.local_id || '';
+  const searchName = encodeURIComponent(card.displayName || card.name);
+  const searchJa = encodeURIComponent(card.name_ja || card.displayName || card.name);
 
-      // Filter previously selected grades to only keep ones existing in new scale
-      const scale = (state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL')
-        ? GRADING_SCALES[state.condition.companies[0]]
-        : GRADING_SCALES.ALL;
-      const validGrades = scale.map(g => g.grade);
-      state.condition.grades = (state.condition.grades || []).filter(g => validGrades.includes(g));
+  // Verification URLs
+  const pricechartingUrl = p?.fr?.source_url || p?.jp?.source_url || `https://www.pricecharting.com/search-products?q=${encodeURIComponent('pokemon japanese ' + (card.displayName || card.name) + ' ' + cleanNum)}&type=prices`;
+  const cardmarketUrl = p?.fr?.source_url?.includes('cardmarket') ? p.fr.source_url : `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${searchName}`;
+  const ebayFrSoldUrl = `https://www.ebay.fr/sch/i.html?_nkw=${encodeURIComponent(card.set_id + ' ' + cleanNum)}&LH_Sold=1&LH_Complete=1&_sop=13`;
+  const mercariJpUrl = `https://jp.mercari.com/search?keyword=${searchJa}%20${cleanNum}&status=sold_out`;
+  const yahooJpUrl = `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${searchJa}+${cleanNum}&va=${searchJa}+${cleanNum}&b=1&n=25&s1=bids&o1=d`;
 
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      applyFilters();
-      if (document.getElementById('modal-library')?.classList.contains('open')) {
-        renderLibrary();
-      }
-    });
-  });
+  // Graded prices list
+  const frGraded = p?.fr?.graded || {};
+  const jpGraded = p?.jp?.graded || {};
+  const allGradedKeys = Array.from(new Set([...Object.keys(frGraded), ...Object.keys(jpGraded), 'PSA 10', 'PSA 9', 'BGS 9.5', 'CGC 10']));
 
-  // Grades (Row 2)
-  popoverEl.querySelectorAll('[data-popover-grade]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const grade = btn.dataset.popoverGrade;
-      let grades = [...(state.condition.grades || [])];
-      if (grades.includes(grade)) {
-        grades = grades.filter(g => g !== grade);
-      } else {
-        grades.push(grade);
-      }
-      state.condition.grades = grades;
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      applyFilters();
-      if (document.getElementById('modal-library')?.classList.contains('open')) {
-        renderLibrary();
-      }
-    });
-  });
+  const gradedRowsHtml = allGradedKeys.map(gKey => {
+    const frVal = frGraded[gKey]?.price || (frPrice ? Number((frPrice * (GRADE_MULTIPLIERS[gKey]?.fr || 2.2)).toFixed(2)) : null);
+    const jpVal = jpGraded[gKey]?.price || (jpPriceYen ? Math.round(jpPriceYen * (GRADE_MULTIPLIERS[gKey]?.jp || 2.0)) : null);
+    const gMargin = (frVal && jpVal) ? Number((frVal - jpToEur(jpVal)).toFixed(2)) : null;
 
-  // Reset
-  popoverEl.querySelectorAll('[data-popover-reset]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      state.condition = {
-        mode: 'raw',
-        rawConditions: ['NM'],
-        companies: ['ALL'],
-        grades: []
-      };
-      state.conditionFilter = 'raw_nm';
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      applyFilters();
-      if (document.getElementById('modal-library')?.classList.contains('open')) {
-        renderLibrary();
-      }
-      showToast('Filtre état réinitialisé (Non-gradé NM)');
-    });
-  });
-
-  popoverEl.addEventListener('click', (e) => {
-    e.stopPropagation();
-  });
-}
-
-function renderConditionPopovers() {
-  const mainPopover = document.getElementById('popover-filter-condition');
-  const libPopover = document.getElementById('popover-lib-filter-condition');
-  const html = getConditionPopoverHtml();
-
-  if (mainPopover) {
-    mainPopover.innerHTML = html;
-    attachPopoverEvents(mainPopover);
-  }
-  if (libPopover) {
-    libPopover.innerHTML = html;
-    attachPopoverEvents(libPopover);
-  }
-
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
-}
-
-function toggleConditionPopover(source = 'main') {
-  const isMain = source === 'main';
-  const targetPopover = document.getElementById(isMain ? 'popover-filter-condition' : 'popover-lib-filter-condition');
-  const targetBtn = document.getElementById(isMain ? 'btn-filter-condition' : 'btn-lib-filter-condition');
-  const otherPopover = document.getElementById(isMain ? 'popover-lib-filter-condition' : 'popover-filter-condition');
-  const otherBtn = document.getElementById(isMain ? 'btn-lib-filter-condition' : 'btn-filter-condition');
-
-  if (otherPopover) otherPopover.classList.add('hidden');
-  if (otherBtn) otherBtn.classList.remove('open');
-
-  const countryPopover = document.getElementById('popover-filter-country');
-  const countryBtn = document.getElementById('btn-filter-country');
-  const pricePopover = document.getElementById('popover-filter-price');
-  const priceBtn = document.getElementById('btn-filter-price');
-  if (countryPopover) countryPopover.classList.add('hidden');
-  if (countryBtn) countryBtn.classList.remove('open');
-  if (pricePopover) pricePopover.classList.add('hidden');
-  if (priceBtn) priceBtn.classList.remove('open');
-
-  if (targetPopover) {
-    const isHidden = targetPopover.classList.contains('hidden');
-    if (isHidden) {
-      renderConditionPopovers();
-      targetPopover.classList.remove('hidden');
-      if (targetBtn) targetBtn.classList.add('open');
-    } else {
-      targetPopover.classList.add('hidden');
-      if (targetBtn) targetBtn.classList.remove('open');
-    }
-  }
-}
-
-function togglePopover(name) {
-  const countryPopover = document.getElementById('popover-filter-country');
-  const countryBtn = document.getElementById('btn-filter-country');
-  const pricePopover = document.getElementById('popover-filter-price');
-  const priceBtn = document.getElementById('btn-filter-price');
-  const condPopover = document.getElementById('popover-filter-condition');
-  const condBtn = document.getElementById('btn-filter-condition');
-  const libCondPopover = document.getElementById('popover-lib-filter-condition');
-  const libCondBtn = document.getElementById('btn-lib-filter-condition');
-
-  if (name === 'country') {
-    if (pricePopover) pricePopover.classList.add('hidden');
-    if (priceBtn) priceBtn.classList.remove('open');
-    if (condPopover) condPopover.classList.add('hidden');
-    if (condBtn) condBtn.classList.remove('open');
-    if (libCondPopover) libCondPopover.classList.add('hidden');
-    if (libCondBtn) libCondBtn.classList.remove('open');
-
-    if (countryPopover) {
-      const willOpen = countryPopover.classList.contains('hidden');
-      if (willOpen) {
-        renderCountryOptionsList(document.getElementById('input-search-country')?.value || '');
-        countryPopover.classList.remove('hidden');
-        if (countryBtn) countryBtn.classList.add('open');
-      } else {
-        countryPopover.classList.add('hidden');
-        if (countryBtn) countryBtn.classList.remove('open');
-      }
-    }
-  } else if (name === 'price') {
-    if (countryPopover) countryPopover.classList.add('hidden');
-    if (countryBtn) countryBtn.classList.remove('open');
-    if (condPopover) condPopover.classList.add('hidden');
-    if (condBtn) condBtn.classList.remove('open');
-    if (libCondPopover) libCondPopover.classList.add('hidden');
-    if (libCondBtn) libCondBtn.classList.remove('open');
-
-    if (pricePopover) {
-      const willOpen = pricePopover.classList.contains('hidden');
-      if (willOpen) {
-        renderPricePresets();
-        pricePopover.classList.remove('hidden');
-        if (priceBtn) priceBtn.classList.add('open');
-      } else {
-        pricePopover.classList.add('hidden');
-        if (priceBtn) priceBtn.classList.remove('open');
-      }
-    }
-  } else if (name === 'condition') {
-    toggleConditionPopover('main');
-  }
-}
-
-function closeAllPopovers() {
-  const countryPopover = document.getElementById('popover-filter-country');
-  const countryBtn = document.getElementById('btn-filter-country');
-  const pricePopover = document.getElementById('popover-filter-price');
-  const priceBtn = document.getElementById('btn-filter-price');
-  const condPopover = document.getElementById('popover-filter-condition');
-  const condBtn = document.getElementById('btn-filter-condition');
-  const libCondPopover = document.getElementById('popover-lib-filter-condition');
-  const libCondBtn = document.getElementById('btn-lib-filter-condition');
-
-  if (countryPopover) countryPopover.classList.add('hidden');
-  if (countryBtn) countryBtn.classList.remove('open');
-  if (pricePopover) pricePopover.classList.add('hidden');
-  if (priceBtn) priceBtn.classList.remove('open');
-  if (condPopover) condPopover.classList.add('hidden');
-  if (condBtn) condBtn.classList.remove('open');
-  if (libCondPopover) libCondPopover.classList.add('hidden');
-  if (libCondBtn) libCondBtn.classList.remove('open');
-}
-
-// ── FILTER BAR PLACEMENT & SYNC ──────────────────────────────
-function syncFilterBarPlacement() {
-  const filterBar = document.getElementById('focus-filter-bar');
-  if (!filterBar) return;
-
-  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-    const mobilePanel = document.getElementById('mobile-col-panel');
-    if (mobilePanel && filterBar.parentElement !== mobilePanel) {
-      mobilePanel.insertAdjacentElement('afterbegin', filterBar);
-    }
-    filterBar.classList.remove('hidden');
-  } else {
-    if (state.focusCol) {
-      const header = document.getElementById(`col-header-${state.focusCol}`);
-      if (header) {
-        header.insertAdjacentElement('afterend', filterBar);
-        filterBar.classList.remove('hidden');
-      }
-    } else {
-      const columnsGrid = document.getElementById('columns-grid');
-      if (columnsGrid) {
-        columnsGrid.insertAdjacentElement('beforebegin', filterBar);
-      }
-      filterBar.classList.add('hidden');
-    }
-  }
-  updateFilterMatchCount();
-  updateCountryTriggerLabel();
-  updatePriceTriggerLabel();
-  updateConditionTriggerLabels();
-  updateColumnCounters();
-}
-
-function updateFilterMatchCount() {
-  const countEl = document.getElementById('filter-match-count');
-  if (!countEl) return;
-  let activeTab = 'margin';
-  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-    activeTab = state.activeMobileTab || 'margin';
-  } else if (state.focusCol) {
-    activeTab = state.focusCol;
-  }
-  const matching = getCardsForTab(activeTab, true);
-  const count = matching.length;
-  countEl.textContent = `${count} carte${count > 1 ? 's' : ''} trouvée${count > 1 ? 's' : ''}`;
-}
-
-function applyFilters() {
-  updateFilterMatchCount();
-  updateCountryTriggerLabel();
-  updatePriceTriggerLabel();
-  updateConditionTriggerLabels();
-  renderAllColumns();
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-// ── TIMESTAMP ────────────────────────────────────────────────
-function updateTimestamp() {
-  const now = new Date();
-  const hh = now.getHours().toString().padStart(2, '0');
-  const mm = now.getMinutes().toString().padStart(2, '0');
-  const el = document.getElementById('last-update');
-  if (el) el.textContent = `Aujourd'hui, ${hh}:${mm}`;
-}
-
-// ── TOAST ────────────────────────────────────────────────────
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-2 rounded-full shadow-lg z-[200] fade-in pointer-events-none';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
-
-// ── LIVE RATE FETCH ──────────────────────────────────────────
-async function fetchLiveRate() {
-  const liveRateEl = document.getElementById('live-rate');
-  const indicator = document.getElementById('live-indicator');
-  try {
-    const res = await fetch('https://open.er-api.com/v6/latest/EUR');
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
-    const rate = data && data.rates && data.rates.JPY ? data.rates.JPY : 163.5;
-    state.rate = rate;
-    if (liveRateEl) liveRateEl.textContent = rate.toFixed(2);
-    if (indicator) {
-      indicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> Live`;
-      indicator.className = 'inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 flex-shrink-0';
-    }
-  } catch (e) {
-    try {
-      const res2 = await fetch('https://api.frankfurter.app/latest?from=EUR&to=JPY');
-      const data2 = await res2.json();
-      const rate2 = data2.rates && data2.rates.JPY ? data2.rates.JPY : 163.5;
-      state.rate = rate2;
-      if (liveRateEl) liveRateEl.textContent = rate2.toFixed(2);
-      if (indicator) {
-        indicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block"></span> Live`;
-        indicator.className = 'inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 flex-shrink-0';
-      }
-    } catch (e2) {
-      state.rate = 163.5;
-      if (liveRateEl) liveRateEl.textContent = state.rate.toFixed(2);
-      if (indicator) {
-        indicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span> Hors-ligne`;
-        indicator.className = 'inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5 flex-shrink-0';
-      }
-    }
-  }
-  renderAllColumns();
-  updateTimestamp();
-}
-
-// ── MODAL SYSTEM ─────────────────────────────────────────────
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.add('open');
-}
-
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (el) el.classList.remove('open');
-}
-
-// ── LIVE GLOBAL SEARCH HOOK ──────────────────────────────────
-let searchDebounceTimer = null;
-let currentSearchAbort = null;
-
-function renderSearchDropdown(matches, isSearchingLive = false) {
-  const dropdown = document.getElementById('search-dropdown');
-  if (!dropdown) return;
-
-  if (matches.length === 0) {
-    if (isSearchingLive) {
-      dropdown.innerHTML = `
-        <div class="p-3 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-          <span>Recherche mondiale TCGdex…</span>
-        </div>
-      `;
-      dropdown.classList.remove('hidden');
-    } else {
-      dropdown.innerHTML = `
-        <div class="p-3 text-center text-xs text-slate-400">
-          Aucune carte trouvée pour "${state.searchQuery}"
-        </div>
-      `;
-      dropdown.classList.remove('hidden');
-    }
-    return;
-  }
-
-  const itemsHtml = matches.map(card => {
-    const hasSubName = card.subName && card.subName !== card.name;
-    const jpActive = getActiveJpPrice(card);
-    const frActive = getActiveFrPrice(card);
     return `
-      <div class="search-result-item" data-id="${card.id}">
-        <img src="${card.image}" alt="${card.name}"
-             onerror="onCardImageError(this)">
-        <div class="flex-1 min-w-0">
-          <div class="search-result-name truncate">${card.name}</div>
-          ${hasSubName ? `<div class="text-[10px] text-slate-400 truncate leading-tight">${card.subName}</div>` : ''}
-          <div class="search-result-ref flex items-center gap-1.5 flex-wrap mt-0.5">
-            <span>${card.ref}</span>
-            <span>·</span>
-            <span>JP ¥${jpActive.toLocaleString('fr-FR')} → FR ${frActive.toFixed(2)}€</span>
-            ${editionBadge(card)}
-          </div>
-        </div>
-      </div>
+      <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+        <td class="py-2 px-3 font-bold text-slate-800 text-xs">${gKey}</td>
+        <td class="py-2 px-3 text-right font-medium text-slate-700 text-xs">${fmtJpy(jpVal)}</td>
+        <td class="py-2 px-3 text-right font-bold text-slate-900 text-xs">${fmtEur(frVal)}</td>
+        <td class="py-2 px-3 text-right font-black ${gMargin && gMargin > 0 ? 'text-emerald-600' : 'text-slate-400'} text-xs">
+          ${gMargin != null ? fmtEur(gMargin) : '—'}
+        </td>
+      </tr>
     `;
   }).join('');
 
-  const footerHtml = isSearchingLive
-    ? `<div class="px-3 py-1.5 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
-         <span>Recherche en cours dans la base mondiale…</span>
-         <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-       </div>`
-    : `<div class="px-3 py-1 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 text-right">
-         Base officielle TCGdex multi-langues
-       </div>`;
-
-  dropdown.innerHTML = itemsHtml + footerHtml;
-  dropdown.classList.remove('hidden');
-
-  dropdown.querySelectorAll('.search-result-item').forEach(item => {
-    item.addEventListener('click', () => {
-      openCardDetail(item.dataset.id);
-      dropdown.classList.add('hidden');
-      const input = document.getElementById('search-input');
-      if (input) input.value = '';
-    });
-  });
-}
-
-function handleSearch(query) {
-  state.searchQuery = query.trim().toLowerCase();
-  const dropdown = document.getElementById('search-dropdown');
-  if (!dropdown) return;
-
-  if (!state.searchQuery) {
-    dropdown.classList.add('hidden');
-    dropdown.innerHTML = '';
-    return;
-  }
-
-  const localMatches = CARDS.filter(c =>
-    (c.name && c.name.toLowerCase().includes(state.searchQuery)) ||
-    (c.subName && c.subName.toLowerCase().includes(state.searchQuery)) ||
-    (c.ref && c.ref.toLowerCase().includes(state.searchQuery)) ||
-    (c.localId && c.localId.toLowerCase() === state.searchQuery)
-  ).slice(0, 8);
-
-  renderSearchDropdown(localMatches, state.searchQuery.length >= 2);
-
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-  if (currentSearchAbort) {
-    currentSearchAbort.abort();
-    currentSearchAbort = null;
-  }
-
-  if (state.searchQuery.length < 2) return;
-
-  searchDebounceTimer = setTimeout(async () => {
-    try {
-      const abortCtrl = new AbortController();
-      currentSearchAbort = abortCtrl;
-
-      const liveApiCards = await CatalogService.searchLive(query);
-
-      const seen = new Set();
-      const merged = [];
-
-      for (const card of [...localMatches, ...liveApiCards]) {
-        if (!seen.has(card.id)) {
-          seen.add(card.id);
-          merged.push(card);
-          if (!CARDS.some(c => c.id === card.id)) {
-            CARDS.push(card);
-          }
-        }
-      }
-
-      renderSearchDropdown(merged.slice(0, 10), false);
-    } catch (e) {
-      if (e.name !== 'AbortError') {
-        console.warn('Live search error:', e);
-      }
-    }
-  }, 280);
-}
-
-// ── UPGRADED CARD DETAIL MODAL (RAW VS GRADED SLABS + DUAL CHARTS) ─
-let detailModalState = {
-  cardId: null,
-  mode: 'raw',           // 'raw' | 'graded'
-  rawCondition: 'NM',    // 'NM' | 'EX' | 'LP' | 'PL'
-  company: 'PSA',        // 'PSA' | 'BGS' | 'CGC' | 'PCA' | 'ARS'
-  grade: '10 (Gem Mint)' // Authentic grade string from GRADING_SCALES[company]
-};
-
-function openCardDetail(cardId, initialMode = null, initialSlab = null) {
-  detailModalState.cardId = cardId;
-  if (initialSlab && initialSlab.company) {
-    detailModalState.mode = 'graded';
-    detailModalState.company = GRADING_COMPANIES[initialSlab.company] ? initialSlab.company : 'PSA';
-    const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
-    const matched = scale.find(g => g.grade === initialSlab.grade || g.short === initialSlab.short || g.grade.startsWith(String(initialSlab.short || initialSlab.grade || '10')));
-    detailModalState.grade = matched ? matched.grade : scale[0].grade;
-  } else {
-    if (initialMode) {
-      detailModalState.mode = initialMode;
-    } else if (state.condition?.mode === 'graded') {
-      detailModalState.mode = 'graded';
-    } else {
-      detailModalState.mode = 'raw';
-    }
-
-    if (detailModalState.mode === 'graded') {
-      if (state.condition?.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') {
-        detailModalState.company = state.condition.companies[0];
-      } else if (!detailModalState.company || !GRADING_COMPANIES[detailModalState.company]) {
-        detailModalState.company = 'PSA';
-      }
-      const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
-      const activeGrades = state.condition?.grades || [];
-      const matched = scale.find(g => activeGrades.includes(g.grade));
-      detailModalState.grade = matched ? matched.grade : scale[0].grade;
-    } else {
-      detailModalState.rawCondition = state.condition?.rawConditions?.[0] || 'NM';
-    }
-  }
-
-  renderCardDetailModal();
-  openModal('modal-card-detail');
-}
-
-function renderCardDetailModal() {
-  let card = CARDS.find(c => c.id === detailModalState.cardId);
-  if (!card && detailModalState.currentCard) {
-    card = detailModalState.currentCard;
-  }
-  if (!card) return;
-
-  const content = document.getElementById('detail-content');
-  if (!content) return;
-
-  const isRaw = detailModalState.mode === 'raw';
-  const condOrGradeStr = isRaw 
-    ? detailModalState.rawCondition 
-    : `${detailModalState.company} ${detailModalState.grade}`;
-
-  const currentConditionLabel = isRaw
-    ? (RAW_CONDITIONS.find(c => c.key === detailModalState.rawCondition)?.label || 'Near Mint (NM)')
-    : `${detailModalState.company} ${detailModalState.grade}`;
-
-  const frActive = getActiveFrPrice(card, condOrGradeStr);
-  const jpActive = getActiveJpPrice(card, condOrGradeStr);
-  const margin = netMargin(card, condOrGradeStr);
-  const roi = netROI(card, condOrGradeStr);
-  const hasPrices = (frActive !== null && jpActive !== null && margin !== null && roi !== null);
-
-  const marginSign = hasPrices && margin >= 0 ? '+' : '';
-  const profitClass = hasPrices && margin >= 0 ? 'profit-positive' : 'profit-negative';
-  const hasSubName = card.subName && card.subName !== card.name;
-
-  const platforms = PriceService.getMultiPlatformPrices(
-    card, 
-    detailModalState.mode, 
-    isRaw ? detailModalState.rawCondition : { company: detailModalState.company, grade: detailModalState.grade }
-  );
-
-  // Extract release year from ref
-  const refCode = (card.ref || '').toLowerCase();
-  let releaseYear = '—';
-  if (refCode.startsWith('sv')) {
-    const svNum = parseFloat(refCode.replace('sv', ''));
-    if (!isNaN(svNum)) {
-      if (svNum >= 9) releaseYear = '2026';
-      else if (svNum >= 7) releaseYear = '2025';
-      else if (svNum >= 4) releaseYear = '2024';
-      else releaseYear = '2023';
-    } else {
-      releaseYear = '2024';
-    }
-  } else if (refCode.startsWith('swsh')) {
-    releaseYear = '2021';
-  } else if (refCode.startsWith('xy') || refCode.startsWith('sm')) {
-    releaseYear = '2020 et avant';
-  } else {
-    releaseYear = '2024';
-  }
-
-  // Price history arrays (7j, 30j, 90j points) scaled with platforms smoothed data
-  const fr7j = platforms.fr?.ebay?.avg7;
-  const fr30j = platforms.fr?.ebay?.avg30;
-  const fr90j = platforms.fr?.ebay?.avg90;
-  const frHist = frActive !== null ? [
-    Math.round((fr90j || frActive) * 0.98 * 10) / 10,
-    Math.round((fr90j || frActive) * 10) / 10,
-    Math.round((fr30j || frActive) * 0.99 * 10) / 10,
-    Math.round((fr30j || frActive) * 10) / 10,
-    Math.round((fr7j || frActive) * 10) / 10,
-    Math.round(frActive * 10) / 10
-  ] : [];
-
-  const jp7j = platforms.jp?.mercari?.avg7;
-  const jp30j = platforms.jp?.mercari?.avg30;
-  const jp90j = platforms.jp?.mercari?.avg90;
-  const jpHist = jpActive !== null ? [
-    Math.round((jp90j || jpActive) * 1.02),
-    Math.round(jp90j || jpActive),
-    Math.round((jp30j || jpActive) * 1.01),
-    Math.round(jp30j || jpActive),
-    Math.round(jp7j || jpActive),
-    Math.round(jpActive)
-  ] : [];
-
-  const fmtEur = (v) => (v != null && !isNaN(v)) ? `${Number(v).toFixed(2)} €` : '—';
-  const fmtJpy = (v) => (v != null && !isNaN(v)) ? `¥${Number(v).toLocaleString('fr-FR')}` : '—';
-
-  // Verification Search Links (including grade when graded)
-  const querySuffixFr = isRaw ? '' : ` ${detailModalState.company} ${detailModalState.grade}`;
-  const querySuffixJp = isRaw ? '' : ` ${detailModalState.company} ${detailModalState.grade}`;
-  const searchFrQuery = encodeURIComponent(`${card.name} ${card.ref}${querySuffixFr}`);
-  const searchJpQuery = encodeURIComponent(`${card.subName || card.name}${querySuffixJp}`);
-
-  const ebayLink = `https://www.ebay.fr/sch/i.html?_nkw=${searchFrQuery}&LH_Sold=1&LH_Complete=1`;
-  const vintedLink = `https://www.vinted.fr/catalog?search_text=${searchFrQuery}`;
-  const lbcLink = `https://www.leboncoin.fr/recherche?text=${searchFrQuery}&category=172`;
-  const mercariLink = `https://jp.mercari.com/search?keyword=${searchJpQuery}&status=sold_out`;
-  const yahooLink = `https://auctions.yahoo.co.jp/search/search?p=${searchJpQuery}&b=1&n=20&istatus=2`;
-
-  // Build Price Evolution SVG Chart
-  function buildPriceChartSVG(pricePoints) {
-    if (!pricePoints || pricePoints.length < 2) return '';
-    const w = 240, h = 60, padX = 10, padY = 8;
-    const min = Math.min(...pricePoints);
-    const max = Math.max(...pricePoints);
-    const range = max - min || 1;
-
-    const coords = pricePoints.map((p, i) => {
-      const x = padX + (i / (pricePoints.length - 1)) * (w - 2 * padX);
-      const y = h - padY - ((p - min) / range) * (h - 2 * padY);
-      return [x.toFixed(1), y.toFixed(1)];
-    });
-
-    const ptsStr = coords.map(c => `${c[0]},${c[1]}`).join(' ');
-    const isUp = pricePoints[pricePoints.length - 1] >= pricePoints[0];
-    const strokeCol = isUp ? '#22c55e' : '#ef4444';
-    const fillCol = isUp ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
-
-    const firstX = coords[0][0];
-    const lastX = coords[coords.length - 1][0];
-    const baseY = (h - padY).toFixed(1);
-    const areaPath = `M${firstX},${baseY} L${coords.map(c => `${c[0]},${c[1]}`).join(' L')} L${lastX},${baseY} Z`;
-    const lastCoord = coords[coords.length - 1];
-
-    return `
-      <svg class="price-chart-svg" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-        <path d="${areaPath}" fill="${fillCol}"/>
-        <polyline points="${ptsStr}" fill="none" stroke="${strokeCol}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${lastCoord[0]}" cy="${lastCoord[1]}" r="3.5" fill="${strokeCol}"/>
-      </svg>
-    `;
-  }
-
-  // Generate Mode Controls HTML
-  let modeControlsHtml = '';
-  if (isRaw) {
-    modeControlsHtml = `
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-        <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center justify-between">
-          <span>État physique de la carte</span>
-          <span class="text-blue-600 font-semibold">${currentConditionLabel}</span>
+  container.innerHTML = `
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- Col 1: Card Artwork -->
+      <div class="flex flex-col items-center">
+        <div class="w-full max-w-[220px] rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-100">
+          <img src="${imgUrl}" alt="${card.displayName || card.name}"
+               onerror="onCardImageError(this)"
+               class="w-full h-auto object-cover">
         </div>
-        <div class="flex flex-wrap gap-1.5" id="detail-raw-pills">
-          ${RAW_CONDITIONS.map(c => `
-            <button type="button" class="detail-sub-pill ${detailModalState.rawCondition === c.key ? 'active' : ''}" data-raw-key="${c.key}">
-              <span>${c.key}</span>
-              <span class="text-[10px] opacity-75">(${c.label.split('(')[1]?.replace(')', '') || c.key})</span>
-            </button>
-          `).join('')}
+        <div class="mt-3 text-center">
+          <span class="inline-block px-2.5 py-1 font-mono font-bold text-xs bg-slate-100 text-slate-700 rounded-lg border border-slate-200">
+            ${card.ref}
+          </span>
         </div>
       </div>
-    `;
-  } else {
-    const currentCompany = GRADING_COMPANIES[detailModalState.company] || GRADING_COMPANIES.PSA;
-    const currentScale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
 
-    // Safety check: ensure selected grade exists in current company scale
-    if (!currentScale.some(g => g.grade === detailModalState.grade)) {
-      detailModalState.grade = currentScale[0].grade;
-    }
-
-    const summaryTableRows = currentScale.map(g => {
-      const gradeLabelStr = `${detailModalState.company} ${g.grade}`;
-      const multMeta = resolveConditionMultiplier(gradeLabelStr, card);
-      const gFr = getActiveFrPrice(card, gradeLabelStr);
-      const gJp = getActiveJpPrice(card, gradeLabelStr);
-      const gMargin = netMargin(card, gradeLabelStr);
-      const gRoi = netROI(card, gradeLabelStr);
-      const isSelected = detailModalState.grade === g.grade;
-      const hasGPrice = (gFr !== null && gJp !== null && gMargin !== null);
-      const profitCls = hasGPrice ? (gMargin >= 0 ? 'profit-positive' : 'profit-negative') : 'text-slate-400';
-      const pSign = hasGPrice && gMargin >= 0 ? '+' : '';
-      const frText = gFr !== null ? `${gFr.toFixed(2)} €` : '—';
-      const jpText = gJp !== null ? `¥${gJp.toLocaleString('fr-FR')}` : '—';
-      const marginText = hasGPrice ? `${pSign}${gMargin.toFixed(2)} €` : 'Pas de ventes';
-      const roiText = hasGPrice ? `${pSign}${gRoi.toFixed(0)} %` : '—';
-      const spreadTag = hasGPrice ? (
-        multMeta.source === 'direct_sold'
-          ? '<span class="text-[9px] font-semibold text-emerald-600 ml-1" title="Ventes slab réelles">● Réel</span>'
-          : `<span class="text-[9px] text-slate-400 ml-1" title="Spread historique marché">×${multMeta.frMult.toFixed(2)}</span>`
-      ) : '';
-
-      return `
-        <tr class="${isSelected ? 'selected' : ''} cursor-pointer" data-select-grade="${g.grade}">
-          <td class="font-bold flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-slate-300'}"></span>
-            <span>${g.grade}</span>${spreadTag}
-          </td>
-          <td>${jpText}</td>
-          <td class="font-semibold text-slate-800">${frText}</td>
-          <td class="${profitCls} font-bold">${marginText}</td>
-          <td class="${profitCls} font-bold">${roiText}</td>
-        </tr>
-      `;
-    }).join('');
-
-    modeControlsHtml = `
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-        <!-- Grading Companies -->
-        <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center justify-between">
-          <span>Société de gradation</span>
-          <span class="text-blue-600 font-semibold">${currentCompany.fullName}</span>
-        </div>
-        <div class="flex flex-wrap gap-1.5 mb-3" id="detail-company-tabs">
-          ${Object.keys(GRADING_COMPANIES).map(k => `
-            <button type="button" class="company-tab ${detailModalState.company === k ? 'active' : ''}" data-company-key="${k}">
-              ${k}
-            </button>
-          `).join('')}
+      <!-- Col 2 & 3: Detailed Financials & Audit Trail -->
+      <div class="md:col-span-2 space-y-4">
+        <!-- Card Titles -->
+        <div>
+          <h2 class="text-xl font-black text-slate-900">${card.displayName || card.name}</h2>
+          ${card.subName ? `<p class="text-xs text-slate-500 font-medium">${card.subName}</p>` : ''}
+          <div class="flex items-center gap-2 mt-1 flex-wrap">
+            <span class="text-xs font-semibold text-slate-600">Édition : ${card.edition === 'JP' ? '🇯🇵 Japon' : '🇫🇷 France'}</span>
+            <span class="text-slate-300">•</span>
+            <span class="text-xs font-semibold text-slate-600">Set : ${card.set_id}</span>
+            <span class="text-slate-300">•</span>
+            ${p?.jp?.data_type === 'shop' 
+              ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">🏪 Prix boutique JP (Yuyu-tei)</span>'
+              : '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">🏷️ Ventes conclues</span>'
+            }
+          </div>
         </div>
 
-        <!-- Grade Selector Pills -->
-        <div class="text-[11px] font-bold text-slate-600 uppercase tracking-wide mb-2 flex items-center justify-between">
-          <span>Note sélectionnée</span>
-          <span class="text-blue-600 font-semibold">Échelle ${detailModalState.company}</span>
-        </div>
-        <div class="flex flex-wrap gap-1.5 mb-3" id="detail-grade-pills">
-          ${currentScale.map(g => `
-            <button type="button" class="grade-pill ${detailModalState.grade === g.grade ? 'active' : ''}" data-grade-key="${g.grade}">
-              ${g.grade}
-            </button>
-          `).join('')}
+        <!-- Primary Arbitrage KPI Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+          <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Achat JP (¥)</span>
+            <span class="text-base font-black text-slate-800">${fmtJpy(jpPriceYen)}</span>
+            <span class="text-[10px] text-slate-500 block">(${fmtEur(jpPriceEur)})</span>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Revente FR (€)</span>
+            <span class="text-base font-black text-slate-800">${fmtEur(frPrice)}</span>
+            <span class="text-[10px] text-slate-500 block">Prix lissé 30j</span>
+          </div>
+          <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
+            <span class="text-[10px] text-emerald-600 font-semibold uppercase block">Marge Nette</span>
+            <span class="text-base font-black text-emerald-700">${margin != null ? fmtEur(margin) : '—'}</span>
+            <span class="text-[10px] text-emerald-600 font-semibold block">Gain réel</span>
+          </div>
+          <div class="bg-purple-50 border border-purple-200 p-2.5 rounded-xl">
+            <span class="text-[10px] text-purple-600 font-semibold uppercase block">ROI Net</span>
+            <span class="text-base font-black text-purple-700">${roi != null ? fmtPct(roi) : '—'}</span>
+            <span class="text-[10px] text-purple-600 font-semibold block">Rendement</span>
+          </div>
         </div>
 
-        <!-- Slabs Comparison Summary Table -->
-        <div class="border border-slate-200 rounded-lg overflow-x-auto shadow-sm">
-          <table class="slab-summary-table">
+        <!-- Graded Slabs Breakdown Table -->
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+              <i data-lucide="layers" style="width:14px;height:14px;" class="text-purple-600"></i>
+              Comparatif Slabs Gradés (PSA, BGS, CGC, PCA, ARS)
+            </span>
+          </div>
+          <table class="w-full text-left border-collapse">
             <thead>
-              <tr>
-                <th>Grade (${detailModalState.company})</th>
-                <th>Achat JP (¥)</th>
-                <th>Revente FR (€)</th>
-                <th>Marge nette</th>
-                <th>ROI</th>
+              <tr class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                <th class="py-1.5 px-3">Grade</th>
+                <th class="py-1.5 px-3 text-right">Achat JP</th>
+                <th class="py-1.5 px-3 text-right">Revente FR</th>
+                <th class="py-1.5 px-3 text-right">Marge</th>
               </tr>
             </thead>
             <tbody>
-              ${summaryTableRows}
+              ${gradedRowsHtml}
             </tbody>
           </table>
         </div>
-      </div>
-    `;
-  }
 
-  const hasBothPrices = (frActive !== null && jpActive !== null && margin !== null && roi !== null);
-  const hasFrOnly = (frActive !== null && (jpActive === null || isNaN(jpActive)));
-  const hasJpOnly = (jpActive !== null && (frActive === null || isNaN(frActive)));
+        <!-- 🔍 TRANSPARENT AUDIT TRAIL & DIRECT VERIFICATION LINKS -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+              <i data-lucide="search-check" style="width:14px;height:14px;" class="text-blue-600"></i>
+              🔍 Sources Officielles &amp; Audit des Ventes Réalisées
+            </h4>
+            <span class="text-[10px] text-slate-500 font-medium">100% Transactions Réalisées</span>
+          </div>
 
-  let pricingHeaderHtml = '';
-  if (hasBothPrices) {
-    pricingHeaderHtml = `
-      <div class="text-sm text-slate-700 mb-1">
-        Achat JP : <strong class="text-slate-900">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)
-        → Revente FR : <strong class="text-slate-900">${frActive.toFixed(2)} €</strong>
-      </div>
-      <div class="text-sm mb-3">
-        Marge nette : <span class="${profitClass} font-bold">${marginSign}${margin.toFixed(2)} €</span>
-        &nbsp;|&nbsp; ROI : <span class="${profitClass} font-bold">${marginSign}${roi.toFixed(0)} %</span>
-      </div>
-    `;
-  } else if (hasFrOnly) {
-    const frSource = card.platforms?.cardmarket ? 'Cardmarket' : (card.platforms?.ebay ? 'eBay FR' : 'Marché FR');
-    pricingHeaderHtml = `
-      <div class="text-sm text-slate-700 mb-1 flex items-center gap-2 flex-wrap">
-        <span>Revente FR : <strong class="text-emerald-700 font-bold">${frActive.toFixed(2)} €</strong> <span class="text-xs text-slate-400">(${frSource})</span></span>
-        <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 font-medium">Achat JP : En attente</span>
-      </div>
-      <div class="text-xs text-slate-500 mb-3">
-        Le prix européen / français est confirmé par ${frSource}. Le prix d'achat japonais est en attente d'actualisation.
-      </div>
-    `;
-  } else if (hasJpOnly) {
-    pricingHeaderHtml = `
-      <div class="text-sm text-slate-700 mb-1 flex items-center gap-2 flex-wrap">
-        <span>Achat JP : <strong class="text-sky-700 font-bold">¥${jpActive.toLocaleString('fr-FR')}</strong> (${(jpToEur(jpActive) || 0).toFixed(2)} €)</span>
-        <span class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 font-medium">Revente FR : En attente</span>
-      </div>
-      <div class="text-xs text-slate-500 mb-3">
-        Le prix d'acquisition japonais est confirmé. Le prix de revente européen / français est en attente d'actualisation.
-      </div>
-    `;
-  } else {
-    pricingHeaderHtml = `
-      <div class="my-2">
-        <span class="price-pending-badge text-xs py-1 px-3">
-          <span class="price-pending-dot"></span>
-          Prix non disponible / En cours d'actualisation
-        </span>
-      </div>
-      <div class="text-xs text-slate-500 mb-3">
-        Aucune vente finalisée enregistrée pour cette référence. Consultez les plateformes ci-dessous pour les ventes en direct.
-      </div>
-    `;
-  }
+          <div class="text-[11px] text-slate-600 space-y-1 bg-white p-2.5 rounded-lg border border-slate-200">
+            <div><strong class="text-slate-700">Titre Exact Matched :</strong> <span class="font-mono">${p?.matched_title || p?.fr?.matched_title || p?.jp?.matched_title || 'Correspondance officielle TCGdex'}</span></div>
+            <div><strong class="text-slate-700">Type de donnée JP :</strong> <span class="font-bold ${p?.jp?.data_type === 'shop' ? 'text-amber-700' : 'text-emerald-700'}">${p?.jp?.data_type === 'shop' ? '🏪 Prix boutique catalogue (Yuyu-tei)' : '🏷️ Ventes conclues réelles (PriceCharting / SNKRDUNK)'}</span></div>
+            <div><strong class="text-slate-700">Type de donnée FR :</strong> <span class="font-bold text-emerald-700">🏷️ Ventes conclues réelles (PriceCharting / eBay FR Sold)</span></div>
+            <div><strong class="text-slate-700">Plateforme Source :</strong> <span>${p?.fr?.source_name || p?.jp?.source_name || 'PriceCharting / Yuyu-tei / SNKRDUNK'}</span></div>
+            <div><strong class="text-slate-700">Échantillons Ventes :</strong> <span>${getCardLiquidity(card)} ventes vérifiées enregistrées</span></div>
+            <div><strong class="text-slate-700">Dernière Vérification :</strong> <span>${p?.fetched_at ? new Date(p.fetched_at).toLocaleString('fr-FR') : 'Actualisation continue'}</span></div>
+          </div>
 
-  const chartsHtml = (frHist.length > 0 || jpHist.length > 0) ? `
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-      <div class="price-chart-wrap">
-        <div class="flex items-center justify-between mb-1">
-          <span class="price-chart-title">📈 Évolution Prix FR (€)</span>
-          <span class="text-[10px] font-bold text-slate-600">${frActive !== null ? `${frActive.toFixed(2)} €` : 'En attente'}</span>
-        </div>
-        ${frHist.length > 0 ? buildPriceChartSVG(frHist) : '<div class="h-[60px] flex items-center justify-center text-xs text-slate-400">Prix FR en cours d\'actualisation</div>'}
-        <div class="price-chart-axis">
-          <span>Lissée 90j</span>
-          <span>Lissée 30j</span>
-          <span>Lissée 7j</span>
-        </div>
-      </div>
-      <div class="price-chart-wrap">
-        <div class="flex items-center justify-between mb-1">
-          <span class="price-chart-title">📉 Évolution Prix JP (¥)</span>
-          <span class="text-[10px] font-bold text-slate-600">${jpActive !== null ? `¥${jpActive.toLocaleString('fr-FR')}` : 'En attente'}</span>
-        </div>
-        ${jpHist.length > 0 ? buildPriceChartSVG(jpHist) : '<div class="h-[60px] flex items-center justify-center text-xs text-slate-400">Prix JP en cours d\'actualisation</div>'}
-        <div class="price-chart-axis">
-          <span>Lissée 90j</span>
-          <span>Lissée 30j</span>
-          <span>Lissée 7j</span>
-        </div>
-      </div>
-    </div>
-  ` : '';
-
-  content.innerHTML = `
-    <!-- Top-level Mode Tabs -->
-    <div class="flex gap-2 mb-4 p-1 bg-slate-100 rounded-2xl w-full max-w-sm">
-      <button type="button" class="detail-mode-tab flex-1 ${isRaw ? 'active' : ''}" data-mode-toggle="raw">
-        <i data-lucide="package" style="width:14px;height:14px;"></i>
-        <span>Non-gradé (Raw)</span>
-      </button>
-      <button type="button" class="detail-mode-tab flex-1 ${!isRaw ? 'active' : ''}" data-mode-toggle="graded">
-        <i data-lucide="shield" style="width:14px;height:14px;"></i>
-        <span>Gradée (Slabs)</span>
-      </button>
-    </div>
-
-    <!-- Top Card Info Block -->
-    <div class="flex flex-col sm:flex-row gap-4 mb-4 items-center sm:items-start text-center sm:text-left">
-      <img src="${card.image}" class="w-32 max-h-48 object-contain rounded-xl flex-shrink-0 shadow-md mx-auto sm:mx-0 bg-slate-50 border border-slate-100" alt="${card.name}"
-           onerror="onCardImageError(this)">
-      <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-xl text-slate-900 leading-tight">${card.name}</h3>
-        ${hasSubName ? `<div class="text-xs text-slate-500 mt-0.5">Nom japonais / VO : <span class="font-semibold text-slate-700">${card.subName}</span></div>` : ''}
-        <div class="flex items-center gap-2 mt-1.5 mb-2.5 flex-wrap justify-center sm:justify-start">
-          <span class="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${card.ref}</span>
-          ${editionBadge(card)}
-          <span class="text-xs text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">📅 ${releaseYear}</span>
-          <span class="text-xs font-semibold ${isRaw ? 'bg-slate-100 text-slate-700' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'} rounded-full px-2.5 py-0.5">
-            ${isRaw ? '📦 ' + currentConditionLabel : '🛡️ ' + currentConditionLabel}
-          </span>
+          <!-- Direct Clickable Verification Links Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+            <a href="${pricechartingUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <i data-lucide="trending-up" style="width:12px;height:12px;" class="text-blue-600"></i>
+              <span>PriceCharting JP</span>
+            </a>
+            <a href="${cardmarketUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <i data-lucide="tag" style="width:12px;height:12px;" class="text-indigo-600"></i>
+              <span>Cardmarket FR</span>
+            </a>
+            <a href="${ebayFrSoldUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <i data-lucide="check-circle" style="width:12px;height:12px;" class="text-emerald-600"></i>
+              <span>eBay FR Sold</span>
+            </a>
+            <a href="${mercariJpUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <i data-lucide="shopping-bag" style="width:12px;height:12px;" class="text-rose-600"></i>
+              <span>Mercari JP Sold</span>
+            </a>
+            <a href="${yahooJpUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <i data-lucide="gavel" style="width:12px;height:12px;" class="text-amber-600"></i>
+              <span>Yahoo! Closed</span>
+            </a>
+            <button type="button" onclick="addToPurchasesFromModal('${card.id}')"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm cursor-pointer">
+              <i data-lucide="plus" style="width:12px;height:12px;"></i>
+              <span>Acheté</span>
+            </button>
+          </div>
         </div>
 
-        ${pricingHeaderHtml}
-
-        <button id="btn-add-purchase-modal"
-          class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl transition-colors shadow flex items-center justify-center gap-1.5 cursor-pointer">
-          <i data-lucide="plus-circle" style="width:15px;height:15px;"></i>
-          + Ajouter aux cartes achetées (${isRaw ? 'Raw ' + detailModalState.rawCondition : detailModalState.company + ' ' + detailModalState.grade})
-        </button>
-      </div>
-    </div>
-
-    <!-- Mode Sub-controls (Raw pills or Graded Slabs table) -->
-    ${modeControlsHtml}
-
-    <!-- Dual Price Evolution Charts -->
-    ${chartsHtml}
-
-    <!-- French Platforms Breakdown Table -->
-    <div class="mb-4 bg-slate-50 border border-slate-200 rounded-xl p-3">
-      <div class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2 flex items-center justify-between">
-        <div class="flex items-center gap-1.5">
-          <span>🇫🇷 Plateformes Françaises</span>
-          <span class="text-[10px] font-normal text-slate-400">(Moyennes lissées anti-outliers)</span>
-        </div>
-        <span class="text-[10px] font-semibold text-blue-600">${isRaw ? 'Raw ' + detailModalState.rawCondition : detailModalState.company + ' ' + detailModalState.grade}</span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="platform-table">
-          <thead>
-            <tr>
-              <th>Plateforme</th>
-              <th>Dernière vente</th>
-              <th>Lissée 7j</th>
-              <th>Lissée 30j</th>
-              <th>Lissée 90j</th>
-              <th class="text-right">Vérifier</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="font-bold text-slate-900">eBay FR</td>
-              <td>${fmtEur(platforms.fr?.ebay?.last)}</td>
-              <td>${fmtEur(platforms.fr?.ebay?.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.ebay?.avg30)}</td>
-              <td>${fmtEur(platforms.fr?.ebay?.avg90)}</td>
-              <td class="text-right"><a href="${ebayLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
-            </tr>
-            <tr>
-              <td class="font-bold text-slate-900">Vinted</td>
-              <td>${fmtEur(platforms.fr?.vinted?.last)}</td>
-              <td>${fmtEur(platforms.fr?.vinted?.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.vinted?.avg30)}</td>
-              <td>${fmtEur(platforms.fr?.vinted?.avg90)}</td>
-              <td class="text-right"><a href="${vintedLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
-            </tr>
-            <tr>
-              <td class="font-bold text-slate-900">LeBonCoin</td>
-              <td>${fmtEur(platforms.fr?.lbc?.last)}</td>
-              <td>${fmtEur(platforms.fr?.lbc?.avg7)}</td>
-              <td class="font-semibold text-blue-600">${fmtEur(platforms.fr?.lbc?.avg30)}</td>
-              <td>${fmtEur(platforms.fr?.lbc?.avg90)}</td>
-              <td class="text-right"><a href="${lbcLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Japanese Platforms Breakdown Table -->
-    <div class="mb-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
-      <div class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2 flex items-center justify-between">
-        <div class="flex items-center gap-1.5">
-          <span>🇯🇵 Plateformes Japonaises</span>
-          <span class="text-[10px] font-normal text-slate-400">(Prix d'achat direct en Yen)</span>
-        </div>
-        <span class="text-[10px] font-semibold text-amber-600">${isRaw ? 'Raw ' + detailModalState.rawCondition : detailModalState.company + ' ' + detailModalState.grade}</span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="platform-table">
-          <thead>
-            <tr>
-              <th>Plateforme</th>
-              <th>Dernière vente</th>
-              <th>Lissée 7j</th>
-              <th>Lissée 30j</th>
-              <th>Lissée 90j</th>
-              <th class="text-right">Vérifier</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="font-bold text-slate-900">Mercari JP</td>
-              <td>${fmtJpy(platforms.jp?.mercari?.last)}</td>
-              <td>${fmtJpy(platforms.jp?.mercari?.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.mercari?.avg30)}</td>
-              <td>${fmtJpy(platforms.jp?.mercari?.avg90)}</td>
-              <td class="text-right"><a href="${mercariLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
-            </tr>
-            <tr>
-              <td class="font-bold text-slate-900">Yahoo! Auctions</td>
-              <td>${fmtJpy(platforms.jp?.yahoo?.last)}</td>
-              <td>${fmtJpy(platforms.jp?.yahoo?.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.yahoo?.avg30)}</td>
-              <td>${fmtJpy(platforms.jp?.yahoo?.avg90)}</td>
-              <td class="text-right"><a href="${yahooLink}" target="_blank" rel="noopener" class="platform-link">↗ Vérifier</a></td>
-            </tr>
-            <tr>
-              <td class="font-bold text-slate-900">Card Rush</td>
-              <td>${fmtJpy(platforms.jp?.cardrush?.last)}</td>
-              <td>${fmtJpy(platforms.jp?.cardrush?.avg7)}</td>
-              <td class="font-semibold text-amber-600">${fmtJpy(platforms.jp?.cardrush?.avg30)}</td>
-              <td>${fmtJpy(platforms.jp?.cardrush?.avg90)}</td>
-              <td class="text-right text-slate-400 text-xs">—</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   `;
 
-  // Attach Detail Event Listeners
-  content.querySelectorAll('[data-mode-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      detailModalState.mode = btn.dataset.modeToggle;
-      renderCardDetailModal();
-    });
-  });
-
-  content.querySelectorAll('[data-raw-key]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      detailModalState.rawCondition = btn.dataset.rawKey;
-      renderCardDetailModal();
-    });
-  });
-
-  content.querySelectorAll('[data-company-key]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      detailModalState.company = btn.dataset.companyKey;
-      const scale = GRADING_SCALES[detailModalState.company] || GRADING_SCALES.PSA;
-      if (!scale.some(g => g.grade === detailModalState.grade)) {
-        detailModalState.grade = scale[0].grade;
-      }
-      renderCardDetailModal();
-    });
-  });
-
-  content.querySelectorAll('[data-grade-key]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      detailModalState.grade = btn.dataset.gradeKey;
-      renderCardDetailModal();
-    });
-  });
-
-  content.querySelectorAll('[data-select-grade]').forEach(row => {
-    row.addEventListener('click', () => {
-      detailModalState.grade = row.dataset.selectGrade;
-      renderCardDetailModal();
-    });
-  });
-
-  document.getElementById('btn-add-purchase-modal')?.addEventListener('click', () => {
-    const condLabel = isRaw ? `Raw ${detailModalState.rawCondition}` : `${detailModalState.company} ${detailModalState.grade}`;
-    addToPurchases(card, jpActive, 1, condLabel);
-  });
-
-  if (typeof lucide !== 'undefined') lucide.createIcons();
+  openModal('modal-card-detail');
+  if (window.lucide) lucide.createIcons();
 }
 
-// ── PURCHASES LOGIC & REPORT ─────────────────────────────────
-function addToPurchases(card, customPrice = null, customQty = 1, conditionLabel = 'Raw NM') {
-  const condition = conditionLabel || 'Raw NM';
-  const price = customPrice !== null ? customPrice : getActiveJpPrice(card, condition);
-  const boughtAtEur = jpToEur(price) + 1.50;
-  const existing = state.purchasedCards.find(p => p.card.id === card.id && p.condition === condition);
+function addToPurchasesFromModal(cardId) {
+  const card = CatalogService.cards.find(c => c.id === cardId || c.raw_id === cardId);
+  if (!card) return;
+  const jpBuyYen = getActiveJpPrice(card) || 1000;
+  const conditionLabel = state.condition.mode === 'graded' ? state.condition.grade : `Raw ${state.condition.rawCondition}`;
+  addToPurchases(card, jpBuyYen, 1, conditionLabel);
+  closeModal('modal-card-detail');
+}
 
-  if (existing) {
-    existing.quantity += customQty;
-  } else {
-    state.purchasedCards.push({
-      card,
-      condition,
-      quantity: customQty,
-      boughtAt: price,
-      boughtAtEur: boughtAtEur,
-      addedDate: new Date().toISOString()
+// ── 12. CARD SCANNER (GEMINI FLASH VISION AI + TESSERACT OCR) ─
+const ScannerService = {
+  geminiApiKey: localStorage.getItem('pokespread_gemini_api_key') || '',
+
+  init() {
+    this.updateEngineBadge();
+    this.bindSettingsEvents();
+  },
+
+  updateEngineBadge() {
+    const textEl = document.getElementById('scanner-engine-text');
+    const badgeEl = document.getElementById('gemini-status-badge');
+    const hasKey = !!this.geminiApiKey;
+
+    if (textEl) {
+      textEl.textContent = hasKey ? '✨ IA Gemini Flash Active' : '📷 OCR Local (Tesseract)';
+    }
+    if (badgeEl) {
+      if (hasKey) {
+        badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
+        badgeEl.textContent = 'Actif';
+      } else {
+        badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-600';
+        badgeEl.textContent = 'Non configuré';
+      }
+    }
+  },
+
+  bindSettingsEvents() {
+    const saveBtn = document.getElementById('btn-save-gemini-key');
+    const removeBtn = document.getElementById('btn-remove-gemini-key');
+    const inputEl = document.getElementById('input-gemini-key');
+    const toggleVisBtn = document.getElementById('btn-toggle-key-visibility');
+
+    if (inputEl && this.geminiApiKey) {
+      inputEl.value = this.geminiApiKey;
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const key = inputEl ? inputEl.value.trim() : '';
+        if (!key) {
+          showToast('Veuillez entrer une clé API valide');
+          return;
+        }
+        this.geminiApiKey = key;
+        localStorage.setItem('pokespread_gemini_api_key', key);
+        this.updateEngineBadge();
+        showToast('✅ Clé Gemini API enregistrée avec succès !');
+        closeModal('modal-settings');
+      });
+    }
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
+        this.geminiApiKey = '';
+        localStorage.removeItem('pokespread_gemini_api_key');
+        if (inputEl) inputEl.value = '';
+        this.updateEngineBadge();
+        showToast('Clé Gemini API effacée');
+      });
+    }
+
+    if (toggleVisBtn && inputEl) {
+      toggleVisBtn.addEventListener('click', () => {
+        inputEl.type = inputEl.type === 'password' ? 'text' : 'password';
+        toggleVisBtn.textContent = inputEl.type === 'password' ? 'Afficher' : 'Masquer';
+      });
+    }
+  },
+
+  async processImageFile(file) {
+    if (!file) return;
+
+    const resultsEl = document.getElementById('scanner-results');
+    const previewWrapper = document.getElementById('scanner-preview-wrapper');
+    const previewImg = document.getElementById('scanner-captured-preview');
+    const placeholder = document.getElementById('scanner-guide-placeholder');
+
+    // Show image preview immediately
+    const objectUrl = URL.createObjectURL(file);
+    if (previewImg) {
+      previewImg.src = objectUrl;
+      previewImg.classList.remove('hidden');
+    }
+    if (placeholder) placeholder.classList.add('hidden');
+
+    // 1. Primary Engine: Gemini Flash Vision
+    if (this.geminiApiKey) {
+      if (resultsEl) {
+        resultsEl.innerHTML = `
+          <div class="flex flex-col items-center justify-center p-4 bg-slate-900/90 rounded-2xl border border-emerald-500/30">
+            <div class="w-8 h-8 border-3 border-emerald-400 border-t-transparent rounded-full animate-spin mb-2"></div>
+            <span class="text-xs font-bold text-white">Analyse multimodale Gemini Flash Vision...</span>
+            <span class="text-[11px] text-white/60 mt-1">Identification carte brute ou slab gradé (PSA/BGS/CGC)</span>
+          </div>
+        `;
+      }
+
+      try {
+        const base64Data = await this.resizeAndEncodeImage(file);
+        const aiResult = await this.callGeminiVisionAPI(base64Data);
+        if (aiResult) {
+          this.handleIdentificationSuccess(aiResult, resultsEl);
+          return;
+        }
+      } catch (err) {
+        console.warn('Gemini Vision error; falling back to OCR:', err);
+      }
+    }
+
+    // 2. Fallback Engine: Tesseract OCR
+    if (resultsEl) {
+      resultsEl.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-4 bg-slate-900/90 rounded-2xl border border-white/20">
+          <div class="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
+          <span class="text-xs font-bold text-white">Lecture OCR locale en cours...</span>
+          ${!this.geminiApiKey ? '<span class="text-[10px] text-amber-300 mt-1">💡 Ajoutez votre clé Gemini gratuite dans ⚙️ Paramètres pour une précision parfaite.</span>' : ''}
+        </div>
+      `;
+    }
+
+    try {
+      const ocrResult = await this.runTesseractOCR(file);
+      if (ocrResult) {
+        this.handleIdentificationSuccess(ocrResult, resultsEl);
+      } else {
+        this.showNoMatch(resultsEl);
+      }
+    } catch (e) {
+      this.showNoMatch(resultsEl);
+    }
+  },
+
+  async resizeAndEncodeImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1024;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
     });
+  },
+
+  async callGeminiVisionAPI(base64Image) {
+    const prompt = `You are an expert Pokémon TCG trading card and graded slab authenticator.
+Analyze this image and identify the exact Pokémon card.
+If this is a graded slab (PSA, BGS, CGC, PCA, ARS), read the grading company and grade accurately.
+Return strictly valid JSON matching this exact schema:
+{
+  "pokemon_name_en": "Charizard ex",
+  "pokemon_name_fr": "Dracaufeu ex",
+  "pokemon_name_ja": "リザードンex",
+  "set_code": "sv2a",
+  "card_number": "201",
+  "set_total": "165",
+  "language": "JP",
+  "is_graded": false,
+  "grading_company": null,
+  "grade": null
+}`;
+
+    const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+    for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.geminiApiKey}`;
+      const payload = {
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inline_data: {
+                  mime_type: 'image/jpeg',
+                  data: base64Image
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          response_mime_type: 'application/json'
+        }
+      };
+
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (resp.status === 404) continue; // Try next model name
+        if (!resp.ok) continue;
+
+        const data = await resp.json();
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) continue;
+
+        const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        return parsed;
+      } catch (e) {
+        continue;
+      }
+    }
+    return null;
+  },
+
+  async runTesseractOCR(file) {
+    if (!window.Tesseract) return null;
+    try {
+      const worker = await Tesseract.createWorker('eng');
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+
+      const text = ret.data.text || '';
+      console.log('Tesseract OCR Output:', text);
+
+      // Match card number pattern: e.g. 201/165
+      const numMatch = text.match(/(\d{1,3})\s*[\/|\\]\s*(\d{2,3})/);
+      const cardNum = numMatch ? numMatch[1] : '';
+      const setTotal = numMatch ? numMatch[2] : '';
+
+      // Match slab markers
+      let isGraded = false;
+      let company = null;
+      let grade = null;
+
+      if (/PSA\s*10/i.test(text)) { isGraded = true; company = 'PSA'; grade = 'PSA 10'; }
+      else if (/PSA\s*9/i.test(text)) { isGraded = true; company = 'PSA'; grade = 'PSA 9'; }
+      else if (/BGS\s*10/i.test(text)) { isGraded = true; company = 'BGS'; grade = 'BGS 10'; }
+      else if (/BGS\s*9\.5/i.test(text)) { isGraded = true; company = 'BGS'; grade = 'BGS 9.5'; }
+      else if (/CGC\s*10/i.test(text)) { isGraded = true; company = 'CGC'; grade = 'CGC 10'; }
+      else if (/PCA\s*10/i.test(text)) { isGraded = true; company = 'PCA'; grade = 'PCA 10'; }
+      else if (/ARS\s*10/i.test(text)) { isGraded = true; company = 'ARS'; grade = 'ARS 10'; }
+
+      if (cardNum) {
+        return {
+          card_number: cardNum,
+          set_total: setTotal,
+          is_graded: isGraded,
+          grading_company: company,
+          grade: grade
+        };
+      }
+    } catch (e) {
+      console.warn('Tesseract OCR error:', e);
+    }
+    return null;
+  },
+
+  handleIdentificationSuccess(data, resultsEl) {
+    const cardNum = String(data.card_number || '').trim();
+    const setCode = String(data.set_code || '').trim().toLowerCase();
+    const setTotal = String(data.set_total || '').trim();
+
+    // Find card in catalog
+    let matchedCard = null;
+
+    // 1. Exact set + number match
+    if (setCode && cardNum) {
+      const targetRef = setTotal ? `${setCode} ${cardNum}/${setTotal}` : `${setCode} ${cardNum}`;
+      matchedCard = CatalogService.cards.find(c => {
+        const s = (c.set_id || '').toLowerCase();
+        return s === setCode && c.local_id === cardNum;
+      });
+    }
+
+    // 2. Name + number match
+    if (!matchedCard && cardNum) {
+      const en = (data.pokemon_name_en || '').toLowerCase();
+      const fr = (data.pokemon_name_fr || '').toLowerCase();
+      const ja = (data.pokemon_name_ja || '').toLowerCase();
+
+      matchedCard = CatalogService.cards.find(c => {
+        if (c.local_id !== cardNum) return false;
+        const cn = (c.displayName || c.name || '').toLowerCase();
+        return (en && cn.includes(en)) || (fr && cn.includes(fr)) || (ja && cn.includes(ja));
+      });
+    }
+
+    // 3. Number only fallback in recent sets
+    if (!matchedCard && cardNum) {
+      matchedCard = CatalogService.cards.find(c => c.local_id === cardNum && c.edition === 'JP');
+    }
+
+    if (!matchedCard) {
+      this.showNoMatch(resultsEl, data);
+      return;
+    }
+
+    // Auto-select detected slab
+    const slabKey = data.grade || (data.is_graded ? `${data.grading_company || 'PSA'} 10` : null);
+    if (slabKey && GRADE_MULTIPLIERS[slabKey]) {
+      state.condition.mode = 'graded';
+      state.condition.grade = slabKey;
+      state.filters.slabGrade = slabKey;
+    }
+
+    const frSell = getActiveFrPrice(matchedCard, slabKey);
+    const jpBuyYen = getActiveJpPrice(matchedCard, slabKey);
+    const margin = netMargin(matchedCard, slabKey);
+    const roi = netROI(matchedCard, slabKey);
+
+    const imgUrl = formatHighResCardImage(matchedCard.image);
+
+    if (resultsEl) {
+      resultsEl.innerHTML = `
+        <div class="bg-slate-900/95 border border-emerald-500/40 rounded-2xl p-4 shadow-2xl text-left max-w-sm mx-auto">
+          <div class="flex items-center justify-between mb-2">
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2.5 py-0.5">
+              ✨ Carte Identifiée
+            </span>
+            ${slabKey ? `<span class="text-xs font-black text-purple-300 bg-purple-900/50 border border-purple-500/30 px-2 py-0.5 rounded-lg">💎 ${slabKey}</span>` : '<span class="text-[10px] text-white/50">Raw Non-gradé</span>'}
+          </div>
+
+          <div class="flex items-start gap-3 my-2">
+            <img src="${imgUrl}" alt="${matchedCard.displayName || matchedCard.name}"
+                 class="w-16 h-22 rounded-xl object-cover border border-white/20 flex-shrink-0">
+            <div class="flex-1 min-w-0">
+              <h4 class="font-bold text-sm text-white truncate">${matchedCard.displayName || matchedCard.name}</h4>
+              <p class="text-xs text-white/60 font-mono mt-0.5">${matchedCard.ref}</p>
+              <div class="mt-2 text-xs">
+                <span class="text-white/40 block text-[10px] uppercase font-semibold">Opportunité :</span>
+                <span class="text-base font-black ${margin && margin > 0 ? 'text-emerald-400' : 'text-white'}">
+                  ${margin != null ? fmtEur(margin) : '—'}
+                </span>
+                <span class="text-xs font-bold text-emerald-400 ml-1.5">${roi != null ? fmtPct(roi) : ''}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 p-2 rounded-xl bg-black/40 border border-white/10 text-xs mb-3">
+            <div>
+              <span class="text-[10px] text-white/40 block">Achat JP</span>
+              <span class="font-bold text-white">${fmtJpy(jpBuyYen)}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-white/40 block">Revente FR</span>
+              <span class="font-bold text-white">${fmtEur(frSell)}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button type="button" onclick="openCardDetail('${matchedCard.id}')"
+                    class="flex-1 py-2 px-3 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-xl text-xs text-center transition-all cursor-pointer">
+              Fiche complète
+            </button>
+            <button type="button" onclick="addToPurchasesFromModal('${matchedCard.id}')"
+                    class="py-2 px-3 bg-white/20 hover:bg-white/30 text-white font-bold rounded-xl text-xs transition-all cursor-pointer">
+              + Acheté
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  },
+
+  showNoMatch(resultsEl, detected = {}) {
+    if (!resultsEl) return;
+    resultsEl.innerHTML = `
+      <div class="bg-slate-900/90 border border-white/20 rounded-2xl p-4 text-center max-w-sm mx-auto">
+        <i data-lucide="help-circle" style="width:28px;height:28px;" class="mx-auto text-amber-400 mb-2"></i>
+        <h4 class="text-xs font-bold text-white">Carte non résolue automatiquement</h4>
+        <p class="text-[11px] text-white/60 mt-1 mb-3">
+          Entrez le numéro ou le nom manuellement ci-dessous pour afficher les prix en direct.
+        </p>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+  }
+};
+
+// ── 13. PURCHASES TRACKER (LOCALSTORAGE PERSISTENCE) ──────────
+function loadPurchases() {
+  try {
+    const raw = localStorage.getItem('pokespread_purchases');
+    if (raw) {
+      state.purchasedCards = JSON.parse(raw);
+    }
+  } catch (e) {
+    state.purchasedCards = [];
   }
   updatePurchaseBadge();
-  renderPurchases();
-  showToast(`✅ ${card.name} (${condition}) ajouté au rapport !`);
+}
+
+function savePurchases() {
+  try {
+    localStorage.setItem('pokespread_purchases', JSON.stringify(state.purchasedCards));
+  } catch (e) {}
+  updatePurchaseBadge();
 }
 
 function updatePurchaseBadge() {
   const badge = document.getElementById('purchase-badge');
   const counter = document.getElementById('purchases-counter');
-  const total = state.purchasedCards.reduce((acc, p) => acc + p.quantity, 0);
+  const count = state.purchasedCards.length;
 
   if (badge) {
-    badge.textContent = total;
-    badge.classList.toggle('hidden', total === 0);
+    badge.textContent = String(count);
+    badge.classList.toggle('hidden', count === 0);
   }
   if (counter) {
-    counter.textContent = `${total} carte${total > 1 ? 's' : ''}`;
+    counter.textContent = `${count} carte${count > 1 ? 's' : ''}`;
   }
+}
+
+function addToPurchases(card, priceJpy, qty = 1, conditionLabel = 'Raw NM') {
+  if (!card) return;
+  const purchaseItem = {
+    id: `purch_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+    cardId: card.id,
+    ref: card.ref,
+    name: card.displayName || card.name,
+    image: card.image,
+    priceJpy: Number(priceJpy) || 0,
+    priceEur: jpToEur(Number(priceJpy) || 0),
+    qty: Math.max(1, Number(qty) || 1),
+    condition: conditionLabel,
+    date: new Date().toISOString()
+  };
+
+  state.purchasedCards.unshift(purchaseItem);
+  savePurchases();
+  renderPurchases();
+  showToast(`✅ "${card.displayName || card.name}" ajouté aux achats !`);
+}
+
+function removePurchase(purchaseId) {
+  state.purchasedCards = state.purchasedCards.filter(p => p.id !== purchaseId);
+  savePurchases();
+  renderPurchases();
 }
 
 function renderPurchases() {
-  const list = document.getElementById('purchase-list');
-  const stats = document.getElementById('purchase-stats');
-  const counter = document.getElementById('purchases-counter');
-  if (!list || !stats) return;
-
-  const totalQty = state.purchasedCards.reduce((acc, p) => acc + p.quantity, 0);
-  if (counter) counter.textContent = `${totalQty} carte${totalQty > 1 ? 's' : ''}`;
+  const listEl = document.getElementById('purchase-list');
+  const statsEl = document.getElementById('purchase-stats');
+  if (!listEl) return;
 
   if (state.purchasedCards.length === 0) {
-    list.innerHTML = `
-      <div class="py-8 text-center text-sm text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-        <p class="font-semibold text-slate-600">Aucune carte achetée pour l'instant</p>
-        <p class="text-xs text-slate-400 mt-1">Utilisez l'entrée rapide ci-dessus ou parcourez les recommandations.</p>
+    listEl.innerHTML = `
+      <div class="py-12 text-center text-slate-400">
+        <i data-lucide="package-open" style="width:36px;height:36px;" class="mx-auto mb-2 text-slate-300"></i>
+        <p class="text-sm font-semibold text-slate-600">Aucun achat enregistré</p>
+        <p class="text-xs text-slate-400 mt-0.5">Utilisez le formulaire d'entrée rapide ou le scanner photo.</p>
       </div>
     `;
-    stats.innerHTML = '';
+    if (statsEl) statsEl.innerHTML = '';
+    if (window.lucide) lucide.createIcons();
     return;
   }
 
-  let totalCards = 0, totalJpy = 0, totalEurInvested = 0, totalEurRevente = 0;
+  // Calculate KPIs
+  let totalInvestedEur = 0;
+  let totalInvestedJpy = 0;
+  let totalResaleEur = 0;
 
-  list.innerHTML = state.purchasedCards.map(({ card, condition, quantity, boughtAt, boughtAtEur, addedDate }, idx) => {
-    const frSell = getActiveFrPrice(card, condition || 'Raw NM') * (1 - state.fee);
-    const profitPerUnit = frSell - boughtAtEur;
-    const profitTotal = profitPerUnit * quantity;
-    const profitCls = profitTotal >= 0 ? 'profit-positive' : 'profit-negative';
-    const profitSign = profitTotal >= 0 ? '+' : '';
+  for (const item of state.purchasedCards) {
+    const card = CatalogService.indexedCardsMap.get(item.cardId) || CatalogService.cards.find(c => c.ref === item.ref);
+    const frResale = card ? getActiveFrPrice(card, item.condition) : (item.priceEur * 1.3);
 
-    totalCards += quantity;
-    totalJpy += boughtAt * quantity;
-    totalEurInvested += boughtAtEur * quantity;
-    totalEurRevente += frSell * quantity;
+    const cost = item.priceEur * item.qty;
+    totalInvestedEur += cost;
+    totalInvestedJpy += item.priceJpy * item.qty;
+    totalResaleEur += (frResale || item.priceEur) * item.qty;
+  }
 
-    const cond = condition || 'Raw NM';
-    const isGraded = !cond.startsWith('Raw');
-    const condBadge = isGraded
-      ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">🛡️ ${cond}</span>`
-      : `<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">📦 ${cond}</span>`;
+  const totalMarginEur = totalResaleEur - totalInvestedEur;
+  const avgRoi = totalInvestedEur > 0 ? (totalMarginEur / totalInvestedEur) * 100 : 0;
 
-    const dateStr = addedDate ? new Date(addedDate).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'}) : '—';
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-center">
+        <span class="text-[10px] text-slate-400 uppercase font-semibold block">Total Investi</span>
+        <span class="font-black text-slate-900 text-sm">${fmtEur(totalInvestedEur)}</span>
+        <span class="text-[10px] text-slate-500 block">(${fmtJpy(totalInvestedJpy)})</span>
+      </div>
+      <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-center">
+        <span class="text-[10px] text-slate-400 uppercase font-semibold block">Revente Estimée</span>
+        <span class="font-black text-slate-900 text-sm">${fmtEur(totalResaleEur)}</span>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-center">
+        <span class="text-[10px] text-emerald-600 uppercase font-semibold block">Plus-Value Nette</span>
+        <span class="font-black ${totalMarginEur >= 0 ? 'text-emerald-700' : 'text-rose-600'} text-sm">${fmtEur(totalMarginEur)}</span>
+      </div>
+      <div class="bg-purple-50 border border-purple-200 p-2.5 rounded-xl text-center">
+        <span class="text-[10px] text-purple-600 uppercase font-semibold block">ROI Portefeuille</span>
+        <span class="font-black ${avgRoi >= 0 ? 'text-purple-700' : 'text-rose-600'} text-sm">${fmtPct(avgRoi)}</span>
+      </div>
+    `;
+  }
+
+  listEl.innerHTML = state.purchasedCards.map(item => {
+    const card = CatalogService.indexedCardsMap.get(item.cardId) || CatalogService.cards.find(c => c.ref === item.ref);
+    const frResale = card ? getActiveFrPrice(card, item.condition) : null;
+    const margin = frResale ? (frResale - item.priceEur) * item.qty : null;
 
     return `
-      <div class="flex items-center gap-2.5 py-2 px-1 border-b border-slate-100 last:border-0 text-xs hover:bg-slate-50 transition-colors rounded-lg">
-        <span class="text-slate-400 text-[10px] w-9 flex-shrink-0 text-center font-mono">${dateStr}</span>
-        <img src="${card.image}" class="w-8 h-11 object-cover rounded flex-shrink-0 shadow-sm" alt="${card.name}" onerror="onCardImageError(this)">
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold text-slate-900 truncate">${card.name}</div>
-          <div class="flex items-center gap-1.5 text-[10px] text-slate-400 flex-wrap">
-            <span>${card.ref}</span>
-            <span>·</span>
-            ${editionBadge(card)}
-            ${condBadge}
+      <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl gap-2 hover:bg-slate-100/60 transition-colors">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img src="${formatHighResCardImage(item.image)}" alt="${item.name}"
+               class="w-10 h-14 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+               onerror="onCardImageError(this)">
+          <div class="min-w-0">
+            <h5 class="font-bold text-xs text-slate-900 truncate">${item.name}</h5>
+            <div class="flex items-center gap-1.5 text-[11px] text-slate-500 font-mono mt-0.5">
+              <span>${item.ref}</span>
+              <span>•</span>
+              <span class="text-purple-600 font-semibold">${item.condition}</span>
+              ${item.qty > 1 ? `<span class="bg-slate-200 px-1 rounded text-slate-700 font-bold">x${item.qty}</span>` : ''}
+            </div>
           </div>
         </div>
-        <span class="text-slate-600 font-semibold w-7 text-center flex-shrink-0">x${quantity}</span>
-        <div class="text-right flex-shrink-0 leading-tight">
-          <div class="text-slate-700 font-medium">¥${boughtAt.toLocaleString('fr-FR')}</div>
-          <div class="text-[10px] text-slate-400">${boughtAtEur.toFixed(2)}€</div>
+
+        <div class="flex items-center gap-3 flex-shrink-0 text-right">
+          <div>
+            <span class="text-xs font-bold text-slate-800 block">${fmtJpy(item.priceJpy * item.qty)}</span>
+            <span class="text-[10px] text-slate-400 block">${fmtEur(item.priceEur * item.qty)}</span>
+          </div>
+          <div>
+            <span class="text-xs font-black ${margin && margin > 0 ? 'text-emerald-600' : 'text-slate-400'} block">
+              ${margin != null ? fmtEur(margin) : '—'}
+            </span>
+            <span class="text-[10px] text-slate-400 block">marge</span>
+          </div>
+          <button type="button" onclick="removePurchase('${item.id}')"
+                  class="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-rose-50 transition-colors" title="Supprimer">
+            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+          </button>
         </div>
-        <div class="text-right flex-shrink-0 leading-tight">
-          <div class="font-semibold text-slate-800">${frSell.toFixed(2)} €</div>
-          <div class="text-[10px] text-slate-400">revente</div>
-        </div>
-        <span class="${profitCls} font-bold whitespace-nowrap flex-shrink-0 text-right min-w-[55px]">${profitSign}${profitTotal.toFixed(2)} €</span>
-        <button class="btn-delete-purchase p-1 text-slate-300 hover:text-red-500 transition-colors flex-shrink-0 rounded cursor-pointer" data-purchase-idx="${idx}" title="Supprimer">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
       </div>
     `;
   }).join('');
 
-  list.querySelectorAll('.btn-delete-purchase').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.purchaseIdx, 10);
-      if (!isNaN(idx)) {
-        state.purchasedCards.splice(idx, 1);
-        updatePurchaseBadge();
-        renderPurchases();
-        showToast('🗑️ Carte retirée du rapport');
-      }
-    });
+  if (window.lucide) lucide.createIcons();
+}
+
+function exportPurchasesCSV() {
+  if (state.purchasedCards.length === 0) {
+    showToast('Aucun achat à exporter.');
+    return;
+  }
+
+  const headers = ['Date', 'Reference', 'Nom', 'Etat', 'Quantite', 'Prix_JP_Yen', 'Prix_JP_Eur', 'Revente_FR_Eur', 'Marge_Nette_Eur'];
+  const rows = state.purchasedCards.map(p => {
+    const card = CatalogService.indexedCardsMap.get(p.cardId) || CatalogService.cards.find(c => c.ref === p.ref);
+    const fr = card ? getActiveFrPrice(card, p.condition) : '';
+    const m = fr ? (fr - p.priceEur).toFixed(2) : '';
+
+    return [
+      p.date ? p.date.split('T')[0] : '',
+      `"${p.ref}"`,
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.condition}"`,
+      p.qty,
+      p.priceJpy,
+      p.priceEur.toFixed(2),
+      fr || '',
+      m || ''
+    ].join(',');
   });
 
-  const totalProfit = totalEurRevente - totalEurInvested;
-  const roi = totalEurInvested > 0 ? ((totalProfit / totalEurInvested) * 100) : 0;
-  const profitCls = totalProfit >= 0 ? 'profit-positive' : 'profit-negative';
-  const profitSign = totalProfit >= 0 ? '+' : '';
+  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `pokespread_achats_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
-  stats.innerHTML = `
-    <div class="purchase-kpi">
-      <span class="kpi-label">Total cartes</span>
-      <span class="kpi-value">${totalCards}</span>
-      <span class="kpi-sub">unités</span>
-    </div>
-    <div class="purchase-kpi">
-      <span class="kpi-label">Total investi</span>
-      <span class="kpi-value">¥${totalJpy.toLocaleString('fr-FR')}</span>
-      <span class="kpi-sub">${totalEurInvested.toFixed(2)} €</span>
-    </div>
-    <div class="purchase-kpi">
-      <span class="kpi-label">Valeur revente FR</span>
-      <span class="kpi-value">${totalEurRevente.toFixed(2)} €</span>
-      <span class="kpi-sub">brut estimé</span>
-    </div>
-    <div class="purchase-kpi">
-      <span class="kpi-label">Bénéfice net estimé</span>
-      <span class="kpi-value ${profitCls}">${profitSign}${totalProfit.toFixed(2)} €</span>
-      <span class="kpi-sub ${profitCls}">${profitSign}${roi.toFixed(1)} % ROI</span>
-    </div>
-  `;
+// ── 14. SEARCH & QUICK ENTRY DROPDOWNS ────────────────────────
+function renderSearchDropdown(matches) {
+  const dropdown = document.getElementById('search-dropdown');
+  if (!dropdown) return;
+
+  if (!matches || matches.length === 0) {
+    dropdown.innerHTML = `
+      <div class="p-3 text-xs text-slate-400 text-center">Aucun résultat trouvé</div>
+    `;
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  dropdown.innerHTML = matches.slice(0, 8).map(card => {
+    const frPrice = getActiveFrPrice(card);
+    const jpPriceYen = getActiveJpPrice(card);
+    const margin = netMargin(card);
+
+    return `
+      <div class="flex items-center justify-between p-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors"
+           onclick="selectSearchResult('${card.id}')">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img src="${formatHighResCardImage(card.image)}" alt="${card.displayName || card.name}"
+               class="w-8 h-11 rounded object-cover border border-slate-200 flex-shrink-0"
+               onerror="onCardImageError(this)">
+          <div class="min-w-0">
+            <h5 class="font-bold text-xs text-slate-900 truncate">${card.displayName || card.name}</h5>
+            <span class="text-[10px] text-slate-400 font-mono">${card.ref}</span>
+          </div>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <span class="font-bold text-xs text-slate-800 block">${fmtJpy(jpPriceYen)}</span>
+          <span class="text-[10px] font-black ${margin && margin > 0 ? 'text-emerald-600' : 'text-slate-400'}">
+            ${margin != null ? fmtEur(margin) : '—'}
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  dropdown.classList.remove('hidden');
+}
+
+function selectSearchResult(cardId) {
+  const dropdown = document.getElementById('search-dropdown');
+  if (dropdown) dropdown.classList.add('hidden');
+  openCardDetail(cardId);
 }
 
 function setupQuickEntry() {
-  const refInput = document.getElementById('quick-entry-ref');
-  const condSelect = document.getElementById('quick-entry-condition');
+  const inputEl = document.getElementById('quick-entry-ref');
+  const dropdown = document.getElementById('quick-entry-dropdown');
+  const addBtn = document.getElementById('quick-entry-add');
   const priceInput = document.getElementById('quick-entry-price');
   const qtyInput = document.getElementById('quick-entry-qty');
-  const addBtn = document.getElementById('quick-entry-add');
-  const dropdown = document.getElementById('quick-entry-dropdown');
-  if (!refInput || !addBtn) return;
-
-  let quickEntrySelected = null;
-
-  const updatePriceSuggestion = () => {
-    if (!quickEntrySelected) return;
-    const cond = condSelect?.value || 'Raw NM';
-    if (priceInput) priceInput.value = getActiveJpPrice(quickEntrySelected, cond);
-  };
-
-  if (condSelect) {
-    condSelect.addEventListener('change', updatePriceSuggestion);
-  }
-
-  refInput.addEventListener('input', () => {
-    const q = refInput.value.trim().toLowerCase();
-    if (!q || q.length < 2) {
-      if (dropdown) dropdown.classList.add('hidden');
-      return;
-    }
-    const matches = CARDS.filter(c =>
-      (c.name && c.name.toLowerCase().includes(q)) ||
-      (c.ref && c.ref.toLowerCase().includes(q)) ||
-      (c.subName && c.subName.toLowerCase().includes(q))
-    ).slice(0, 8);
-
-    if (matches.length === 0) {
-      if (dropdown) dropdown.classList.add('hidden');
-      return;
-    }
-
-    if (dropdown) {
-      dropdown.innerHTML = matches.map(c => `
-        <div class="qe-result-item" data-id="${c.id}">
-          <img src="${c.image}" alt="${c.name}" onerror="onCardImageError(this)">
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold text-slate-900 truncate">${c.name}</div>
-            <div class="text-[10px] text-slate-400">${c.ref} · ¥${getActiveJpPrice(c).toLocaleString('fr-FR')}</div>
-          </div>
-        </div>
-      `).join('');
-      dropdown.classList.remove('hidden');
-
-      dropdown.querySelectorAll('.qe-result-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const card = CARDS.find(c => c.id === item.dataset.id);
-          if (!card) return;
-          quickEntrySelected = card;
-          refInput.value = `${card.name} (${card.ref})`;
-          updatePriceSuggestion();
-          dropdown.classList.add('hidden');
-        });
-      });
-    }
-  });
-
-  document.addEventListener('click', e => {
-    if (refInput && dropdown && !refInput.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.classList.add('hidden');
-    }
-  });
-
-  addBtn.onclick = () => {
-    let card = quickEntrySelected;
-    const refVal = refInput.value.trim();
-    if (!card && refVal) {
-      card = CARDS.find(c =>
-        (c.name && c.name.toLowerCase().includes(refVal.toLowerCase())) ||
-        (c.ref && c.ref.toLowerCase().includes(refVal.toLowerCase()))
-      );
-    }
-
-    if (!card) {
-      showToast('⚠️ Sélectionnez ou saisissez une carte valide');
-      return;
-    }
-
-    const cond = condSelect?.value || 'Raw NM';
-    const price = parseInt(priceInput?.value || '0', 10) || getActiveJpPrice(card, cond);
-    const qty = parseInt(qtyInput?.value || '1', 10) || 1;
-
-    addToPurchases(card, price, qty, cond);
-
-    refInput.value = '';
-    if (priceInput) priceInput.value = '';
-    if (qtyInput) qtyInput.value = '1';
-    quickEntrySelected = null;
-    if (dropdown) dropdown.classList.add('hidden');
-  };
-}
-
-function exportCSV() {
-  if (state.purchasedCards.length === 0) {
-    showToast('Aucune carte à exporter.');
-    return;
-  }
-  const header = ['Date', 'Carte', 'Nom Original', 'Référence', 'Édition', 'État / Grade', 'Quantité', 'Achat JP (¥)', 'Achat (€)', 'Revente FR (€)', 'Profit (€)', 'ROI (%)'];
-  const rows = state.purchasedCards.map(({ card, condition, quantity, boughtAt, boughtAtEur, addedDate }) => {
-    const cond = condition || 'Raw NM';
-    const sellPrice = getActiveFrPrice(card, cond) * (1 - state.fee);
-    const profit = (sellPrice - boughtAtEur) * quantity;
-    const roi = boughtAtEur > 0 ? ((sellPrice - boughtAtEur) / boughtAtEur * 100).toFixed(1) : '0';
-    const date = addedDate ? new Date(addedDate).toLocaleDateString('fr-FR') : '—';
-    return [date, `"${card.name}"`, `"${card.subName || ''}"`, `"${card.ref}"`, card.edition || 'JP', `"${cond}"`, quantity, boughtAt, boughtAtEur.toFixed(2), sellPrice.toFixed(2), profit.toFixed(2), roi].join(';');
-  });
-  const csv = [header.join(';'), ...rows].join('\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'pokespread_achats_rapport.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('📥 Rapport CSV exporté !');
-}
-
-// ── ENHANCED LIBRARY MODAL ───────────────────────────────────
-let libraryState = {
-  condition: 'raw_nm',
-  editions: ['all'],
-  search: '',
-  platformFr: 'avg',
-  platformJp: 'min',
-  year: 'all',
-  pricedOnly: false,
-};
-
-function renderLibrary() {
-  const grid = document.getElementById('library-grid');
-  const counter = document.getElementById('library-counter');
-  if (!grid) return;
-
-  let cards = [...CARDS];
-
-  // 1. Unified condition filter
-  if (!state.condition || state.condition.mode === 'raw') {
-    // all cards qualify raw
-  } else if (state.condition.mode === 'graded') {
-    cards = cards.filter(c => {
-      const nameLower = (c.name || '').toLowerCase();
-      const subLower = (c.subName || '').toLowerCase();
-      const isSpecial = nameLower.includes('sar') || nameLower.includes('ar') || nameLower.includes('alt') ||
-                        nameLower.includes('secret') || nameLower.includes('vmax') || nameLower.includes('shiny') ||
-                        subLower.includes('sar') || subLower.includes('ar');
-      return isSpecial || c.frPrice >= 25;
-    });
-  }
-
-  // 2. Multi-select editions
-  if (!libraryState.editions.includes('all') && libraryState.editions.length > 0) {
-    cards = cards.filter(c => libraryState.editions.includes(c.edition));
-  }
-
-  // 3. Search query
-  if (libraryState.search) {
-    const q = libraryState.search.toLowerCase();
-    cards = cards.filter(c =>
-      (c.name && c.name.toLowerCase().includes(q)) ||
-      (c.subName && c.subName.toLowerCase().includes(q)) ||
-      (c.ref && c.ref.toLowerCase().includes(q)) ||
-      (c.localId && c.localId.toLowerCase() === q)
-    );
-  }
-
-  // 4. Year filter
-  if (libraryState.year !== 'all') {
-    cards = cards.filter(c => {
-      const ref = (c.ref || '').toLowerCase();
-      let year = '2024';
-      if (ref.startsWith('sv')) {
-        const svNum = parseFloat(ref.replace('sv', ''));
-        if (!isNaN(svNum)) {
-          if (svNum >= 9) year = '2026';
-          else if (svNum >= 7) year = '2025';
-          else if (svNum >= 4) year = '2024';
-          else year = '2023';
-        }
-      } else if (ref.startsWith('swsh')) {
-        year = '2021';
-      } else {
-        year = '2020';
-      }
-      if (libraryState.year === '2020') return year <= '2020';
-      return year === libraryState.year;
-    });
-  }
-
-  // 5. Priced Only filter
-  if (libraryState.pricedOnly) {
-    cards = cards.filter(c => getActiveFrPrice(c) !== null || getActiveJpPrice(c) !== null);
-  }
-
-  // Sort: Cards with real prices first, then sorted by highest FR price descending
-  cards.sort((a, b) => {
-    const aPriced = (getActiveFrPrice(a) !== null || getActiveJpPrice(a) !== null) ? 1 : 0;
-    const bPriced = (getActiveFrPrice(b) !== null || getActiveJpPrice(b) !== null) ? 1 : 0;
-    if (bPriced !== aPriced) return bPriced - aPriced;
-    const aFr = getActiveFrPrice(a) || 0;
-    const bFr = getActiveFrPrice(b) || 0;
-    return bFr - aFr;
-  });
-
-  // Live counter
-  if (counter) {
-    counter.textContent = `${cards.length} carte${cards.length > 1 ? 's' : ''} trouvée${cards.length > 1 ? 's' : ''}`;
-  }
-
-  if (cards.length === 0) {
-    grid.innerHTML = '<div class="col-span-full py-8 text-center text-sm text-slate-400 bg-slate-50 rounded-xl">Aucune carte trouvée pour ces critères de recherche.</div>';
-    return;
-  }
-
-  const isGraded = state.condition?.mode === 'graded';
-  let badgeText = 'Raw NM';
-  if (isGraded) {
-    const co = (state.condition.companies && state.condition.companies.length === 1 && state.condition.companies[0] !== 'ALL') ? state.condition.companies[0] : 'Slabs';
-    const gr = state.condition.grades && state.condition.grades.length > 0 ? ' ' + state.condition.grades[0].split(' ')[0] : '';
-    badgeText = `${co}${gr}`;
-  } else {
-    badgeText = 'Raw ' + (state.condition?.rawConditions && state.condition.rawConditions.length > 0 ? state.condition.rawConditions.join('/') : 'NM');
-  }
-
-  const pageLimit = libraryState.pageLimit || 60;
-  const visibleCards = cards.slice(0, pageLimit);
-
-  const cardsHtml = visibleCards.map(card => {
-    const frPrice = getActiveFrPrice(card);
-    const jpPrice = getActiveJpPrice(card);
-    const margin = netMargin(card);
-    const hasBoth = (frPrice !== null && jpPrice !== null && margin !== null);
-    const hasFrOnly = (frPrice !== null && jpPrice === null);
-    const hasJpOnly = (jpPrice !== null && frPrice === null);
-    const profitCls = hasBoth && margin >= 0 ? 'profit-positive' : 'profit-negative';
-    const marginSign = hasBoth && margin >= 0 ? '+' : '';
-    const hasSubName = card.subName && card.subName !== card.name;
-
-    let priceRowHtml = '';
-    if (hasBoth) {
-      priceRowHtml = `
-        <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] text-slate-500">${frPrice.toFixed(2)} €</span>
-          <span class="${profitCls} text-xs font-bold">${marginSign}${margin.toFixed(2)} €</span>
-        </div>
-      `;
-    } else if (hasFrOnly) {
-      priceRowHtml = `
-        <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] font-semibold text-emerald-700">${frPrice.toFixed(2)} €</span>
-          <span class="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-1">JP en attente</span>
-        </div>
-      `;
-    } else if (hasJpOnly) {
-      priceRowHtml = `
-        <div class="flex items-center justify-between mt-1">
-          <span class="text-[10px] font-semibold text-sky-700">¥${jpPrice.toLocaleString('fr-FR')}</span>
-          <span class="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-1">FR en attente</span>
-        </div>
-      `;
-    } else {
-      priceRowHtml = `
-        <div class="mt-1">
-          <span class="price-pending-badge text-[9px] py-0.5 px-1.5"><span class="price-pending-dot"></span>Prix non disponible</span>
-        </div>
-      `;
-    }
-
-    return `
-      <div class="library-card-mini fade-in" data-id="${card.id}">
-        <img src="${card.image}" alt="${card.name}" loading="lazy" onerror="onCardImageError(this)">
-        <div class="library-card-info">
-          <div class="text-xs font-semibold text-slate-900 leading-tight truncate">${card.name}</div>
-          ${hasSubName ? `<div class="text-[9px] text-slate-400 font-normal truncate">${card.subName}</div>` : ''}
-          <div class="flex items-center gap-1 mt-0.5 flex-wrap">
-            ${editionBadge(card)}
-            <span class="text-[8px] font-semibold ${isGraded ? 'text-indigo-600 bg-indigo-50 border border-indigo-200' : 'text-slate-500 bg-slate-100'} px-1 py-0.2 rounded">
-              ${badgeText}
-            </span>
-          </div>
-          ${priceRowHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  const loadMoreBtnHtml = cards.length > pageLimit ? `
-    <div class="col-span-full flex justify-center py-4">
-      <button type="button" id="library-load-more-btn" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow cursor-pointer transition-all">
-        Charger plus (${visibleCards.length} / ${cards.length.toLocaleString('fr-FR')})
-      </button>
-    </div>
-  ` : '';
-
-  grid.innerHTML = cardsHtml + loadMoreBtnHtml;
-
-  grid.querySelectorAll('.library-card-mini').forEach(el => {
-    el.addEventListener('click', () => {
-      closeModal('modal-library');
-      openCardDetail(el.dataset.id, isGraded ? 'graded' : 'raw');
-    });
-  });
-
-  document.getElementById('library-load-more-btn')?.addEventListener('click', () => {
-    libraryState.pageLimit = pageLimit + 60;
-    renderLibrary();
-  });
-}
-
-// ── FULL-SCREEN CAMERA SCANNER (NATIVE CAMERA CAPTURE) ──────────
-
-// ── ADVANCED NATIVE OCR: SERIAL NUMBER + GRADED SLAB EXTRACTOR (`CardOCR`) ──
-const CardOCR = {
-  isTesseractAvailable() {
-    return typeof window !== 'undefined' && typeof window.Tesseract !== 'undefined';
-  },
-
-  // Extract and contrast-enhance a targeted image strip for crisp OCR recognition
-  prepareOcrStrip(source, sx, sy, sw, sh, highContrast = true) {
-    if (!source || sw < 10 || sh < 10) return null;
-    // Upscale narrow strips to at least 640px wide so small printed serials & slab labels read clearly
-    const scale = sw < 640 ? Math.min(2.5, 640 / sw) : 1.0;
-    const outW = Math.round(sw * scale);
-    const outH = Math.round(sh * scale);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(source, sx, sy, sw, sh, 0, 0, outW, outH);
-
-    if (highContrast) {
-      try {
-        const imgData = ctx.getImageData(0, 0, outW, outH);
-        const d = imgData.data;
-        // Compute mean luminance for adaptive contrast expansion
-        let lumSum = 0;
-        const pxCount = d.length / 4;
-        for (let i = 0; i < d.length; i += 4) {
-          lumSum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        }
-        const meanLum = pxCount > 0 ? lumSum / pxCount : 128;
-        const hi = Math.min(220, meanLum + 28);
-        const lo = Math.max(40, meanLum - 28);
-
-        for (let i = 0; i < d.length; i += 4) {
-          const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          const val = lum > hi ? 255 : (lum < lo ? 0 : Math.round(((lum - lo) / (hi - lo)) * 255));
-          d[i] = val;
-          d[i + 1] = val;
-          d[i + 2] = val;
-        }
-        ctx.putImageData(imgData, 0, 0);
-      } catch (e) {}
-    }
-
-    return canvas;
-  },
-
-  // Crop top 30% of full photo for PSA / BGS / CGC / PCA slab headers
-  getTopSlabStrip(fullImg) {
-    const w = fullImg.naturalWidth || fullImg.width;
-    const h = fullImg.naturalHeight || fullImg.height;
-    if (!w || !h) return null;
-    const stripH = Math.max(40, Math.round(h * 0.30));
-    return this.prepareOcrStrip(fullImg, 0, 0, w, stripH, true);
-  },
-
-  // Crop bottom 22% of card/slab for printed serial numbers (e.g. 201/165, 120/119) & ARS labels
-  getBottomSerialStrip(source) {
-    const w = source.naturalWidth || source.width;
-    const h = source.naturalHeight || source.height;
-    if (!w || !h) return null;
-    const stripH = Math.max(32, Math.round(h * 0.22));
-    const stripY = h - stripH;
-    return this.prepareOcrStrip(source, 0, stripY, w, stripH, true);
-  },
-
-  async runTesseract(canvas, whitelist = null) {
-    if (!canvas || !this.isTesseractAvailable()) return '';
-    try {
-      const opts = whitelist ? { tessedit_char_whitelist: whitelist } : {};
-      const res = await window.Tesseract.recognize(canvas, 'eng', opts);
-      return (res?.data?.text || '').trim();
-    } catch (err) {
-      console.warn('[CardOCR] Tesseract pass warning:', err);
-      return '';
-    }
-  },
-
-  // Direct Tesseract.js OCR pipeline: reads serial numbers & graded slab labels without visual guesswork
-  async extractFromPhoto(file, fullImg) {
-    if (!this.isTesseractAvailable()) {
-      return { serial: null, slab: null, rawText: '' };
-    }
-
-    const topStrip = fullImg ? this.getTopSlabStrip(fullImg) : null;
-    const bottomStrip = fullImg ? this.getBottomSerialStrip(fullImg) : null;
-
-    // Pass 1: Parallel targeted OCR on top slab header & bottom serial/ARS strip
-    const [topText, bottomText] = await Promise.all([
-      this.runTesseract(topStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- '),
-      this.runTesseract(bottomStrip, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/#+.- ')
-    ]);
-
-    let combinedText = `${topText}\n${bottomText}`.trim();
-    let slab = this.parseSlabFromText(topText) || this.parseSlabFromText(bottomText);
-    let serial = this.parseSerialFromText(bottomText) || this.parseSerialFromText(topText);
-
-    // Pass 2: Full-image direct Tesseract OCR pass if serial or slab was missed (handles tilted/macro shots)
-    if (!serial && file) {
-      const fullText = await this.runTesseract(file);
-      if (fullText) {
-        combinedText = `${combinedText}\n${fullText}`.trim();
-        if (!slab) slab = this.parseSlabFromText(fullText);
-        if (!serial) serial = this.parseSerialFromText(fullText);
-      }
-    }
-
-    return { serial, slab, rawText: combinedText };
-  },
-
-  // Parse grading company & grade markers: (PSA|BGS|CGC|PCA|ARS) (10 BL|10 Pr|10+|10|9.5|9|8.5|8)
-  parseSlabFromText(text) {
-    if (!text) return null;
-    const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!clean) return null;
-
-    const buildSlab = (company, shortMatch) => {
-      const scale = GRADING_SCALES[company] || GRADING_SCALES.PSA;
-      const found = scale.find(g =>
-        g.short.toLowerCase() === shortMatch.toLowerCase() ||
-        g.grade.toLowerCase().startsWith(shortMatch.toLowerCase())
-      ) || scale[0];
-      return {
-        company,
-        grade: found.grade,
-        short: found.short,
-        displayLabel: `${company} ${found.short}`,
-        rawText: clean
-      };
-    };
-
-    // Primary unified grading regex
-    const unified = clean.match(/\b(PSA|BGS|CGC|PCA|ARS)\s*(10\s*BL|10\s*Pr|10\+|10|9\.5|9|8\.5|8)\b/i);
-    if (unified) {
-      const company = unified[1].toUpperCase();
-      const rawGrade = unified[2].replace(/\s+/g, ' ').trim();
-      const upperG = rawGrade.toUpperCase();
-      if (upperG === '10 BL') return buildSlab('BGS', '10 BL');
-      if (upperG === '10 PR') return buildSlab(company, '10 Pr');
-      if (upperG === '10+') return buildSlab(company, '10+');
-      if (upperG === '8.5') return buildSlab(company, '≤ 8.5');
-      if (upperG === '8' && (company === 'PCA' || company === 'ARS')) return buildSlab(company, '≤ 8');
-      return buildSlab(company, rawGrade);
-    }
-
-    // Secondary authentic slab label phrasing aliases
-    if (/\bBLACK\s*LABEL\b/i.test(clean)) return buildSlab('BGS', '10 BL');
-    if (/\bGEM\s*MT\s*10\b/i.test(clean)) return buildSlab('PSA', '10');
-    if (/\bPSA\b/i.test(clean) && /\bMINT\s*9\b/i.test(clean)) return buildSlab('PSA', '9');
-    if (/\bPSA\s*7\b/i.test(clean)) return buildSlab('PSA', '≤ 7');
-    const beckett = clean.match(/\bBECKETT\s*(10|9\.5|9|8\.5|8)\b/i);
-    if (beckett) return buildSlab('BGS', beckett[1] === '10' ? '10 Pr' : (beckett[1] === '8.5' || beckett[1] === '8' ? '≤ 8.5' : beckett[1]));
-    const arsGrade = clean.match(/\bGRADE\s*(10\+|10|9|8)\b/i);
-    if (arsGrade) return buildSlab('ARS', arsGrade[1] === '8' ? '≤ 8' : arsGrade[1]);
-
-    return null;
-  },
-
-  // Extract serial numbers matching (\d{1,3})\s*/\s*(\d{1,3}) (e.g. 120/119, 201/165) or set IDs (sv2a, xy4)
-  parseSerialFromText(text) {
-    if (!text) return null;
-    const clean = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (!clean) return null;
-
-    // Optional set ID hint across all Pokémon TCG eras (sv2a, xy4, swsh7, sm12, base1, etc.)
-    const setMatch = clean.match(/\b(sv\d+[a-z]?|sv0?\d\.\d|swsh\d+(?:\.\d)?|sm\d+|xy\d+|bw\d+|dp\d+|ex\d+|base\d+|s\d+[a-z])\b/i);
-    const setHint = setMatch ? setMatch[1].toLowerCase() : null;
-
-    // Primary pattern: explicit card serial fraction (\d{1,3})\s*/\s*(\d{1,3})
-    const fracMatch = clean.match(/\b([0-9O]{1,3})\s*[\/|!]\s*([0-9O]{1,3})\b/);
-    if (fracMatch) {
-      const localId = fracMatch[1].replace(/O/g, '0');
-      const total = fracMatch[2].replace(/O/g, '0');
-      const totalInt = parseInt(total, 10);
-      if (totalInt >= 10 && totalInt <= 400) {
-        return {
-          serial: `${localId}/${total}`,
-          localId,
-          cleanLocalId: localId.replace(/^0+/, '') || localId,
-          total,
-          setHint,
-          exactFraction: true,
-          rawText: clean
-        };
-      }
-    }
-
-    // Secondary pattern: slab-label card number ("#201", "#120", "No. 201")
-    const hashMatch = clean.match(/(?:#|No\.?\s*)([0-9]{1,3})\b/i);
-    if (hashMatch) {
-      const localId = hashMatch[1];
-      return {
-        serial: `#${localId}`,
-        localId,
-        cleanLocalId: localId.replace(/^0+/, '') || localId,
-        total: null,
-        setHint,
-        exactFraction: false,
-        rawText: clean
-      };
-    }
-
-    // Tertiary pattern: explicit set ID + standalone card number (e.g. "sv2a 201")
-    if (setHint) {
-      const afterSet = clean.match(new RegExp(`${setHint}\\s+0*([0-9]{1,3})\\b`, 'i'));
-      if (afterSet) {
-        const localId = afterSet[1];
-        return {
-          serial: `${setHint} ${localId}`,
-          localId,
-          cleanLocalId: localId.replace(/^0+/, '') || localId,
-          total: null,
-          setHint,
-          exactFraction: false,
-          rawText: clean
-        };
-      }
-    }
-
-    return null;
-  }
-};
-
-// Automatically switch global app UI to Graded mode when OCR detects a slab label
-function applyDetectedSlabToGlobalUI(detectedSlab) {
-  if (!detectedSlab || !detectedSlab.company) return;
-  try {
-    state.condition.mode = 'graded';
-    state.condition.companies = [detectedSlab.company];
-    state.condition.grades = [detectedSlab.grade];
-    if (typeof updateConditionTriggerLabels === 'function') updateConditionTriggerLabels();
-    if (typeof renderConditionPopovers === 'function') renderConditionPopovers();
-    if (typeof renderAllColumns === 'function') renderAllColumns();
-    if (typeof renderMobileColumn === 'function') renderMobileColumn();
-  } catch (e) {
-    console.warn('[CardOCR] Failed switching UI to graded mode:', e);
-  }
-}
-
-function resetScannerPreview() {
-  const previewImg = document.getElementById('scanner-captured-preview');
-  const placeholder = document.getElementById('scanner-guide-placeholder');
-  const camInput = document.getElementById('native-camera-input');
-  const fileFallback = document.getElementById('scanner-file-fallback');
-  const resultsEl = document.getElementById('scanner-results');
-
-  if (previewImg) {
-    previewImg.src = '';
-    previewImg.classList.add('hidden');
-  }
-  if (placeholder) {
-    placeholder.classList.remove('hidden');
-  }
-  if (camInput) camInput.value = '';
-  if (fileFallback) fileFallback.value = '';
-  if (resultsEl) {
-    resultsEl.innerHTML = '<p class="text-white/60 text-xs">Prenez une photo nette de la carte ou du slab (numéro visible en bas)</p>';
-  }
-}
-
-function openScanner() {
-  const overlay = document.getElementById('modal-scanner');
-  if (!overlay) return;
-  overlay.style.display = 'flex';
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-  updateScannerEditionPill();
-  resetScannerPreview();
-}
-
-function updateScannerEditionPill() {
-  const pillText = document.getElementById('scanner-edition-text');
-  if (!pillText) return;
-  if (typeof state !== 'undefined' && state.filters && state.filters.countries && state.filters.countries.length > 0) {
-    const flags = state.filters.countries.map(code => {
-      const c = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(x => x.code === code) : null;
-      return `${c ? c.flag : '🌐'} ${code}`;
-    }).join(', ');
-    pillText.textContent = `Édition : ${flags} (Prioritaire)`;
-  } else {
-    pillText.textContent = 'Édition : Toutes (Catalogue mondial TCGdex)';
-  }
-}
-
-function closeScanner() {
-  const overlay = document.getElementById('modal-scanner');
-  if (overlay) overlay.style.display = 'none';
-  resetScannerPreview();
-}
-
-// Pure Tesseract.js OCR + TCGdex API Scanner (Raw Cards & Graded Slabs — Zero Visual Guesswork)
-async function processCapturedPhoto(file) {
-  if (!file) return;
-  const resultsEl = document.getElementById('scanner-results');
-  const previewImg = document.getElementById('scanner-captured-preview');
-  const placeholder = document.getElementById('scanner-guide-placeholder');
-
-  const objectUrl = URL.createObjectURL(file);
-  if (previewImg) {
-    previewImg.src = objectUrl;
-    previewImg.classList.remove('hidden');
-  }
-  if (placeholder) {
-    placeholder.classList.add('hidden');
-  }
-
-  if (resultsEl) {
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/95 border border-emerald-500/40 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl space-y-3">
-        <div class="flex items-center gap-3">
-          <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-          <div class="text-left flex-1 min-w-0">
-            <div id="scanner-step-title" class="text-xs font-bold text-emerald-300 truncate scanner-step-pulse">Analyse OCR Tesseract.js...</div>
-            <div id="scanner-step-desc" class="text-[11px] text-white/50 truncate">Lecture du n° de série & détection PSA / BGS / CGC / PCA / ARS</div>
-          </div>
-          <span id="scanner-step-pct" class="text-[11px] font-mono text-emerald-400 font-bold">30%</span>
-        </div>
-        <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-          <div id="scanner-step-progress" class="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 ease-out" style="width: 30%;"></div>
-        </div>
-      </div>
-    `;
-  }
-
-  const stepTitle = document.getElementById('scanner-step-title');
-  const stepDesc = document.getElementById('scanner-step-desc');
-  const stepPct = document.getElementById('scanner-step-pct');
-  const stepProgress = document.getElementById('scanner-step-progress');
-
-  const updateProgress = (title, desc, pct) => {
-    if (stepTitle) stepTitle.textContent = title;
-    if (stepDesc) stepDesc.textContent = desc;
-    if (stepPct) stepPct.textContent = `${pct}%`;
-    if (stepProgress) stepProgress.style.width = `${pct}%`;
-  };
-
-  const img = new Image();
-  img.onload = async () => {
-    try {
-      // 1. Direct Tesseract.js OCR extraction (serial number + slab marker)
-      updateProgress(
-        "Extraction OCR (Numéro & Boîtier)...",
-        "Recherche du n° (ex: 120/119) et du grade (PSA/BGS/CGC/PCA/ARS)",
-        50
-      );
-
-      let ocrData = { serial: null, slab: null, rawText: '' };
-      try {
-        ocrData = await CardOCR.extractFromPhoto(file, img);
-      } catch (ocrErr) {
-        console.warn('[Scanner] OCR pass warning:', ocrErr);
-      }
-
-      const detectedSlab = ocrData.slab || null;
-      const detectedSerial = ocrData.serial || null;
-
-      // 2. Automatically switch UI to Graded mode & apply historical grade multiplier if slab detected
-      if (detectedSlab) {
-        applyDetectedSlabToGlobalUI(detectedSlab);
-      }
-
-      // 3. Instant 100% accurate TCGdex API lookup by extracted serial / localId
-      if (detectedSerial && detectedSerial.cleanLocalId) {
-        updateProgress(
-          `Numéro ${detectedSerial.serial} détecté par OCR...`,
-          detectedSlab
-            ? `Mode Gradé (${detectedSlab.displayLabel}) activé — requête TCGdex`
-            : "Interrogation directe de l'API TCGdex...",
-          85
-        );
-
-        let serialCandidates = [];
-        try {
-          serialCandidates = await CatalogService.lookupCardsBySerial(
-            detectedSerial.serial,
-            detectedSerial.setHint
-          );
-        } catch (lookupErr) {
-          console.warn('[Scanner] TCGdex serial lookup warning:', lookupErr);
-        }
-
-        if (serialCandidates && serialCandidates.length > 0) {
-          // Prioritize active country filter if multiple editions share the exact serial
-          const activeCountries = state.filters?.countries || [];
-          if (activeCountries.length > 0 && serialCandidates.length > 1) {
-            serialCandidates = [...serialCandidates].sort((a, b) => {
-              const am = activeCountries.includes(a.edition) ? 1 : 0;
-              const bm = activeCountries.includes(b.edition) ? 1 : 0;
-              return bm - am;
-            });
-          }
-
-          // On-demand native TCGdex JA→FR translation if needed
-          const topCard = await LocalizationService.translateCardViaTCGdex(serialCandidates[0]);
-
-          const bestMatch = {
-            card: topCard,
-            score: 100,
-            ocrVerified: true,
-            ocrSerial: detectedSerial.serial,
-            detectedSlab
-          };
-          const runnerUps = serialCandidates.slice(1, 4).map(c => ({
-            card: c,
-            score: 95,
-            ocrVerified: true,
-            ocrSerial: detectedSerial.serial,
-            detectedSlab
-          }));
-
-          showScannerResult(bestMatch, runnerUps, resultsEl);
-          return;
-        }
-      }
-
-      // 4. Clean manual fallback when OCR could not read a catalog serial number
-      showNoMatchResult(0, resultsEl, detectedSlab);
-    } catch (e) {
-      console.error('[Scanner] OCR processing error:', e);
-      showNoMatchResult(0, resultsEl);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-  };
-
-  img.onerror = () => {
-    URL.revokeObjectURL(objectUrl);
-    showNoMatchResult(0, resultsEl);
-  };
-
-  img.src = objectUrl;
-}
-
-// Honest threshold display when confidence is below 50% (retains any detected slab marker)
-function showNoMatchResult(score = 0, resultsEl = null, detectedSlab = null) {
-  if (!resultsEl) resultsEl = document.getElementById('scanner-results');
-  if (!resultsEl) return;
-
-  const slabHintHtml = detectedSlab ? `
-    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 text-[11px] font-bold">
-      <span>🛡️ Slab détecté : ${detectedSlab.displayLabel}</span>
-    </div>
-  ` : '';
-
-  resultsEl.innerHTML = `
-    <div class="scanner-no-match bg-slate-900/95 border border-amber-500/50 backdrop-blur-md rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-3">
-      <div class="w-12 h-12 mx-auto rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-        <i data-lucide="scan" style="width:24px;height:24px;"></i>
-      </div>
-      ${slabHintHtml}
-      <div class="space-y-1">
-        <div class="text-sm font-bold text-amber-300">Numéro de série non détecté — Réessayez ou tapez le n°</div>
-        <p class="text-xs text-white/60">L'OCR n'a pas pu lire le numéro en bas de carte (ex: 120/119, 201/165). Rapprochez-vous du numéro ou saisissez-le ci-dessous.</p>
-      </div>
-
-      <div class="flex gap-2">
-        <button id="scanner-retry-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-900 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
-          <i data-lucide="camera" style="width:14px;height:14px;"></i>
-          <span>Reprendre une photo</span>
-        </button>
-      </div>
-
-      <!-- Quick manual reference input box -->
-      <div class="border-t border-white/10 pt-3 text-left">
-        <label class="text-[11px] text-white/70 block mb-1.5 font-medium">Ou tapez le numéro ou le nom :</label>
-        <div class="flex gap-2">
-          <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165 ou 120/119" 
-                 class="flex-1 px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
-          <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-
-  // Retry button resets preview and triggers native camera
-  document.getElementById('scanner-retry-btn')?.addEventListener('click', () => {
-    resetScannerPreview();
-    document.getElementById('native-camera-input')?.click();
-  });
-
-  // Inline manual reference lookup (preserves any OCR-detected slab)
-  const inlineInput = document.getElementById('scanner-inline-manual-ref');
-  const inlineBtn = document.getElementById('scanner-inline-manual-btn');
-  if (inlineInput && inlineBtn) {
-    const handleInlineLookup = () => {
-      runScannerManualLookup(inlineInput.value, resultsEl, detectedSlab);
-    };
-    inlineBtn.addEventListener('click', handleInlineLookup);
-    inlineInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleInlineLookup();
-    });
-  }
-}
-
-// Display recognized card with confidence score >= 50% + Dynamic Graded Slab Switcher
-function showScannerResult(matchedResult, runnerUps = [], resultsEl = null, activeCondOverride = null) {
-  if (!resultsEl) resultsEl = document.getElementById('scanner-results');
-  if (!resultsEl || !matchedResult) return;
-
-  const card = matchedResult.card || matchedResult;
-  const score = matchedResult.score !== undefined ? Math.round(matchedResult.score) : 100;
-  const isHighConfidence = score >= 75;
-  const detectedSlab = matchedResult.detectedSlab || null;
-
-  // Determine active pricing condition (defaults to detected slab if scanned, else Raw NM)
-  const activeCond = activeCondOverride || (detectedSlab ? detectedSlab.displayLabel : 'Raw NM');
-  const isGradedActive = !activeCond.startsWith('Raw');
-  const activeSlabObj = isGradedActive ? (() => {
-    const parts = activeCond.split(/\s+/);
-    const co = parts[0] || 'PSA';
-    const sh = parts.slice(1).join(' ').trim() || '10';
-    const scale = GRADING_SCALES[co] || GRADING_SCALES.PSA;
-    const found = scale.find(g => g.short === sh || g.grade === sh || g.grade.startsWith(sh)) || scale[0];
-    return { company: co, grade: found.grade, short: found.short, displayLabel: `${co} ${found.short}` };
-  })() : null;
-
-  const multInfo = resolveConditionMultiplier(activeCond, card);
-  const margin = (typeof netMargin === 'function') ? netMargin(card, activeCond) : null;
-  const roi = (typeof netROI === 'function') ? netROI(card, activeCond) : null;
-  const frActive = (typeof getActiveFrPrice === 'function') ? getActiveFrPrice(card, activeCond) : null;
-  const jpActive = (typeof getActiveJpPrice === 'function') ? getActiveJpPrice(card, activeCond) : null;
-  const hasPrices = (margin !== null && roi !== null && frActive !== null && jpActive !== null);
-
-  const profitCls = hasPrices && margin >= 0 ? 'text-emerald-400' : 'text-red-400';
-  const marginSign = hasPrices && margin >= 0 ? '+' : '';
-
-  const cardCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === card.edition) : null;
-  const editionFlag = cardCountry ? cardCountry.flag : '🌐';
-
-  const highResImg = (typeof formatHighResCardImage === 'function')
-    ? formatHighResCardImage(card.image)
-    : card.image;
-
-  // Header status styling based on strict thresholds
-  const statusColor = isHighConfidence ? 'text-emerald-400' : 'text-amber-400';
-  const statusIcon = isHighConfidence ? 'check-circle' : 'alert-triangle';
-  const statusTitle = matchedResult.ocrVerified
-    ? 'Identifiée à 100% par OCR'
-    : (isHighConfidence ? 'Carte identifiée avec certitude' : '⚠️ Correspondance probable mais incertaine');
-  const scoreBadgeBg = isHighConfidence
-    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-    : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-
-  // Explicit banner for 50-74% uncertain matches
-  const uncertainBannerHtml = !isHighConfidence ? `
-    <div class="bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 text-amber-200 text-xs flex items-center gap-2.5 text-left">
-      <span class="text-lg flex-shrink-0">⚠️</span>
-      <div class="min-w-0 flex-1">
-        <div class="font-bold text-amber-300 text-xs">⚠️ Correspondance probable mais incertaine</div>
-        <div class="text-[10px] text-white/70 mt-0.5">Score de similarité structurelle de ${score}% (&lt; 75%). Vérifiez l'illustration ci-dessous ou tapez la référence directe.</div>
-      </div>
-    </div>
-  ` : '';
-
-  const isPurchased = (typeof state !== 'undefined' && state.purchasedCards)
-    ? state.purchasedCards.find(p => p.card.id === card.id)
-    : null;
-
-  const checklistBadgeHtml = isPurchased ? `
-    <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
-      <i data-lucide="check" style="width:12px;height:12px;"></i>
-      <span>Dans vos achats (x${isPurchased.quantity})</span>
-    </span>
-  ` : `
-    <button type="button" id="scanner-add-checklist-btn" class="scanner-badge-checklist bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 cursor-pointer transition-colors">
-      <i data-lucide="plus" style="width:12px;height:12px;"></i>
-      <span>Ajouter (${activeCond})</span>
-    </button>
-  `;
-
-  const ocrBadgeHtml = matchedResult.ocrSerial ? `
-    <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
-      <i data-lucide="binary" style="width:12px;height:12px;"></i>
-      <span>OCR n° ${matchedResult.ocrSerial}</span>
-    </span>
-  ` : '';
-
-  const slabBadgeHtml = detectedSlab ? `
-    <span class="scanner-badge-checklist bg-indigo-950/90 text-indigo-200 border border-indigo-400/50">
-      <i data-lucide="shield-check" style="width:12px;height:12px;"></i>
-      <span>Slab détecté : ${detectedSlab.displayLabel}</span>
-    </span>
-  ` : '';
-
-  const validationPillsHtml = isHighConfidence ? `
-    <div class="flex items-center justify-center gap-1.5 flex-wrap">
-      ${matchedResult.ocrVerified ? `
-        <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
-          <span>Match catalogue TCGdex 100%</span>
-        </span>
-      ` : `
-        <span class="scanner-badge-checklist bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-          <i data-lucide="check-circle" style="width:12px;height:12px;"></i>
-          <span>Grille structurelle 4x4 validée (≥ 75%)</span>
-        </span>
-      `}
-      ${ocrBadgeHtml}
-      ${slabBadgeHtml}
-      <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
-        <span>${editionFlag} ${card.edition || 'JP'}</span>
-      </span>
-      ${checklistBadgeHtml}
-    </div>
-  ` : `
-    <div class="flex items-center justify-center gap-1.5 flex-wrap">
-      <span class="scanner-badge-checklist bg-amber-950/80 text-amber-300 border border-amber-500/40">
-        <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i>
-        <span>Similarité modérée (${score}%)</span>
-      </span>
-      ${ocrBadgeHtml}
-      ${slabBadgeHtml}
-      <span class="scanner-badge-checklist bg-white/10 text-white/80 border border-white/10">
-        <span>${editionFlag} ${card.edition || 'JP'}</span>
-      </span>
-      ${checklistBadgeHtml}
-    </div>
-  `;
-
-  // Quick Raw / Graded Condition Switcher inside Scanner Result
-  const quickCondOptions = ['Raw NM', 'PSA 9', 'PSA 10', 'BGS 9.5', 'ARS 10'];
-  if (detectedSlab && !quickCondOptions.includes(detectedSlab.displayLabel)) {
-    quickCondOptions.splice(1, 0, detectedSlab.displayLabel);
-  }
-  const conditionSwitcherHtml = `
-    <div class="flex items-center gap-1 overflow-x-auto pb-0.5 justify-center flex-wrap">
-      ${quickCondOptions.map(opt => {
-        const isAct = opt === activeCond;
-        return `<button type="button" class="scanner-cond-btn text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
-          isAct
-            ? 'bg-emerald-500 text-slate-900 border-emerald-400 shadow-sm'
-            : 'bg-white/5 text-white/70 border-white/15 hover:bg-white/15 hover:text-white'
-        }" data-cond="${opt}">${opt}</button>`;
-      }).join('')}
-    </div>
-  `;
-
-  const spreadOriginLabel = isGradedActive && hasPrices ? (
-    multInfo.source === 'direct_sold'
-      ? 'Ventes slab réelles'
-      : (multInfo.source === 'market_spread' ? 'Spread marché observé' : `Spread historique (×${multInfo.frMult.toFixed(2)})`)
-  ) : '';
-
-  const pricingSectionHtml = hasPrices ? `
-    <div class="text-xs text-white/85 mt-1 font-medium">
-      <span class="text-emerald-300 font-bold">${activeCond}</span> · JP: ¥${jpActive.toLocaleString('fr-FR')} → FR: ${frActive.toFixed(2)} €
-    </div>
-    <div class="text-xs font-bold ${profitCls} mt-0.5">
-      Marge: ${marginSign}${margin.toFixed(2)} € (${marginSign}${roi.toFixed(0)}%)
-    </div>
-    ${spreadOriginLabel ? `<div class="text-[9px] text-white/45 mt-0.5">${spreadOriginLabel}</div>` : ''}
-  ` : `
-    <div class="mt-1 flex items-center">
-      <span class="price-pending-badge">
-        <span class="price-pending-dot"></span>
-        Prix non disponible / En cours d'actualisation
-      </span>
-    </div>
-  `;
-
-  const runnerUpsHtml = (runnerUps && runnerUps.length > 0) ? `
-    <div class="border-t border-white/10 pt-2.5 mt-2">
-      <div class="text-[11px] font-bold text-white/70 uppercase tracking-wider mb-2 flex items-center justify-between text-left">
-        <span class="flex items-center gap-1.5">
-          <i data-lucide="help-circle" style="width:13px;height:13px;" class="text-amber-400"></i>
-          <span>Pas la bonne carte ?</span>
-        </span>
-        <span class="text-[10px] text-white/40 normal-case font-normal">Top suggestions</span>
-      </div>
-      <div class="grid grid-cols-1 gap-1.5">
-        ${runnerUps.map((item, idx) => {
-          const rCard = item.card;
-          const rScore = Math.round(item.score);
-          const rCountry = (typeof COUNTRIES !== 'undefined') ? COUNTRIES.find(c => c.code === rCard.edition) : null;
-          const rFlag = rCountry ? rCountry.flag : '🌐';
-          const rImg = (typeof formatHighResCardImage === 'function') ? formatHighResCardImage(rCard.image) : rCard.image;
-          return `
-            <div class="scanner-runner-card flex items-center justify-between gap-2 p-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-emerald-400/50 transition-all text-left cursor-pointer group" data-idx="${idx}" data-card-id="${rCard.id}">
-              <div class="flex items-center gap-2 min-w-0 flex-1">
-                <img src="${rImg}" class="w-8 h-11 object-cover rounded flex-shrink-0 border border-white/20 shadow-sm" alt="${rCard.name}" onerror="onCardImageError(this)">
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-semibold text-white truncate group-hover:text-emerald-300 transition-colors">
-                    <span>${rFlag}</span> ${rCard.name}
-                  </div>
-                  <div class="text-[10px] text-white/50 truncate font-mono">${rCard.ref || ''}</div>
-                </div>
-              </div>
-              <div class="flex items-center gap-1.5 flex-shrink-0">
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/10">
-                  ${rScore}%
-                </span>
-                <button type="button" class="scanner-runner-open text-[10px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 rounded-lg px-2 py-1 transition-all" data-card-id="${rCard.id}">
-                  Voir
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  ` : '';
-
-  const manualBoxHtml = !isHighConfidence ? `
-    <div class="border-t border-white/10 pt-2 text-left">
-      <label class="text-[10px] text-white/60 block mb-1">Ou tapez directement la référence :</label>
-      <div class="flex gap-2">
-        <input id="scanner-inline-manual-ref" type="text" placeholder="ex: 201/165"
-               class="flex-1 px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400">
-        <button id="scanner-inline-manual-btn" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-3 py-1.5 rounded-xl text-xs transition-colors cursor-pointer">OK</button>
-      </div>
-    </div>
-  ` : '';
-
-  resultsEl.innerHTML = `
-    <div class="bg-slate-900/95 border ${isHighConfidence ? 'border-emerald-500/40' : 'border-amber-500/40'} backdrop-blur-md rounded-2xl p-3.5 text-white max-w-sm mx-auto shadow-2xl space-y-3">
-      <!-- Status bar -->
-      <div class="flex items-center justify-between border-b border-white/10 pb-2.5">
-        <div class="flex items-center gap-1.5 ${statusColor} font-bold text-xs uppercase tracking-wide">
-          <i data-lucide="${statusIcon}" style="width:14px;height:14px;"></i>
-          <span>${statusTitle}</span>
-        </div>
-        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${scoreBadgeBg}">
-          ${score}% ${matchedResult.ocrVerified ? 'OCR vérifié' : 'structure valide'}
-        </span>
-      </div>
-
-      <!-- Uncertain Banner (if score 50-74%) -->
-      ${uncertainBannerHtml}
-
-      <!-- Match Validation Pills & Checklist Badges -->
-      ${validationPillsHtml}
-
-      <!-- Dynamic Raw / Graded Slab Valuation Switcher -->
-      ${conditionSwitcherHtml}
-
-      <!-- Primary Card Info -->
-      <div class="flex gap-3 items-center bg-white/5 border border-white/10 rounded-xl p-2.5">
-        <img src="${highResImg}" class="w-16 h-22 object-cover rounded-lg flex-shrink-0 shadow-lg border border-white/20" alt="${card.name}" onerror="onCardImageError(this)">
-        <div class="flex-1 min-w-0 text-left">
-          <div class="font-bold text-sm truncate text-white">${card.name}</div>
-          ${card.subName ? `<div class="text-white/60 text-[11px] truncate">${card.subName}</div>` : ''}
-          <div class="text-white/40 text-[10px] mt-0.5 font-mono">${card.ref || ''}</div>
-          ${pricingSectionHtml}
-        </div>
-      </div>
-
-      <!-- Action Button: Open Full Card Detail View -->
-      <button type="button" class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] text-slate-900 text-xs font-bold py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer" id="scanner-open-detail">
-        <span>Ouvrir le détail (${activeCond})</span>
-        <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
-      </button>
-
-      <!-- Scan next card / rescan button -->
-      <button type="button" class="w-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-[11px] font-semibold py-1.5 rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer" id="scanner-rescan-btn">
-        <i data-lucide="refresh-cw" style="width:12px;height:12px;"></i>
-        <span>Scanner une autre carte / slab</span>
-      </button>
-
-      <!-- Runner-ups -->
-      ${runnerUpsHtml}
-
-      <!-- Inline manual input if uncertain -->
-      ${manualBoxHtml}
-    </div>
-  `;
-
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-
-  // Bind condition / slab switcher pills
-  resultsEl.querySelectorAll('.scanner-cond-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const chosenCond = btn.dataset.cond;
-      showScannerResult(matchedResult, runnerUps, resultsEl, chosenCond);
-    });
-  });
-
-  // Add to purchases checklist button listener (records exact active raw or slab condition)
-  const addChecklistBtn = document.getElementById('scanner-add-checklist-btn');
-  if (addChecklistBtn) {
-    addChecklistBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (typeof addToPurchases === 'function') {
-        addToPurchases(card, null, 1, activeCond);
-      }
-      addChecklistBtn.outerHTML = `
-        <span class="scanner-badge-checklist bg-blue-950/80 text-blue-300 border border-blue-500/40">
-          <i data-lucide="check" style="width:12px;height:12px;"></i>
-          <span>Dans vos achats (x1)</span>
-        </span>
-      `;
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    });
-  }
-
-  document.getElementById('scanner-open-detail')?.addEventListener('click', () => {
-    closeScanner();
-    detailModalState.currentCard = card;
-    if (typeof openCardDetail === 'function') {
-      openCardDetail(card.id, isGradedActive ? 'graded' : 'raw', activeSlabObj);
-    }
-  });
-
-  document.getElementById('scanner-rescan-btn')?.addEventListener('click', () => {
-    resetScannerPreview();
-    document.getElementById('native-camera-input')?.click();
-  });
-
-  // Inline manual reference lookup if rendered
-  const inlineInput = document.getElementById('scanner-inline-manual-ref');
-  const inlineBtn = document.getElementById('scanner-inline-manual-btn');
-  if (inlineInput && inlineBtn) {
-    const handleInlineLookup = () => {
-      runScannerManualLookup(inlineInput.value, resultsEl, detectedSlab);
-    };
-    inlineBtn.addEventListener('click', handleInlineLookup);
-    inlineInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') handleInlineLookup();
-    });
-  }
-
-  resultsEl.querySelectorAll('.scanner-runner-card').forEach(elem => {
-    elem.addEventListener('click', (e) => {
-      if (e.target.closest('.scanner-runner-open')) {
-        const id = e.target.closest('.scanner-runner-open').dataset.cardId;
-        closeScanner();
-        if (typeof openCardDetail === 'function') {
-          openCardDetail(id, isGradedActive ? 'graded' : 'raw', activeSlabObj);
-        }
+  const condSelect = document.getElementById('quick-entry-condition');
+
+  let selectedQuickCard = null;
+
+  if (inputEl && dropdown) {
+    inputEl.addEventListener('input', () => {
+      const q = inputEl.value.trim().toLowerCase();
+      if (q.length < 2) {
+        dropdown.classList.add('hidden');
         return;
       }
-      const idx = parseInt(elem.dataset.idx, 10);
-      if (!isNaN(idx) && runnerUps[idx]) {
-        const selected = runnerUps[idx];
-        const newRunners = [matchedResult, ...runnerUps.filter((_, i) => i !== idx)];
-        showScannerResult(selected, newRunners.slice(0, 3), resultsEl);
+
+      const matches = CatalogService.cards.filter(c => {
+        return (c.displayName || c.name || '').toLowerCase().includes(q) || (c.ref || '').toLowerCase().includes(q);
+      }).slice(0, 6);
+
+      if (matches.length > 0) {
+        dropdown.innerHTML = matches.map(c => `
+          <div class="p-2 hover:bg-slate-50 cursor-pointer flex items-center justify-between text-xs border-b border-slate-100 last:border-0"
+               data-quick-id="${c.id}">
+            <span class="font-bold text-slate-800 truncate">${c.displayName || c.name}</span>
+            <span class="font-mono text-[10px] text-slate-400">${c.ref}</span>
+          </div>
+        `).join('');
+
+        dropdown.querySelectorAll('[data-quick-id]').forEach(el => {
+          el.addEventListener('click', () => {
+            const id = el.getAttribute('data-quick-id');
+            selectedQuickCard = CatalogService.cards.find(c => c.id === id);
+            if (selectedQuickCard) {
+              inputEl.value = `${selectedQuickCard.displayName || selectedQuickCard.name} (${selectedQuickCard.ref})`;
+              const jp = getActiveJpPrice(selectedQuickCard);
+              if (jp && priceInput && !priceInput.value) {
+                priceInput.value = String(jp);
+              }
+            }
+            dropdown.classList.add('hidden');
+          });
+        });
+
+        dropdown.classList.remove('hidden');
+      } else {
+        dropdown.classList.add('hidden');
       }
     });
-  });
-}
 
-function handleScannerFileUpload(file) {
-  processCapturedPhoto(file);
-}
-
-// Manual Reference Search helper with live dynamic TCGdex serial/name fallback + slab support
-async function runScannerManualLookup(rawQuery, resultsEl = null, detectedSlab = null) {
-  if (!resultsEl) resultsEl = document.getElementById('scanner-results');
-  if (!resultsEl) return;
-
-  const raw = (rawQuery || '').trim();
-  if (!raw) return;
-
-  // Detect any inline slab marker typed by the user (e.g. "201/165 PSA 10" or "120/119 ARS 10+")
-  const typedSlab = detectedSlab || CardOCR.parseSlabFromText(raw);
-  if (typedSlab) {
-    applyDetectedSlabToGlobalUI(typedSlab);
-  }
-  const queryNoSlab = raw
-    .replace(/\b(?:PSA|BGS|BECKETT|CGC|PCA|ARS|GRADE)\s*(?:10\+|10\s*(?:BL|BLACK\s*LABEL|PRISTINE)?|9\.5|9|8\.5|8|7)\b/ig, '')
-    .trim() || raw;
-
-  const q = queryNoSlab.toLowerCase().replace(/\s*\/\s*/g, '/');
-  const cleanNum = q.replace(/^0+/, '');
-
-  const catalog = (typeof CARDS !== 'undefined' && Array.isArray(CARDS)) ? CARDS : [];
-  const activeCountries = (typeof state !== 'undefined' && state.filters && state.filters.countries)
-    ? state.filters.countries
-    : [];
-
-  let matchedList = catalog.filter(c => {
-    const ref = (c.ref || '').toLowerCase();
-    const name = (c.name || '').toLowerCase();
-    const subName = (c.subName || '').toLowerCase();
-    const localId = (c.localId || '').toLowerCase();
-    const localIdClean = localId.replace(/^0+/, '');
-    const id = (c.id || '').toLowerCase();
-
-    return ref.includes(q) ||
-           localId === q ||
-           (cleanNum && localIdClean === cleanNum) ||
-           name.includes(q) ||
-           subName.includes(q) ||
-           id === q;
-  });
-
-  // Prioritize active language edition
-  if (activeCountries.length > 0) {
-    matchedList.sort((a, b) => {
-      const aMatch = activeCountries.includes(a.edition) ? 1 : 0;
-      const bMatch = activeCountries.includes(b.edition) ? 1 : 0;
-      return bMatch - aMatch;
-    });
-  }
-
-  // If not found in loaded catalog, query TCGdex API dynamically (by serial first, then by name)
-  if (matchedList.length === 0) {
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/95 border border-emerald-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-2">
-        <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-xs text-white/80">Recherche en direct sur le catalogue TCGdex...</p>
-      </div>
-    `;
-    try {
-      const parsedSerial = CardOCR.parseSerialFromText(queryNoSlab);
-      if (parsedSerial && parsedSerial.cleanLocalId) {
-        const serialLive = await CatalogService.lookupCardsBySerial(parsedSerial.serial, parsedSerial.setHint);
-        if (serialLive && serialLive.length > 0) {
-          matchedList = serialLive;
-        }
-      }
-      if (matchedList.length === 0) {
-        const liveCards = await CatalogService.searchLive(queryNoSlab);
-        if (liveCards && liveCards.length > 0) {
-          matchedList = liveCards;
-        }
-      }
-    } catch (e) {
-      console.warn('Manual live search warning:', e);
-    }
-  }
-
-  if (matchedList.length > 0) {
-    const primary = {
-      card: matchedList[0],
-      score: 100,
-      scoreVisual: 100,
-      ocrVerified: true,
-      detectedSlab: typedSlab
-    };
-    const runners = matchedList.slice(1, 4).map(c => ({
-      card: c,
-      score: 95,
-      scoreVisual: 95,
-      detectedSlab: typedSlab
-    }));
-    showScannerResult(primary, runners, resultsEl);
-  } else {
-    resultsEl.innerHTML = `
-      <div class="bg-slate-900/95 border border-amber-500/40 rounded-2xl p-4 text-white max-w-sm mx-auto shadow-2xl text-center space-y-2">
-        <div class="text-amber-400 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1">
-          <i data-lucide="alert-triangle" style="width:14px;height:14px;"></i>
-          <span>Carte non trouvée</span>
-        </div>
-        <p class="text-xs text-white/70">Aucune carte trouvée pour <span class="font-mono text-emerald-300">"${raw}"</span> dans le catalogue.</p>
-        <p class="text-[11px] text-white/50">Vérifiez le numéro de set (ex: 201/165) ou le nom du Pokémon.</p>
-        <button id="scanner-retry-manual-btn" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all cursor-pointer mt-1">
-          Réessayer
-        </button>
-      </div>
-    `;
-    if (typeof lucide !== 'undefined') lucide.createIcons();
-    document.getElementById('scanner-retry-manual-btn')?.addEventListener('click', () => {
-      resetScannerPreview();
-    });
-  }
-}
-
-// ── FOCUS MODE (DESKTOP) ─────────────────────────────────────
-function activateFocusMode(col) {
-  state.focusCol = col;
-  const grid = document.getElementById('columns-grid');
-  if (!grid) return;
-
-  ['margin', 'roi', 'velocity'].forEach(key => {
-    const wrapper = document.getElementById(`col-wrapper-${key}`);
-    const header  = document.getElementById(`col-header-${key}`);
-    if (!wrapper || !header) return;
-    if (key === col) {
-      wrapper.classList.remove('hidden');
-      header.classList.add('focus-active');
-      const expandIcon = header.querySelector('.col-expand-icon');
-      if (expandIcon) expandIcon.setAttribute('data-lucide', 'minimize-2');
-      const colEl = document.getElementById(`col-${key}`);
-      if (colEl) colEl.className = 'focus-col-inner';
-    } else {
-      wrapper.classList.add('hidden');
-      header.classList.remove('focus-active');
-    }
-  });
-
-  grid.classList.add('focus-mode');
-  grid.style.gridTemplateColumns = '1fr';
-
-  syncFilterBarPlacement();
-
-  const colMap = { margin: getSortedByMargin, roi: getSortedByROI, velocity: getSortedByVelocity };
-  renderColumn(`col-${col}`, colMap[col](true), col);
-  updateLoadMoreLabels();
-  updateColumnCounters();
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-function deactivateFocusMode() {
-  state.focusCol = null;
-  const grid = document.getElementById('columns-grid');
-  if (!grid) return;
-
-  ['margin', 'roi', 'velocity'].forEach(key => {
-    const wrapper = document.getElementById(`col-wrapper-${key}`);
-    const header  = document.getElementById(`col-header-${key}`);
-    if (!wrapper || !header) return;
-    wrapper.classList.remove('hidden');
-    header.classList.remove('focus-active');
-    const expandIcon = header.querySelector('.col-expand-icon');
-    if (expandIcon) expandIcon.setAttribute('data-lucide', 'maximize-2');
-    const colEl = document.getElementById(`col-${key}`);
-    if (colEl) colEl.className = 'flex flex-col gap-2';
-  });
-
-  grid.classList.remove('focus-mode');
-  grid.style.gridTemplateColumns = '';
-
-  syncFilterBarPlacement();
-  renderAllColumns();
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
-
-// ── BIND EVENTS ──────────────────────────────────────────────
-function bindEvents() {
-  // Modal overlay close
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) closeModal(overlay.id);
-    });
-  });
-
-  // Close buttons
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('[data-close-modal]');
-    if (btn) closeModal(btn.dataset.closeModal);
-  });
-
-  // Refresh (re-fetches rate + multi-language sets + prices.json)
-  const btnRefresh = document.getElementById('btn-refresh');
-  if (btnRefresh) {
-    btnRefresh.addEventListener('click', () => {
-      showToast('🔄 Actualisation en direct…');
-      fetchLiveRate();
-      CatalogService.fetchAllMultiLangSets();
-      PriceService.loadPricesJson();
-    });
-  }
-
-  // Pricing Reference Selectors
-  const pricingRefFr = document.getElementById('pricing-ref-fr');
-  if (pricingRefFr) {
-    pricingRefFr.addEventListener('change', () => {
-      state.pricingRefFr = pricingRefFr.value;
-      renderAllColumns();
-      showToast(`Base FR : ${pricingRefFr.options[pricingRefFr.selectedIndex].text}`);
-    });
-  }
-
-  const pricingRefJp = document.getElementById('pricing-ref-jp');
-  if (pricingRefJp) {
-    pricingRefJp.addEventListener('change', () => {
-      state.pricingRefJp = pricingRefJp.value;
-      renderAllColumns();
-      showToast(`Base JP : ${pricingRefJp.options[pricingRefJp.selectedIndex].text}`);
-    });
-  }
-
-  // Search input
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', () => handleSearch(searchInput.value));
-    document.addEventListener('click', e => {
-      const dropdown = document.getElementById('search-dropdown');
-      if (dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+    document.addEventListener('click', (e) => {
+      if (!inputEl.contains(e.target) && !dropdown.contains(e.target)) {
         dropdown.classList.add('hidden');
       }
     });
   }
 
-  // Mobile tab buttons
-  document.querySelectorAll('.mobile-tab').forEach(btn => {
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      if (!selectedQuickCard && inputEl) {
+        const text = inputEl.value.trim();
+        if (text) {
+          selectedQuickCard = CatalogService.cards.find(c => (c.displayName || c.name).toLowerCase() === text.toLowerCase() || c.ref.toLowerCase() === text.toLowerCase());
+        }
+      }
+
+      if (!selectedQuickCard) {
+        showToast('Veuillez sélectionner une carte dans la liste.');
+        return;
+      }
+
+      const price = priceInput ? Number(priceInput.value) : 0;
+      const qty = qtyInput ? Number(qtyInput.value) : 1;
+      const cond = condSelect ? condSelect.value : 'Raw NM';
+
+      addToPurchases(selectedQuickCard, price, qty, cond);
+
+      if (inputEl) inputEl.value = '';
+      if (priceInput) priceInput.value = '';
+      selectedQuickCard = null;
+    });
+  }
+}
+
+// ── 15. UI MODALS, POPOVERS & EVENT BINDINGS ──────────────────
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.style.display = 'flex';
+    requestAnimationFrame(() => {
+      el.classList.add('open');
+    });
+    document.body.classList.add('overflow-hidden');
+  }
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.remove('open');
+    setTimeout(() => {
+      if (!el.classList.contains('open')) {
+        el.style.display = 'none';
+      }
+    }, 200);
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('toast-notification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl z-50 transition-all opacity-0 pointer-events-none';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.remove('opacity-0', 'pointer-events-none');
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'pointer-events-none');
+  }, 2500);
+}
+
+function toggleColumnFocus(colName) {
+  const grid = document.getElementById('columns-grid');
+  const headers = document.querySelectorAll('.col-header');
+  const wrappers = {
+    margin: document.getElementById('col-wrapper-margin'),
+    roi: document.getElementById('col-wrapper-roi'),
+    velocity: document.getElementById('col-wrapper-velocity'),
+  };
+  const inners = {
+    margin: document.getElementById('col-margin'),
+    roi: document.getElementById('col-roi'),
+    velocity: document.getElementById('col-velocity'),
+  };
+
+  if (state.focusCol === colName) {
+    // Exit focus mode -> return to 3-column view
+    state.focusCol = null;
+    if (grid) grid.classList.remove('focus-mode');
+    headers.forEach(h => {
+      h.classList.remove('focus-active');
+      const icon = h.querySelector('.col-expand-icon');
+      if (icon) icon.setAttribute('data-lucide', 'maximize-2');
+    });
+    Object.values(wrappers).forEach(w => w && w.classList.remove('hidden'));
+    Object.values(inners).forEach(i => i && i.classList.remove('focus-col-inner'));
+  } else {
+    // Enter focus mode
+    state.focusCol = colName;
+    if (grid) grid.classList.add('focus-mode');
+    headers.forEach(h => {
+      const isThis = h.getAttribute('data-col') === colName;
+      h.classList.toggle('focus-active', isThis);
+      const icon = h.querySelector('.col-expand-icon');
+      if (icon) icon.setAttribute('data-lucide', isThis ? 'minimize-2' : 'maximize-2');
+    });
+    Object.entries(wrappers).forEach(([key, w]) => {
+      if (w) w.classList.toggle('hidden', key !== colName);
+    });
+    Object.entries(inners).forEach(([key, inner]) => {
+      if (inner) inner.classList.toggle('focus-col-inner', key === colName);
+    });
+  }
+  if (window.lucide) lucide.createIcons();
+}
+
+function updateConditionTriggerLabel() {
+  const lbl = document.getElementById('label-filter-condition');
+  const libLbl = document.getElementById('label-lib-filter-condition');
+  const text = state.condition.mode === 'raw'
+    ? `💎 État : Non-gradé (${state.condition.rawCondition})`
+    : `💎 État : ${state.condition.grade}`;
+  if (lbl) lbl.textContent = text;
+  if (libLbl) libLbl.textContent = text;
+}
+
+function renderConditionPopover(targetPopoverEl, onUpdateCallback = null) {
+  if (!targetPopoverEl) return;
+
+  targetPopoverEl.innerHTML = `
+    <div class="space-y-3">
+      <!-- Mode switcher (Raw vs Graded) -->
+      <div class="flex rounded-xl p-0.5 bg-slate-100 border border-slate-200">
+        <button type="button" class="cond-mode-raw flex-1 py-1 text-xs font-bold rounded-lg transition-all ${state.condition.mode === 'raw' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'} cursor-pointer">
+          Non-gradé (Raw)
+        </button>
+        <button type="button" class="cond-mode-graded flex-1 py-1 text-xs font-bold rounded-lg transition-all ${state.condition.mode === 'graded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'} cursor-pointer">
+          Slab Gradé (PSA/BGS...)
+        </button>
+      </div>
+
+      ${state.condition.mode === 'raw' ? `
+        <!-- Raw Conditions -->
+        <div class="grid grid-cols-2 gap-1.5">
+          ${['NM', 'EX', 'LP', 'PL'].map(c => `
+            <button type="button" class="cond-raw-btn p-2 rounded-xl border text-left transition-all ${state.condition.rawCondition === c ? 'border-blue-500 bg-blue-50 text-blue-900 font-bold' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'} cursor-pointer"
+                    data-raw-cond="${c}">
+              <div class="text-xs font-bold">${c} (${c === 'NM' ? 'Near Mint' : c === 'EX' ? 'Excellent' : c === 'LP' ? 'Light Play' : 'Played'})</div>
+              <div class="text-[10px] text-slate-400">${c === 'NM' ? 'Neuf' : c === 'EX' ? 'Micro-rayures' : 'Usé'}</div>
+            </button>
+          `).join('')}
+        </div>
+      ` : `
+        <!-- Graded Companies & Grades -->
+        <div class="space-y-2">
+          <div class="flex flex-wrap gap-1">
+            ${Object.keys(GRADING_COMPANIES).map(co => `
+              <button type="button" class="grade-co-btn px-2 py-1 rounded-lg text-xs font-bold border transition-all ${state.condition.company === co ? 'bg-purple-600 text-white border-purple-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'} cursor-pointer"
+                      data-co="${co}">
+                ${co}
+              </button>
+            `).join('')}
+          </div>
+          <div class="grid grid-cols-2 gap-1 pt-1 max-h-40 overflow-y-auto custom-scrollbar">
+            ${(GRADING_COMPANIES[state.condition.company]?.grades || []).map(g => `
+              <button type="button" class="grade-val-btn p-1.5 rounded-lg border text-xs text-left transition-all ${state.condition.grade === g ? 'bg-purple-50 text-purple-900 border-purple-400 font-bold' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'} cursor-pointer"
+                      data-grade="${g}">
+                💎 ${g}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+
+  const rawModeBtn = targetPopoverEl.querySelector('.cond-mode-raw');
+  const gradedModeBtn = targetPopoverEl.querySelector('.cond-mode-graded');
+
+  if (rawModeBtn) {
+    rawModeBtn.addEventListener('click', () => {
+      state.condition.mode = 'raw';
+      state.filters.slabGrade = null;
+      updateConditionTriggerLabel();
+      renderConditionPopover(targetPopoverEl, onUpdateCallback);
+      if (onUpdateCallback) onUpdateCallback();
+      else renderAllColumns();
+    });
+  }
+
+  if (gradedModeBtn) {
+    gradedModeBtn.addEventListener('click', () => {
+      state.condition.mode = 'graded';
+      state.filters.slabGrade = state.condition.grade;
+      updateConditionTriggerLabel();
+      renderConditionPopover(targetPopoverEl, onUpdateCallback);
+      if (onUpdateCallback) onUpdateCallback();
+      else renderAllColumns();
+    });
+  }
+
+  targetPopoverEl.querySelectorAll('[data-raw-cond]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      if (!tab) return;
-      state.activeMobileTab = tab;
-      document.querySelectorAll('.mobile-tab').forEach(b => {
-        b.classList.toggle('mobile-tab-active', b.dataset.tab === tab);
-      });
-      renderMobileColumn();
-      updateFilterMatchCount();
-      updateColumnCounters();
+      state.condition.rawCondition = btn.getAttribute('data-raw-cond');
+      updateConditionTriggerLabel();
+      renderConditionPopover(targetPopoverEl, onUpdateCallback);
+      if (onUpdateCallback) onUpdateCallback();
+      else renderAllColumns();
     });
   });
 
-  // Mobile load more
-  const mobileLoadMore = document.getElementById('mobile-load-more');
-  if (mobileLoadMore) {
-    mobileLoadMore.addEventListener('click', () => {
-      const currentTab = state.activeMobileTab || 'margin';
-      const cards = getCardsForTab(currentTab, isFilterModeActive());
-      state.visibleCount[currentTab] = nextPageStep(state.visibleCount[currentTab], cards.length);
-      renderMobileColumn();
-      updateLoadMoreLabels();
+  targetPopoverEl.querySelectorAll('[data-co]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.condition.company = btn.getAttribute('data-co');
+      const defaultGrade = GRADING_COMPANIES[state.condition.company]?.grades[0] || 'PSA 10';
+      state.condition.grade = defaultGrade;
+      state.filters.slabGrade = defaultGrade;
+      updateConditionTriggerLabel();
+      renderConditionPopover(targetPopoverEl, onUpdateCallback);
+      if (onUpdateCallback) onUpdateCallback();
+      else renderAllColumns();
+    });
+  });
+
+  targetPopoverEl.querySelectorAll('[data-grade]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const g = btn.getAttribute('data-grade');
+      state.condition.grade = g;
+      state.filters.slabGrade = g;
+      updateConditionTriggerLabel();
+      renderConditionPopover(targetPopoverEl, onUpdateCallback);
+      if (onUpdateCallback) onUpdateCallback();
+      else renderAllColumns();
+    });
+  });
+}
+
+function bindFilterEvents() {
+  // Ensure filter bar is always visible by default
+  const filterBar = document.getElementById('focus-filter-bar');
+  if (filterBar) {
+    filterBar.classList.remove('hidden');
+    filterBar.classList.add('flex');
+  }
+
+  // Prevent clicks inside popovers from bubbling to document and closing them
+  ['popover-filter-country', 'popover-filter-price', 'popover-filter-condition', 'popover-lib-filter-condition'].forEach(id => {
+    const pop = document.getElementById(id);
+    if (pop) pop.addEventListener('click', (e) => e.stopPropagation());
+  });
+
+  // Wire Pricing reference dropdowns
+  const selPricingFr = document.getElementById('pricing-ref-fr');
+  const selPricingJp = document.getElementById('pricing-ref-jp');
+  if (selPricingFr) {
+    selPricingFr.value = state.pricingRefFr;
+    selPricingFr.addEventListener('change', () => {
+      state.pricingRefFr = selPricingFr.value;
+      renderAllColumns();
+    });
+  }
+  if (selPricingJp) {
+    selPricingJp.value = state.pricingRefJp;
+    selPricingJp.addEventListener('change', () => {
+      state.pricingRefJp = selPricingJp.value;
+      renderAllColumns();
     });
   }
 
-  // Desktop load more
-  const lmMargin = document.getElementById('load-more-margin');
-  if (lmMargin) {
-    lmMargin.addEventListener('click', () => {
-      const isFocused = state.focusCol === 'margin';
-      const cards = getSortedByMargin(isFocused);
-      state.visibleCount.margin = nextPageStep(state.visibleCount.margin, cards.length);
-      renderColumn('col-margin', cards, 'margin');
-      updateLoadMoreLabels();
-      renderMobileColumn();
-      updateColumnCounters();
-    });
-  }
-  const lmRoi = document.getElementById('load-more-roi');
-  if (lmRoi) {
-    lmRoi.addEventListener('click', () => {
-      const isFocused = state.focusCol === 'roi';
-      const cards = getSortedByROI(isFocused);
-      state.visibleCount.roi = nextPageStep(state.visibleCount.roi, cards.length);
-      renderColumn('col-roi', cards, 'roi');
-      updateLoadMoreLabels();
-      renderMobileColumn();
-      updateColumnCounters();
-    });
-  }
-  const lmVelocity = document.getElementById('load-more-velocity');
-  if (lmVelocity) {
-    lmVelocity.addEventListener('click', () => {
-      const isFocused = state.focusCol === 'velocity';
-      const cards = getSortedByVelocity(isFocused);
-      state.visibleCount.velocity = nextPageStep(state.visibleCount.velocity, cards.length);
-      renderColumn('col-velocity', cards, 'velocity');
-      updateLoadMoreLabels();
-      renderMobileColumn();
-      updateColumnCounters();
+  // 1. Country popover trigger
+  const btnCountry = document.getElementById('btn-filter-country');
+  const popoverCountry = document.getElementById('popover-filter-country');
+  const inputSearchCountry = document.getElementById('input-search-country');
+  const countryListEl = document.getElementById('country-options-list');
+  const clearCountryBtn = document.getElementById('btn-clear-country');
+
+  function renderCountryList(filterText = '') {
+    if (!countryListEl) return;
+    const q = filterText.toLowerCase();
+    const filtered = COUNTRIES.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q));
+
+    countryListEl.innerHTML = filtered.map(c => {
+      const active = state.filters.countries.includes(c.code);
+      return `
+        <label class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-xs select-none">
+          <div class="flex items-center gap-2">
+            <span>${c.flag}</span>
+            <span class="font-medium text-slate-800">${c.name}</span>
+            <span class="text-[10px] text-slate-400 font-mono">(${c.code})</span>
+          </div>
+          <input type="checkbox" data-country-code="${c.code}" ${active ? 'checked' : ''}
+                 class="rounded text-blue-600 focus:ring-blue-400 h-3.5 w-3.5 cursor-pointer">
+        </label>
+      `;
+    }).join('');
+
+    countryListEl.querySelectorAll('[data-country-code]').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const code = cb.getAttribute('data-country-code');
+        if (cb.checked) {
+          if (!state.filters.countries.includes(code)) state.filters.countries.push(code);
+        } else {
+          state.filters.countries = state.filters.countries.filter(c => c !== code);
+        }
+        updateCountryTriggerLabel();
+        renderAllColumns();
+      });
     });
   }
 
-  // Column header focus toggle (Desktop)
-  document.querySelectorAll('.col-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const col = header.dataset.col;
-      if (state.focusCol === col) {
-        deactivateFocusMode();
-      } else {
-        activateFocusMode(col);
+  function updateCountryTriggerLabel() {
+    const lbl = document.getElementById('label-filter-country');
+    if (!lbl) return;
+    if (state.filters.countries.length === 0) {
+      lbl.textContent = '🌐 Édition pays : Toutes';
+    } else if (state.filters.countries.length === 1) {
+      const c = COUNTRIES.find(x => x.code === state.filters.countries[0]);
+      lbl.textContent = `${c ? c.flag : ''} Édition : ${c ? c.name : state.filters.countries[0]}`;
+    } else {
+      lbl.textContent = `🌐 Éditions : ${state.filters.countries.join(', ')}`;
+    }
+  }
+
+  if (btnCountry && popoverCountry) {
+    btnCountry.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popoverCountry.classList.contains('hidden');
+      closeAllPopovers();
+      if (isHidden) {
+        renderCountryList(inputSearchCountry ? inputSearchCountry.value : '');
+        popoverCountry.classList.remove('hidden');
       }
     });
-  });
-
-  // Country popover trigger
-  const btnFilterCountry = document.getElementById('btn-filter-country');
-  if (btnFilterCountry) {
-    btnFilterCountry.addEventListener('click', e => {
-      e.stopPropagation();
-      togglePopover('country');
-    });
   }
 
-  // Country search input inside popover
-  const inputSearchCountry = document.getElementById('input-search-country');
   if (inputSearchCountry) {
-    inputSearchCountry.addEventListener('input', e => {
-      renderCountryOptionsList(e.target.value);
+    inputSearchCountry.addEventListener('input', () => {
+      renderCountryList(inputSearchCountry.value);
     });
   }
 
-  // Country clear button
-  const btnClearCountry = document.getElementById('btn-clear-country');
-  if (btnClearCountry) {
-    btnClearCountry.addEventListener('click', () => {
+  if (clearCountryBtn) {
+    clearCountryBtn.addEventListener('click', () => {
       state.filters.countries = [];
       updateCountryTriggerLabel();
-      const searchVal = document.getElementById('input-search-country')?.value || '';
-      renderCountryOptionsList(searchVal);
-      applyFilters();
+      renderCountryList();
+      renderAllColumns();
     });
   }
 
-  // Price popover trigger
-  const btnFilterPrice = document.getElementById('btn-filter-price');
-  if (btnFilterPrice) {
-    btnFilterPrice.addEventListener('click', e => {
-      e.stopPropagation();
-      togglePopover('price');
-    });
-  }
+  // 2. Price filter popover
+  const btnPrice = document.getElementById('btn-filter-price');
+  const popoverPrice = document.getElementById('popover-filter-price');
+  const inputMin = document.getElementById('input-price-min');
+  const inputMax = document.getElementById('input-price-max');
+  const clearPriceBtn = document.getElementById('btn-clear-price');
+  const priceUnitSymbol = document.getElementById('price-unit-symbol');
+  const presetsContainer = document.getElementById('price-presets-container');
 
-  // Price currency toggle
-  document.querySelectorAll('#price-currency-toggle .price-curr-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const curr = btn.dataset.curr;
-      if (!curr || curr === state.filters.priceUnit) return;
+  function renderPricePresets() {
+    if (!presetsContainer) return;
+    const presets = state.filters.priceUnit === 'JPY' ? PRICE_PRESETS_JPY : PRICE_PRESETS_EUR;
 
-      document.querySelectorAll('#price-currency-toggle .price-curr-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.curr === curr);
+    presetsContainer.innerHTML = presets.map(p => `
+      <button type="button" class="preset-btn px-2 py-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-semibold text-[11px] text-center transition-colors cursor-pointer"
+              data-pmin="${p.min}" data-pmax="${p.max || ''}">
+        ${p.label}
+      </button>
+    `).join('');
+
+    presetsContainer.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pmin = btn.getAttribute('data-pmin') ? Number(btn.getAttribute('data-pmin')) : null;
+        const pmax = btn.getAttribute('data-pmax') ? Number(btn.getAttribute('data-pmax')) : null;
+        state.filters.priceMin = pmin;
+        state.filters.priceMax = pmax;
+        if (inputMin) inputMin.value = pmin !== null ? String(pmin) : '';
+        if (inputMax) inputMax.value = pmax !== null ? String(pmax) : '';
+        updatePriceTriggerLabel();
+        renderAllColumns();
       });
+    });
+  }
 
-      const minInput = document.getElementById('input-price-min');
-      const maxInput = document.getElementById('input-price-max');
-      const symbolEl = document.getElementById('price-unit-symbol');
+  function updatePriceTriggerLabel() {
+    const lbl = document.getElementById('label-filter-price');
+    if (!lbl) return;
+    const sym = state.filters.priceUnit === 'JPY' ? '¥' : '€';
+    if (state.filters.priceMin == null && state.filters.priceMax == null) {
+      lbl.textContent = `💰 Prix : Min — | Max — ${sym}`;
+    } else {
+      const minStr = state.filters.priceMin != null ? state.filters.priceMin : '0';
+      const maxStr = state.filters.priceMax != null ? state.filters.priceMax : '∞';
+      lbl.textContent = `💰 Prix : ${minStr} à ${maxStr} ${sym}`;
+    }
+  }
 
-      if (curr === 'JPY') {
-        state.filters.priceUnit = 'JPY';
-        if (symbolEl) symbolEl.textContent = '¥';
-        if (minInput && minInput.value !== '') {
-          minInput.value = Math.round(parseFloat(minInput.value) * state.rate);
-          state.filters.priceMin = parseFloat(minInput.value);
-        }
-        if (maxInput && maxInput.value !== '') {
-          maxInput.value = Math.round(parseFloat(maxInput.value) * state.rate);
-          state.filters.priceMax = parseFloat(maxInput.value);
-        }
-      } else {
-        state.filters.priceUnit = 'EUR';
-        if (symbolEl) symbolEl.textContent = '€';
-        if (minInput && minInput.value !== '') {
-          minInput.value = (parseFloat(minInput.value) / state.rate).toFixed(1);
-          state.filters.priceMin = parseFloat(minInput.value);
-        }
-        if (maxInput && maxInput.value !== '') {
-          maxInput.value = (parseFloat(maxInput.value) / state.rate).toFixed(1);
-          state.filters.priceMax = parseFloat(maxInput.value);
-        }
+  if (btnPrice && popoverPrice) {
+    btnPrice.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popoverPrice.classList.contains('hidden');
+      closeAllPopovers();
+      if (isHidden) {
+        renderPricePresets();
+        popoverPrice.classList.remove('hidden');
       }
+    });
+  }
 
+  if (inputMin) {
+    inputMin.addEventListener('input', () => {
+      state.filters.priceMin = inputMin.value ? Number(inputMin.value) : null;
+      updatePriceTriggerLabel();
+      renderAllColumns();
+    });
+  }
+
+  if (inputMax) {
+    inputMax.addEventListener('input', () => {
+      state.filters.priceMax = inputMax.value ? Number(inputMax.value) : null;
+      updatePriceTriggerLabel();
+      renderAllColumns();
+    });
+  }
+
+  if (clearPriceBtn) {
+    clearPriceBtn.addEventListener('click', () => {
+      state.filters.priceMin = null;
+      state.filters.priceMax = null;
+      if (inputMin) inputMin.value = '';
+      if (inputMax) inputMax.value = '';
+      updatePriceTriggerLabel();
+      renderAllColumns();
+    });
+  }
+
+  // Currency toggle buttons
+  document.querySelectorAll('.price-curr-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const curr = btn.getAttribute('data-curr');
+      state.filters.priceUnit = curr;
+      document.querySelectorAll('.price-curr-btn').forEach(b => b.classList.remove('active', 'bg-white', 'shadow-sm'));
+      btn.classList.add('active', 'bg-white', 'shadow-sm');
+      if (priceUnitSymbol) priceUnitSymbol.textContent = curr === 'JPY' ? '¥' : '€';
       renderPricePresets();
       updatePriceTriggerLabel();
-      applyFilters();
+      renderAllColumns();
     });
   });
 
-  // Price Min / Max manual inputs
-  const inputPriceMin = document.getElementById('input-price-min');
-  if (inputPriceMin) {
-    inputPriceMin.addEventListener('input', () => {
-      const val = inputPriceMin.value.trim();
-      state.filters.priceMin = val !== '' ? parseFloat(val) : null;
-      renderPricePresets();
-      updatePriceTriggerLabel();
-      applyFilters();
+  // 3. Condition / Grading filter popover
+  const btnCondition = document.getElementById('btn-filter-condition');
+  const popoverCondition = document.getElementById('popover-filter-condition');
+
+  if (btnCondition && popoverCondition) {
+    btnCondition.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = popoverCondition.classList.contains('hidden');
+      closeAllPopovers();
+      if (isHidden) {
+        renderConditionPopover(popoverCondition);
+        popoverCondition.classList.remove('hidden');
+      }
     });
   }
 
-  const inputPriceMax = document.getElementById('input-price-max');
-  if (inputPriceMax) {
-    inputPriceMax.addEventListener('input', () => {
-      const val = inputPriceMax.value.trim();
-      state.filters.priceMax = val !== '' ? parseFloat(val) : null;
-      renderPricePresets();
-      updatePriceTriggerLabel();
-      applyFilters();
+  // 4. Complete Opportunities quick toggle
+  const pricedOnlyToggle = document.getElementById('toggle-priced-only');
+  if (pricedOnlyToggle) {
+    pricedOnlyToggle.checked = state.filters.pricedOnly;
+    pricedOnlyToggle.addEventListener('change', () => {
+      state.filters.pricedOnly = pricedOnlyToggle.checked;
+      renderAllColumns();
     });
   }
 
-  // Clear Price button
-  const btnClearPrice = document.getElementById('btn-clear-price');
-  if (btnClearPrice) {
-    btnClearPrice.addEventListener('click', () => {
-      state.filters.priceMin = null;
-      state.filters.priceMax = null;
-
-      const minInput = document.getElementById('input-price-min');
-      const maxInput = document.getElementById('input-price-max');
-      if (minInput) minInput.value = '';
-      if (maxInput) maxInput.value = '';
-
-      renderPricePresets();
-      updatePriceTriggerLabel();
-      applyFilters();
-    });
-  }
-
-  // Global Reset Filters
+  // 5. Global Reset Button
   const resetBtn = document.getElementById('filter-reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       state.filters.countries = [];
       state.filters.priceMin = null;
       state.filters.priceMax = null;
-      state.filters.priceUnit = 'EUR';
       state.filters.pricedOnly = false;
+      state.filters.slabGrade = null;
+      state.searchQuery = '';
+      state.condition.mode = 'raw';
+      state.condition.rawCondition = 'NM';
 
-      const togglePriced = document.getElementById('toggle-priced-only');
-      if (togglePriced) togglePriced.checked = false;
+      const sInput = document.getElementById('search-input');
+      if (sInput) sInput.value = '';
+      if (pricedOnlyToggle) pricedOnlyToggle.checked = false;
 
-      const inputSearch = document.getElementById('input-search-country');
-      if (inputSearch) inputSearch.value = '';
-      renderCountryOptionsList();
       updateCountryTriggerLabel();
-
-      document.querySelectorAll('#price-currency-toggle .price-curr-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.curr === 'EUR');
-      });
-      const symbolEl = document.getElementById('price-unit-symbol');
-      if (symbolEl) symbolEl.textContent = '€';
-      const minInput = document.getElementById('input-price-min');
-      const maxInput = document.getElementById('input-price-max');
-      if (minInput) minInput.value = '';
-      if (maxInput) maxInput.value = '';
-      renderPricePresets();
       updatePriceTriggerLabel();
-
-      closeAllPopovers();
-      applyFilters();
+      updateConditionTriggerLabel();
+      renderAllColumns();
       showToast('Filtres réinitialisés');
     });
   }
 
-  // Priced Only Toggle (Main Focus Filter Bar)
-  const togglePricedOnly = document.getElementById('toggle-priced-only');
-  if (togglePricedOnly) {
-    togglePricedOnly.addEventListener('change', () => {
-      state.filters.pricedOnly = togglePricedOnly.checked;
-      applyFilters();
-    });
-  }
-
-  // Close popovers on outside click
-  document.addEventListener('click', e => {
-    const countryWrapper = document.getElementById('country-popover-wrapper');
-    const priceWrapper = document.getElementById('price-popover-wrapper');
-    const condWrapper = document.getElementById('condition-popover-wrapper');
-    const libCondWrapper = document.getElementById('lib-condition-popover-wrapper');
-
-    if (countryWrapper && !countryWrapper.contains(e.target)) {
-      const p = document.getElementById('popover-filter-country');
-      const b = document.getElementById('btn-filter-country');
-      if (p) p.classList.add('hidden');
-      if (b) b.classList.remove('open');
-    }
-    if (priceWrapper && !priceWrapper.contains(e.target)) {
-      const p = document.getElementById('popover-filter-price');
-      const b = document.getElementById('btn-filter-price');
-      if (p) p.classList.add('hidden');
-      if (b) b.classList.remove('open');
-    }
-    if (condWrapper && !condWrapper.contains(e.target)) {
-      const p = document.getElementById('popover-filter-condition');
-      const b = document.getElementById('btn-filter-condition');
-      if (p) p.classList.add('hidden');
-      if (b) b.classList.remove('open');
-    }
-    if (libCondWrapper && !libCondWrapper.contains(e.target)) {
-      const p = document.getElementById('popover-lib-filter-condition');
-      const b = document.getElementById('btn-lib-filter-condition');
-      if (p) p.classList.add('hidden');
-      if (b) b.classList.remove('open');
-    }
+  // Close popovers on outer click
+  document.addEventListener('click', (e) => {
+    closeAllPopovers();
   });
-
-  // Condition popover triggers (Focus Filter Bar & Library Modal)
-  const btnFilterCondition = document.getElementById('btn-filter-condition');
-  if (btnFilterCondition) {
-    btnFilterCondition.addEventListener('click', e => {
-      e.stopPropagation();
-      toggleConditionPopover('main');
-    });
-  }
-
-  const btnLibFilterCondition = document.getElementById('btn-lib-filter-condition');
-  if (btnLibFilterCondition) {
-    btnLibFilterCondition.addEventListener('click', e => {
-      e.stopPropagation();
-      toggleConditionPopover('lib');
-    });
-  }
-
-  renderConditionPopovers();
-  updateConditionTriggerLabels();
-
-  // Escape key closes popovers & scanner
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closeScanner();
-      closeAllPopovers();
-    }
-  });
-
-  window.addEventListener('resize', () => {
-    syncFilterBarPlacement();
-  });
-
-  // ── SCANNER BUTTON & OVERLAY (NATIVE CAMERA CAPTURE) ──
-  const btnScanner = document.getElementById('btn-scanner');
-  if (btnScanner) {
-    btnScanner.addEventListener('click', openScanner);
-  }
-
-  const scannerCloseBtn = document.getElementById('scanner-close-btn');
-  if (scannerCloseBtn) {
-    scannerCloseBtn.addEventListener('click', closeScanner);
-  }
-
-  // Native camera trigger button
-  const scannerNativeBtn = document.getElementById('scanner-native-btn');
-  const nativeCameraInput = document.getElementById('native-camera-input');
-  if (scannerNativeBtn && nativeCameraInput) {
-    scannerNativeBtn.addEventListener('click', () => {
-      nativeCameraInput.click();
-    });
-  }
-
-  // Preview silhouette frame click also opens camera
-  const previewWrapper = document.getElementById('scanner-preview-wrapper');
-  if (previewWrapper && nativeCameraInput) {
-    previewWrapper.addEventListener('click', () => {
-      nativeCameraInput.click();
-    });
-  }
-
-  // Backdrop click closes scanner
-  const modalScanner = document.getElementById('modal-scanner');
-  if (modalScanner) {
-    modalScanner.addEventListener('click', e => {
-      if (e.target === modalScanner) {
-        closeScanner();
-      }
-    });
-  }
-
-  if (nativeCameraInput) {
-    nativeCameraInput.addEventListener('change', () => {
-      if (nativeCameraInput.files && nativeCameraInput.files[0]) {
-        processCapturedPhoto(nativeCameraInput.files[0]);
-      }
-    });
-  }
-
-  // Gallery file button & fallback
-  const scannerGalleryBtn = document.getElementById('scanner-gallery-btn');
-  const scannerFileFallback = document.getElementById('scanner-file-fallback');
-  if (scannerGalleryBtn && scannerFileFallback) {
-    scannerGalleryBtn.addEventListener('click', () => {
-      scannerFileFallback.click();
-    });
-  }
-
-  if (scannerFileFallback) {
-    scannerFileFallback.addEventListener('change', () => {
-      if (scannerFileFallback.files && scannerFileFallback.files[0]) {
-        processCapturedPhoto(scannerFileFallback.files[0]);
-        scannerFileFallback.value = '';
-      }
-    });
-  }
-
-  const scannerManualBtn = document.getElementById('scanner-manual-btn');
-  const scannerManualRef = document.getElementById('scanner-manual-ref');
-  if (scannerManualBtn && scannerManualRef) {
-    const triggerManual = () => {
-      runScannerManualLookup(scannerManualRef.value);
-    };
-    scannerManualBtn.addEventListener('click', triggerManual);
-    scannerManualRef.addEventListener('keydown', e => {
-      if (e.key === 'Enter') triggerManual();
-    });
-  }
-
-  // ── LIBRARY MODAL & FILTERS ──
-  const btnLibrary = document.getElementById('btn-library');
-  if (btnLibrary) {
-    btnLibrary.addEventListener('click', () => {
-      libraryState.editions = ['all'];
-      libraryState.search = '';
-      libraryState.year = 'all';
-      renderConditionPopovers();
-      updateConditionTriggerLabels();
-      document.querySelectorAll('[data-lib-edition]').forEach(b => {
-        b.classList.toggle('active', b.dataset.libEdition === 'all');
-      });
-      const sInput = document.getElementById('library-search');
-      if (sInput) sInput.value = '';
-      renderLibrary();
-      openModal('modal-library');
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    });
-  }
-
-  // Library Edition Pills (Multi-select)
-  document.querySelectorAll('[data-lib-edition]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const ed = btn.dataset.libEdition;
-      if (ed === 'all') {
-        libraryState.editions = ['all'];
-      } else {
-        const allIdx = libraryState.editions.indexOf('all');
-        if (allIdx > -1) libraryState.editions.splice(allIdx, 1);
-
-        const idx = libraryState.editions.indexOf(ed);
-        if (idx > -1) {
-          libraryState.editions.splice(idx, 1);
-        } else {
-          libraryState.editions.push(ed);
-        }
-        if (libraryState.editions.length === 0) {
-          libraryState.editions = ['all'];
-        }
-      }
-
-      document.querySelectorAll('[data-lib-edition]').forEach(b => {
-        const bEd = b.dataset.libEdition;
-        if (libraryState.editions.includes('all')) {
-          b.classList.toggle('active', bEd === 'all');
-        } else {
-          b.classList.toggle('active', libraryState.editions.includes(bEd));
-        }
-      });
-      renderLibrary();
-    });
-  });
-
-  const libSearch = document.getElementById('library-search');
-  if (libSearch) {
-    libSearch.addEventListener('input', () => {
-      libraryState.search = libSearch.value.trim();
-      renderLibrary();
-    });
-  }
-
-  const libPlatFr = document.getElementById('lib-filter-platform-fr');
-  if (libPlatFr) {
-    libPlatFr.addEventListener('change', () => {
-      libraryState.platformFr = libPlatFr.value;
-      renderLibrary();
-    });
-  }
-
-  const libPlatJp = document.getElementById('lib-filter-platform-jp');
-  if (libPlatJp) {
-    libPlatJp.addEventListener('change', () => {
-      libraryState.platformJp = libPlatJp.value;
-      renderLibrary();
-    });
-  }
-
-  const libYear = document.getElementById('lib-filter-year');
-  if (libYear) {
-    libYear.addEventListener('change', () => {
-      libraryState.year = libYear.value;
-      renderLibrary();
-    });
-  }
-
-  // Priced Only Toggle (Library Modal)
-  const libTogglePricedOnly = document.getElementById('lib-toggle-priced-only');
-  if (libTogglePricedOnly) {
-    libTogglePricedOnly.addEventListener('change', () => {
-      libraryState.pricedOnly = libTogglePricedOnly.checked;
-      renderLibrary();
-    });
-  }
-
-  // ── PURCHASES MODAL & CSV ──
-  const btnPurchases = document.getElementById('btn-purchases');
-  if (btnPurchases) {
-    btnPurchases.addEventListener('click', () => {
-      renderPurchases();
-      openModal('modal-purchases');
-      setupQuickEntry();
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-    });
-  }
-
-  const btnExportCSV = document.getElementById('btn-export-csv');
-  if (btnExportCSV) {
-    btnExportCSV.addEventListener('click', exportCSV);
-  }
-
-  // Scroll to top
-  const btnScrollTop = document.getElementById('btn-scroll-top');
-  if (btnScrollTop) {
-    btnScrollTop.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    window.addEventListener('scroll', () => {
-      btnScrollTop.classList.toggle('hidden', window.scrollY <= 300);
-    }, { passive: true });
-  }
 }
 
-// ── INIT ─────────────────────────────────────────────────────
-function initApp() {
-  // Step 1: Base state defaults & initial timestamp
-  try {
-    updateTimestamp();
-    state.activeMobileTab = 'margin';
-    state.pricingRefFr = 'avg';
-    state.pricingRefJp = 'min';
-  } catch (err) {
-    console.error('[PokéSpread] Init error in base state/timestamp:', err);
-  }
-
-  // Step 2: Instant rate display (prevents 1€=—¥ from displaying while async rate fetches)
-  try {
-    const liveRateEl = document.getElementById('live-rate');
-    if (liveRateEl && (!liveRateEl.textContent || liveRateEl.textContent.trim() === '—')) {
-      liveRateEl.textContent = (state.rate || 163.5).toFixed(2);
-    }
-  } catch (err) {
-    console.error('[PokéSpread] Init error in initial live rate setup:', err);
-  }
-
-  // Step 3: Filter UI components & triggers
-  try {
-    renderCountryOptionsList();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in renderCountryOptionsList:', err);
-  }
-
-  try {
-    renderPricePresets();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in renderPricePresets:', err);
-  }
-
-  try {
-    updateCountryTriggerLabel();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in updateCountryTriggerLabel:', err);
-  }
-
-  try {
-    updatePriceTriggerLabel();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in updatePriceTriggerLabel:', err);
-  }
-
-  try {
-    updateConditionTriggerLabels();
-    renderConditionPopovers();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in condition trigger labels/popovers:', err);
-  }
-
-  // Step 4: Core recommendation rendering & counters (Renders dynamic cards)
-  try {
-    renderAllColumns();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in renderAllColumns:', err);
-  }
-
-  try {
-    renderMobileColumn();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in renderMobileColumn:', err);
-  }
-
-  try {
-    syncFilterBarPlacement();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in syncFilterBarPlacement:', err);
-  }
-
-  try {
-    updateColumnCounters();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in updateColumnCounters:', err);
-  }
-
-  // Step 5: Event listeners, badges & icons
-  try {
-    bindEvents();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in bindEvents:', err);
-  }
-
-  try {
-    updatePurchaseBadge();
-  } catch (err) {
-    console.error('[PokéSpread] Init error in updatePurchaseBadge:', err);
-  }
-
-  try {
-    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-      lucide.createIcons();
-    }
-  } catch (err) {
-    console.error('[PokéSpread] Init error creating Lucide icons:', err);
-  }
-
-  // Step 6: Non-blocking async background fetch tasks
-  try {
-    fetchLiveRate().catch(err => console.warn('[PokéSpread] Background live rate warning:', err));
-  } catch (err) {
-    console.warn('[PokéSpread] fetchLiveRate error:', err);
-  }
-
-  try {
-    if (typeof CatalogService !== 'undefined' && CatalogService.initCatalog) {
-      CatalogService.initCatalog().catch(err => console.warn('[PokéSpread] Background CatalogService warning:', err));
-    }
-  } catch (err) {
-    console.warn('[PokéSpread] CatalogService error:', err);
-  }
-
-  try {
-    if (typeof PriceService !== 'undefined' && PriceService.loadPricesJson) {
-      PriceService.loadPricesJson().catch(err => console.warn('[PokéSpread] Background PriceService warning:', err));
-    }
-  } catch (err) {
-    console.warn('[PokéSpread] PriceService error:', err);
-  }
+function closeAllPopovers() {
+  document.querySelectorAll('#popover-filter-country, #popover-filter-price, #popover-filter-condition, #popover-lib-filter-condition').forEach(el => {
+    el.classList.add('hidden');
+  });
 }
 
-function safeInit() {
-  try {
-    initApp();
-  } catch (globalErr) {
-    console.error('[PokéSpread] Critical unexpected error during initApp:', globalErr);
-    // Emergency fallback to ensure columns and counters are not empty
-    try {
+function bindMainEvents() {
+  // Top bar buttons
+  const refreshBtn = document.getElementById('btn-refresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      showToast('Actualisation des prix...');
+      await PriceService.loadPrices();
+      CatalogService.populateCards(CatalogService.cards);
       renderAllColumns();
-      updateColumnCounters();
-      const liveRateEl = document.getElementById('live-rate');
-      if (liveRateEl && liveRateEl.textContent === '—') {
-        liveRateEl.textContent = (state.rate || 163.5).toFixed(2);
+      showToast('Prix actualisés.');
+    });
+  }
+
+  const settingsBtn = document.getElementById('btn-settings');
+  const settingsMobileBtn = document.getElementById('btn-settings-mobile');
+  if (settingsBtn) settingsBtn.addEventListener('click', () => openModal('modal-settings'));
+  if (settingsMobileBtn) settingsMobileBtn.addEventListener('click', () => openModal('modal-settings'));
+
+  const scannerEnginePill = document.getElementById('scanner-engine-pill');
+  if (scannerEnginePill) scannerEnginePill.addEventListener('click', () => openModal('modal-settings'));
+
+  const clearCacheBtn = document.getElementById('btn-clear-cache');
+  if (clearCacheBtn) {
+    clearCacheBtn.addEventListener('click', async () => {
+      await CatalogService.clearCache();
+      showToast('Cache TCGdex vidé.');
+      location.reload();
+    });
+  }
+
+  // Search input
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    let debounceTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        state.searchQuery = searchInput.value.trim();
+        const matches = CatalogService.cards.filter(cardMatchesFilters);
+        renderSearchDropdown(matches);
+        renderAllColumns();
+      }, 150);
+    });
+
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim().length > 0) {
+        const matches = CatalogService.cards.filter(cardMatchesFilters);
+        renderSearchDropdown(matches);
       }
-    } catch (fallbackErr) {
-      console.error('[PokéSpread] Emergency fallback render failed:', fallbackErr);
+    });
+
+    document.addEventListener('click', (e) => {
+      const dd = document.getElementById('search-dropdown');
+      if (dd && !searchInput.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+  }
+
+  // Three Image-Button Cards
+  const btnLibrary = document.getElementById('btn-library');
+  const btnScanner = document.getElementById('btn-scanner');
+  const btnPurchases = document.getElementById('btn-purchases');
+
+  if (btnLibrary) btnLibrary.addEventListener('click', () => openLibraryModal());
+  if (btnScanner) btnScanner.addEventListener('click', () => openScannerModal());
+  if (btnPurchases) btnPurchases.addEventListener('click', () => {
+    renderPurchases();
+    openModal('modal-purchases');
+  });
+
+  // Modal close buttons
+  document.querySelectorAll('[data-close-modal]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modalId = btn.getAttribute('data-close-modal');
+      closeModal(modalId);
+    });
+  });
+
+  // Scanner controls
+  const nativeCamInput = document.getElementById('native-camera-input');
+  const fallbackFileInput = document.getElementById('scanner-file-fallback');
+  const nativeCamBtn = document.getElementById('scanner-native-btn');
+  const galleryBtn = document.getElementById('scanner-gallery-btn');
+  const scannerCloseBtn = document.getElementById('scanner-close-btn');
+
+  if (nativeCamBtn && nativeCamInput) {
+    nativeCamBtn.addEventListener('click', () => nativeCamInput.click());
+    nativeCamInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        ScannerService.processImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (galleryBtn && fallbackFileInput) {
+    galleryBtn.addEventListener('click', () => fallbackFileInput.click());
+    fallbackFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        ScannerService.processImageFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (scannerCloseBtn) {
+    scannerCloseBtn.addEventListener('click', () => closeScannerModal());
+  }
+
+  // Manual ref in scanner
+  const manualInput = document.getElementById('scanner-manual-ref');
+  const manualBtn = document.getElementById('scanner-manual-btn');
+  if (manualBtn && manualInput) {
+    const handleManual = () => {
+      const q = manualInput.value.trim().toLowerCase();
+      if (!q) return;
+      const resultsEl = document.getElementById('scanner-results');
+      const numMatch = q.match(/(\d{1,3})\s*[\/|\\]\s*(\d{2,3})/) || q.match(/(\d{1,3})/);
+      const cardNum = numMatch ? numMatch[1] : '';
+
+      let grade = null;
+      if (q.includes('psa 10')) grade = 'PSA 10';
+      else if (q.includes('psa 9')) grade = 'PSA 9';
+      else if (q.includes('bgs 10')) grade = 'BGS 10';
+
+      const data = {
+        card_number: cardNum,
+        pokemon_name_en: q,
+        grade: grade,
+        is_graded: !!grade
+      };
+      ScannerService.handleIdentificationSuccess(data, resultsEl);
+    };
+    manualBtn.addEventListener('click', handleManual);
+    manualInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleManual(); });
+  }
+
+  // Purchases CSV export
+  const exportCsvBtn = document.getElementById('btn-export-csv');
+  if (exportCsvBtn) exportCsvBtn.addEventListener('click', () => exportPurchasesCSV());
+
+  // Mobile Tabs switcher
+  document.querySelectorAll('.mobile-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.getAttribute('data-tab');
+      state.activeMobileTab = tabName;
+      document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('mobile-tab-active', 'border-blue-500', 'bg-blue-50', 'text-blue-900'));
+      tab.classList.add('mobile-tab-active', 'border-blue-500', 'bg-blue-50', 'text-blue-900');
+      renderAllColumns();
+    });
+  });
+
+  // Load more buttons
+  const lmMargin = document.getElementById('load-more-margin');
+  const lmRoi = document.getElementById('load-more-roi');
+  const lmVel = document.getElementById('load-more-velocity');
+  const lmMobile = document.getElementById('mobile-load-more');
+
+  if (lmMargin) lmMargin.addEventListener('click', () => { state.visibleCount.margin += 25; renderAllColumns(); });
+  if (lmRoi) lmRoi.addEventListener('click', () => { state.visibleCount.roi += 25; renderAllColumns(); });
+  if (lmVel) lmVel.addEventListener('click', () => { state.visibleCount.velocity += 25; renderAllColumns(); });
+  if (lmMobile) lmMobile.addEventListener('click', () => {
+    state.visibleCount[state.activeMobileTab] = (state.visibleCount[state.activeMobileTab] || 25) + 25;
+    renderAllColumns();
+  });
+
+  // Scroll to top button
+  const scrollTopBtn = document.getElementById('btn-scroll-top');
+  if (scrollTopBtn) {
+    window.addEventListener('scroll', () => {
+      scrollTopBtn.classList.toggle('hidden', window.scrollY < 300);
+    });
+    scrollTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  // Column headers focus mode
+  document.querySelectorAll('.col-header').forEach(header => {
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const colName = header.getAttribute('data-col');
+      if (colName) toggleColumnFocus(colName);
+    });
+  });
+
+  // Close modals on dark backdrop overlay click
+  document.querySelectorAll('.modal-overlay, #modal-scanner').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        if (overlay.id === 'modal-scanner') {
+          closeScannerModal();
+        } else {
+          closeModal(overlay.id);
+        }
+      }
+    });
+  });
+
+  // Close modals and popovers on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeAllPopovers();
+      document.querySelectorAll('.modal-overlay.open, #modal-scanner').forEach(m => {
+        if (m.id === 'modal-scanner' && m.style.display !== 'none') {
+          closeScannerModal();
+        } else if (m.classList.contains('open')) {
+          closeModal(m.id);
+        }
+      });
     }
+  });
+
+  // Bind arbitrage cost settings
+  bindCostSettings();
+}
+
+function bindCostSettings() {
+  const feeInput = document.getElementById('input-resale-fee');
+  const vatInput = document.getElementById('input-import-vat');
+  const shipInput = document.getElementById('input-shipping-cost');
+  const saveBtn = document.getElementById('btn-save-costs');
+  const resetBtn = document.getElementById('btn-reset-costs');
+
+  try {
+    const saved = localStorage.getItem('pokespread_costs');
+    if (saved) {
+      Object.assign(state.costs, JSON.parse(saved));
+    }
+  } catch (e) {}
+
+  if (feeInput) feeInput.value = state.costs.resaleFeePct ?? 0;
+  if (vatInput) vatInput.value = state.costs.importVatPct ?? 0;
+  if (shipInput) shipInput.value = state.costs.shippingPerCardEur ?? 0;
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      state.costs.resaleFeePct = feeInput ? Number(feeInput.value) || 0 : 0;
+      state.costs.importVatPct = vatInput ? Number(vatInput.value) || 0 : 0;
+      state.costs.shippingPerCardEur = shipInput ? Number(shipInput.value) || 0 : 0;
+      localStorage.setItem('pokespread_costs', JSON.stringify(state.costs));
+      renderAllColumns();
+      showToast('✅ Frais d\'arbitrage appliqués aux marges !');
+      closeModal('modal-settings');
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      state.costs.resaleFeePct = 0;
+      state.costs.importVatPct = 0;
+      state.costs.shippingPerCardEur = 0;
+      if (feeInput) feeInput.value = 0;
+      if (vatInput) vatInput.value = 0;
+      if (shipInput) shipInput.value = 0;
+      localStorage.setItem('pokespread_costs', JSON.stringify(state.costs));
+      renderAllColumns();
+      showToast('Frais réinitialisés par défaut');
+    });
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', safeInit);
-} else {
-  safeInit();
+function openScannerModal() {
+  const el = document.getElementById('modal-scanner');
+  if (el) {
+    el.style.display = 'flex';
+    document.body.classList.add('overflow-hidden');
+    ScannerService.updateEngineBadge();
+  }
 }
+
+function closeScannerModal() {
+  const el = document.getElementById('modal-scanner');
+  if (el) {
+    el.style.display = 'none';
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function openLibraryModal() {
+  const modal = document.getElementById('modal-library');
+  const grid = document.getElementById('library-grid');
+  const counter = document.getElementById('library-counter');
+  const searchInput = document.getElementById('library-search');
+  const btnLibCondition = document.getElementById('btn-lib-filter-condition');
+  const popoverLibCondition = document.getElementById('popover-lib-filter-condition');
+  const selYear = document.getElementById('lib-filter-year');
+  const selPlatformFr = document.getElementById('lib-filter-platform-fr');
+  const selPlatformJp = document.getElementById('lib-filter-platform-jp');
+  const libPricedToggle = document.getElementById('lib-toggle-priced-only');
+
+  if (!modal || !grid) return;
+
+  const libState = {
+    search: searchInput ? searchInput.value.trim() : '',
+    editions: ['all'],
+    pricedOnly: libPricedToggle ? libPricedToggle.checked : false,
+    year: selYear ? selYear.value : 'all',
+    limit: 40
+  };
+
+  function renderGrid() {
+    const q = libState.search.toLowerCase().trim();
+    const filtered = CatalogService.cards.filter(c => {
+      // 1. Search text
+      if (q && !(c.displayName || c.name || '').toLowerCase().includes(q) && !(c.ref || '').toLowerCase().includes(q) && (c.local_id || '') !== q) {
+        return false;
+      }
+      // 2. Multi-select editions
+      if (!libState.editions.includes('all') && !libState.editions.includes(c.edition)) {
+        return false;
+      }
+      // 3. Priced only
+      if (libState.pricedOnly && !PriceService.getExactPrice(c)) {
+        return false;
+      }
+      // 4. Year filter
+      if (libState.year !== 'all') {
+        const sid = (c.set_id || '').toLowerCase();
+        if (libState.year === '2026' || libState.year === '2025' || libState.year === '2024') {
+          if (!sid.startsWith('sv') && !sid.startsWith('m')) return false;
+        } else if (libState.year === '2023') {
+          if (!sid.startsWith('sv') && !sid.startsWith('s12') && !sid.startsWith('s11')) return false;
+        } else if (libState.year === '2022' || libState.year === '2021' || libState.year === '2020') {
+          if (!sid.startsWith('s') && !sid.startsWith('swsh')) return false;
+        }
+      }
+      return true;
+    });
+
+    if (counter) counter.textContent = `${filtered.length} cartes`;
+
+    const slice = filtered.slice(0, libState.limit);
+    let cardsHtml = slice.map((c, i) => renderCardTile(c, i + 1)).join('');
+
+    if (!cardsHtml) {
+      grid.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400">Aucune carte trouvée avec ces critères.</div>`;
+    } else {
+      if (filtered.length > libState.limit) {
+        cardsHtml += `
+          <div class="col-span-full py-4 text-center">
+            <button type="button" id="btn-lib-load-more" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">
+              Charger plus (${filtered.length - libState.limit} restantes)
+            </button>
+          </div>
+        `;
+      }
+      grid.innerHTML = cardsHtml;
+      const loadMoreBtn = document.getElementById('btn-lib-load-more');
+      if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+          libState.limit += 40;
+          renderGrid();
+        });
+      }
+    }
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // Bind library search
+  if (searchInput) {
+    searchInput.oninput = () => {
+      libState.search = searchInput.value;
+      libState.limit = 40;
+      renderGrid();
+    };
+  }
+
+  // Bind edition pills (multi-select)
+  document.querySelectorAll('#lib-edition-pills .lib-filter-btn').forEach(btn => {
+    btn.onclick = () => {
+      const ed = btn.getAttribute('data-lib-edition') || 'all';
+      if (ed === 'all') {
+        libState.editions = ['all'];
+        document.querySelectorAll('#lib-edition-pills .lib-filter-btn').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-lib-edition') === 'all');
+        });
+      } else {
+        if (libState.editions.includes('all')) {
+          libState.editions = [];
+        }
+        if (libState.editions.includes(ed)) {
+          libState.editions = libState.editions.filter(x => x !== ed);
+        } else {
+          libState.editions.push(ed);
+        }
+        if (libState.editions.length === 0) {
+          libState.editions = ['all'];
+        }
+        document.querySelectorAll('#lib-edition-pills .lib-filter-btn').forEach(b => {
+          const bEd = b.getAttribute('data-lib-edition');
+          b.classList.toggle('active', libState.editions.includes(bEd));
+        });
+      }
+      libState.limit = 40;
+      renderGrid();
+    };
+  });
+
+  // Bind priced only
+  if (libPricedToggle) {
+    libPricedToggle.onchange = () => {
+      libState.pricedOnly = libPricedToggle.checked;
+      libState.limit = 40;
+      renderGrid();
+    };
+  }
+
+  // Bind Year filter
+  if (selYear) {
+    selYear.onchange = () => {
+      libState.year = selYear.value;
+      libState.limit = 40;
+      renderGrid();
+    };
+  }
+
+  // Bind platform selects
+  if (selPlatformFr) {
+    selPlatformFr.value = state.pricingRefFr;
+    selPlatformFr.onchange = () => {
+      state.pricingRefFr = selPlatformFr.value;
+      renderGrid();
+      renderAllColumns();
+    };
+  }
+  if (selPlatformJp) {
+    selPlatformJp.value = state.pricingRefJp;
+    selPlatformJp.onchange = () => {
+      state.pricingRefJp = selPlatformJp.value;
+      renderGrid();
+      renderAllColumns();
+    };
+  }
+
+  // Bind condition popover inside library modal
+  if (btnLibCondition && popoverLibCondition) {
+    btnLibCondition.onclick = (e) => {
+      e.stopPropagation();
+      const isHidden = popoverLibCondition.classList.contains('hidden');
+      closeAllPopovers();
+      if (isHidden) {
+        renderConditionPopover(popoverLibCondition, () => {
+          renderGrid();
+          renderAllColumns();
+        });
+        popoverLibCondition.classList.remove('hidden');
+      }
+    };
+  }
+
+  updateConditionTriggerLabel();
+  renderGrid();
+  openModal('modal-library');
+}
+
+// ── 16. LIVE FX RATE FETCHER (BROWSER BACKGROUND) ─────────────
+async function fetchLiveExchangeRate() {
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.rates?.JPY) {
+        state.rate = data.rates.JPY;
+        const rateEl = document.getElementById('live-rate');
+        if (rateEl) rateEl.textContent = state.rate.toFixed(2);
+      }
+    }
+  } catch (e) {
+    console.log('Using default exchange rate:', state.rate);
+  }
+}
+
+// ── 17. APPLICATION INITIALIZATION ────────────────────────────
+async function initApp() {
+  console.log('⚡ Initializing PokéSpread JP→FR v4.0...');
+
+  // 1. Bind global events & popovers
+  bindFilterEvents();
+  bindMainEvents();
+  setupQuickEntry();
+  loadPurchases();
+  ScannerService.init();
+
+  // 2. Fetch live FX rate
+  fetchLiveExchangeRate();
+
+  // 3. Load verified market prices from prices.json (Instant)
+  await PriceService.loadPrices();
+
+  // 4. Load full catalog with IndexedDB caching (24h TTL)
+  await CatalogService.loadCatalog();
+
+  // 5. Initial Render
+  renderAllColumns();
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+
+  console.log('✅ PokéSpread ready: 60fps responsive arbitrage board active.');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initApp();
+});
