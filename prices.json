@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "generated_at": "2026-11-22T04:57:59.287608+00:00",
+    "generated_at": "2026-11-22T14:11:44.137511+00:00",
     "source": "global_real_sold_pipeline_v3",
     "total_sets_discovered": 407,
     "total_catalog_cards": 22368,
     "total_chase_cards": 5589,
     "card_count": 1873,
-    "priced_cards": 1326,
-    "processed_this_run": 180,
+    "priced_cards": 1457,
+    "processed_this_run": 170,
     "circuit_breakers": {
       "ebay_fr": true,
       "mercari_jp": true,
@@ -12989,14 +12989,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "112",
-      "fetched_at": "2026-11-19T05:43:59.822135+00:00",
+      "fetched_at": "2026-11-22T13:57:00.227307+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.66,
+        "median": 5.66,
+        "min": 5.65,
+        "max": 5.67,
+        "count": 2,
+        "sold_samples": [
+          5.65,
+          5.67
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -13004,10 +13007,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.65,
+          "avg30": 5.67,
+          "avg7": 5.71,
+          "avg1": 5.33,
+          "lowPrice": 3.8,
+          "averageSellPrice": 5.67
+        },
+        "cardmarket_trend": 5.65,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 13.09,
+            "low": 12.0,
+            "mid": 14.74
+          }
+        },
+        "tcgplayer_usd": 13.09,
         "graded": {}
       },
       "jp": {
@@ -13121,14 +13137,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "110",
-      "fetched_at": "2026-11-19T05:44:56.199800+00:00",
+      "fetched_at": "2026-11-22T13:56:12.167308+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 35.01,
+        "median": 35.01,
+        "min": 32.94,
+        "max": 37.08,
+        "count": 2,
+        "sold_samples": [
+          32.94,
+          37.08
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -13136,10 +13155,24 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 37.08,
+          "avg30": 32.94,
+          "avg7": 40.94,
+          "avg1": 26.25,
+          "lowPrice": 12.5,
+          "averageSellPrice": 43.33,
+          "reverseHoloTrend": 16.74
+        },
+        "cardmarket_trend": 37.08,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 114.74,
+            "low": 114.99,
+            "mid": 556.75
+          }
+        },
+        "tcgplayer_usd": 114.74,
         "graded": {}
       },
       "jp": {
@@ -13179,14 +13212,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "116",
-      "fetched_at": "2026-11-19T05:45:56.196002+00:00",
+      "fetched_at": "2026-11-22T13:56:03.300325+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.67,
+        "median": 6.67,
+        "min": 6.21,
+        "max": 7.12,
+        "count": 2,
+        "sold_samples": [
+          6.21,
+          7.12
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -13194,10 +13230,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.21,
+          "avg30": 7.12,
+          "avg7": 6.98,
+          "avg1": 7.5,
+          "lowPrice": 3.25,
+          "averageSellPrice": 7.19
+        },
+        "cardmarket_trend": 6.21,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 16.71,
+            "low": 15.41,
+            "mid": 19.0
+          }
+        },
+        "tcgplayer_usd": 16.71,
         "graded": {}
       },
       "jp": {
@@ -14125,7 +14174,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "122",
-      "fetched_at": "2026-11-19T05:46:00.246865+00:00",
+      "fetched_at": "2026-11-22T13:57:00.547243+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -15367,7 +15416,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "123",
-      "fetched_at": "2026-11-19T05:48:04.596315+00:00",
+      "fetched_at": "2026-11-22T13:56:03.745195+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -15721,14 +15770,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "129",
-      "fetched_at": "2026-11-19T05:48:06.633695+00:00",
+      "fetched_at": "2026-11-22T13:56:02.226534+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.46,
+        "median": 2.46,
+        "min": 2.44,
+        "max": 2.48,
+        "count": 2,
+        "sold_samples": [
+          2.44,
+          2.48
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -15736,10 +15788,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.44,
+          "avg30": 2.48,
+          "avg7": 2.35,
+          "avg1": 1.79,
+          "lowPrice": 1.3,
+          "averageSellPrice": 2.57
+        },
+        "cardmarket_trend": 2.44,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.48,
+            "low": 2.9,
+            "mid": 4.5
+          }
+        },
+        "tcgplayer_usd": 4.48,
         "graded": {}
       },
       "jp": {
@@ -17237,14 +17302,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "132",
-      "fetched_at": "2026-11-19T05:50:07.584321+00:00",
+      "fetched_at": "2026-11-22T13:56:06.648837+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.75,
+        "median": 5.75,
+        "min": 5.59,
+        "max": 5.91,
+        "count": 2,
+        "sold_samples": [
+          5.59,
+          5.91
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -17252,10 +17320,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.91,
+          "avg30": 5.59,
+          "avg7": 5.61,
+          "avg1": 5.38,
+          "lowPrice": 3.9,
+          "averageSellPrice": 5.55
+        },
+        "cardmarket_trend": 5.91,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 7.49,
+            "low": 6.3,
+            "mid": 10.0
+          }
+        },
+        "tcgplayer_usd": 7.49,
         "graded": {}
       },
       "jp": {
@@ -17295,7 +17376,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "133",
-      "fetched_at": "2026-11-19T05:50:07.885897+00:00",
+      "fetched_at": "2026-11-22T13:56:15.068088+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -17353,14 +17434,16 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "132",
-      "fetched_at": "2026-11-19T05:50:08.186255+00:00",
+      "fetched_at": "2026-11-22T13:57:04.312905+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.58,
+        "median": 0.58,
+        "min": 0.58,
+        "max": 0.58,
+        "count": 1,
+        "sold_samples": [
+          0.58
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -17370,8 +17453,14 @@
         },
         "cardmarket": null,
         "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.63,
+            "low": 0.1,
+            "mid": 0.8
+          }
+        },
+        "tcgplayer_usd": 0.63,
         "graded": {}
       },
       "jp": {
@@ -17411,14 +17500,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "133",
-      "fetched_at": "2026-11-19T05:50:09.133086+00:00",
+      "fetched_at": "2026-11-22T13:56:11.904447+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.48,
+        "median": 4.48,
+        "min": 4.34,
+        "max": 4.62,
+        "count": 2,
+        "sold_samples": [
+          4.34,
+          4.62
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -17426,10 +17518,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.34,
+          "avg30": 4.62,
+          "avg7": 4.27,
+          "avg1": 4.7,
+          "lowPrice": 2.58,
+          "averageSellPrice": 4.73
+        },
+        "cardmarket_trend": 4.34,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.4,
+            "low": 5.94,
+            "mid": 7.99
+          }
+        },
+        "tcgplayer_usd": 6.4,
         "graded": {}
       },
       "jp": {
@@ -17469,14 +17574,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "135",
-      "fetched_at": "2026-11-19T05:50:10.125970+00:00",
+      "fetched_at": "2026-11-22T13:56:13.563745+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.16,
+        "median": 4.16,
+        "min": 4.08,
+        "max": 4.24,
+        "count": 2,
+        "sold_samples": [
+          4.08,
+          4.24
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -17484,10 +17592,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.08,
+          "avg30": 4.24,
+          "avg7": 4.09,
+          "avg1": 4.05,
+          "lowPrice": 2.5,
+          "averageSellPrice": 4.28
+        },
+        "cardmarket_trend": 4.08,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.69,
+            "low": 10.77,
+            "mid": 17.25
+          }
+        },
+        "tcgplayer_usd": 15.69,
         "graded": {}
       },
       "jp": {
@@ -17881,14 +18002,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "138",
-      "fetched_at": "2026-11-19T05:50:12.650048+00:00",
+      "fetched_at": "2026-11-22T13:56:14.304902+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.83,
+        "median": 3.83,
+        "min": 3.6,
+        "max": 4.05,
+        "count": 2,
+        "sold_samples": [
+          3.6,
+          4.05
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -17896,10 +18020,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.6,
+          "avg30": 4.05,
+          "avg7": 3.76,
+          "avg1": 3.24,
+          "lowPrice": 1.94,
+          "averageSellPrice": 4.11
+        },
+        "cardmarket_trend": 3.6,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.35,
+            "low": 7.96,
+            "mid": 10.74
+          }
+        },
+        "tcgplayer_usd": 10.35,
         "graded": {}
       },
       "jp": {
@@ -17939,7 +18076,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "136",
-      "fetched_at": "2026-11-19T05:51:10.630173+00:00",
+      "fetched_at": "2026-11-22T13:58:13.993316+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -18071,14 +18208,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "137",
-      "fetched_at": "2026-11-19T05:51:12.842645+00:00",
+      "fetched_at": "2026-11-22T13:56:14.672501+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 21.87,
+        "median": 21.87,
+        "min": 21.8,
+        "max": 21.94,
+        "count": 2,
+        "sold_samples": [
+          21.8,
+          21.94
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -18086,10 +18226,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 21.8,
+          "avg30": 21.94,
+          "avg7": 24.01,
+          "avg1": 21.0,
+          "lowPrice": 13.0,
+          "averageSellPrice": 20.94
+        },
+        "cardmarket_trend": 21.8,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 40.78,
+            "low": 38.99,
+            "mid": 45.3
+          }
+        },
+        "tcgplayer_usd": 40.78,
         "graded": {}
       },
       "jp": {
@@ -18129,14 +18282,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "138",
-      "fetched_at": "2026-11-19T05:51:12.963205+00:00",
+      "fetched_at": "2026-11-22T13:56:15.122331+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 10.41,
+        "median": 10.41,
+        "min": 10.15,
+        "max": 10.68,
+        "count": 2,
+        "sold_samples": [
+          10.15,
+          10.68
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -18144,10 +18300,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 10.15,
+          "avg30": 10.68,
+          "avg7": 10.78,
+          "avg1": 10.15,
+          "lowPrice": 8.0,
+          "averageSellPrice": 10.47
+        },
+        "cardmarket_trend": 10.15,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 17.11,
+            "low": 15.95,
+            "mid": 18.39
+          }
+        },
+        "tcgplayer_usd": 17.11,
         "graded": {}
       },
       "jp": {
@@ -18409,14 +18578,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "138",
-      "fetched_at": "2026-11-19T05:51:14.168733+00:00",
+      "fetched_at": "2026-11-22T13:56:15.389220+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.89,
+        "median": 6.89,
+        "min": 6.72,
+        "max": 7.07,
+        "count": 2,
+        "sold_samples": [
+          6.72,
+          7.07
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -18424,10 +18596,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.07,
+          "avg30": 6.72,
+          "avg7": 6.58,
+          "avg1": 6.65,
+          "lowPrice": 3.4,
+          "averageSellPrice": 6.73
+        },
+        "cardmarket_trend": 7.07,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.21,
+            "low": 12.95,
+            "mid": 17.18
+          }
+        },
+        "tcgplayer_usd": 15.21,
         "graded": {}
       },
       "jp": {
@@ -18689,7 +18874,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "139",
-      "fetched_at": "2026-11-19T05:51:14.901806+00:00",
+      "fetched_at": "2026-11-22T13:58:16.059655+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -18895,7 +19080,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "141",
-      "fetched_at": "2026-11-19T05:51:16.381214+00:00",
+      "fetched_at": "2026-11-22T13:56:17.586611+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -19241,14 +19426,16 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "140",
-      "fetched_at": "2026-11-19T05:52:14.886672+00:00",
+      "fetched_at": "2026-11-22T13:57:18.542475+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.59,
+        "median": 0.59,
+        "min": 0.59,
+        "max": 0.59,
+        "count": 1,
+        "sold_samples": [
+          0.59
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -19258,8 +19445,14 @@
         },
         "cardmarket": null,
         "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.64,
+            "low": 0.29,
+            "mid": 0.91
+          }
+        },
+        "tcgplayer_usd": 0.64,
         "graded": {}
       },
       "jp": {
@@ -19299,14 +19492,16 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "141",
-      "fetched_at": "2026-11-19T05:52:15.340340+00:00",
+      "fetched_at": "2026-11-22T13:58:00.600545+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.54,
+        "median": 0.54,
+        "min": 0.54,
+        "max": 0.54,
+        "count": 1,
+        "sold_samples": [
+          0.54
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -19316,8 +19511,14 @@
         },
         "cardmarket": null,
         "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.59,
+            "low": 0.24,
+            "mid": 0.79
+          }
+        },
+        "tcgplayer_usd": 0.59,
         "graded": {}
       },
       "jp": {
@@ -19357,7 +19558,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "142",
-      "fetched_at": "2026-11-19T05:52:16.936441+00:00",
+      "fetched_at": "2026-11-22T13:57:02.237351+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -20057,14 +20258,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "145",
-      "fetched_at": "2026-11-19T15:06:11.920093+00:00",
+      "fetched_at": "2026-11-22T13:57:02.533835+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.87,
+        "median": 1.87,
+        "min": 1.64,
+        "max": 2.1,
+        "count": 2,
+        "sold_samples": [
+          1.64,
+          2.1
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -20072,10 +20276,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.64,
+          "avg30": 2.1,
+          "avg7": 1.79,
+          "avg1": 1.49,
+          "lowPrice": 1.19,
+          "averageSellPrice": 2.1
+        },
+        "cardmarket_trend": 1.64,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.93,
+            "low": 1.99,
+            "mid": 3.15
+          }
+        },
+        "tcgplayer_usd": 2.93,
         "graded": {}
       },
       "jp": {
@@ -20115,14 +20332,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "144",
-      "fetched_at": "2026-11-19T15:06:12.080708+00:00",
+      "fetched_at": "2026-11-22T13:57:03.133052+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.15,
+        "median": 5.15,
+        "min": 5.1,
+        "max": 5.2,
+        "count": 2,
+        "sold_samples": [
+          5.1,
+          5.2
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -20130,10 +20350,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.1,
+          "avg30": 5.2,
+          "avg7": 5.11,
+          "avg1": 5.6,
+          "lowPrice": 3.85,
+          "averageSellPrice": 5.34
+        },
+        "cardmarket_trend": 5.1,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 9.07,
+            "low": 7.9,
+            "mid": 10.09
+          }
+        },
+        "tcgplayer_usd": 9.07,
         "graded": {}
       },
       "jp": {
@@ -20831,14 +21064,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "143",
-      "fetched_at": "2026-11-19T15:06:17.127552+00:00",
+      "fetched_at": "2026-11-22T13:57:03.788741+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 40.14,
+        "median": 40.14,
+        "min": 39.68,
+        "max": 40.61,
+        "count": 2,
+        "sold_samples": [
+          39.68,
+          40.61
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -20846,10 +21082,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 40.61,
+          "avg30": 39.68,
+          "avg7": 39.51,
+          "avg1": 49.99,
+          "lowPrice": 28.0,
+          "averageSellPrice": 39.31
+        },
+        "cardmarket_trend": 40.61,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 74.72,
+            "low": 69.98,
+            "mid": 79.0
+          }
+        },
+        "tcgplayer_usd": 74.72,
         "graded": {}
       },
       "jp": {
@@ -21029,14 +21278,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "148",
-      "fetched_at": "2026-11-19T15:06:18.857017+00:00",
+      "fetched_at": "2026-11-22T13:57:04.221528+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 60.06,
+        "median": 60.06,
+        "min": 59.99,
+        "max": 60.14,
+        "count": 2,
+        "sold_samples": [
+          59.99,
+          60.14
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -21044,10 +21296,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 59.99,
+          "avg30": 60.14,
+          "avg7": 58.63,
+          "avg1": 47.34,
+          "lowPrice": 25.0,
+          "averageSellPrice": 61.42
+        },
+        "cardmarket_trend": 59.99,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 95.02,
+            "low": 84.5,
+            "mid": 107.0
+          }
+        },
+        "tcgplayer_usd": 95.02,
         "graded": {}
       },
       "jp": {
@@ -21375,7 +21640,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "145",
-      "fetched_at": "2026-11-19T15:07:10.500132+00:00",
+      "fetched_at": "2026-11-22T13:57:05.849425+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -22157,7 +22422,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "149",
-      "fetched_at": "2026-11-19T15:08:14.089230+00:00",
+      "fetched_at": "2026-11-22T13:59:04.682578+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -22289,14 +22554,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "151",
-      "fetched_at": "2026-11-19T15:08:14.563182+00:00",
+      "fetched_at": "2026-11-22T13:57:06.096535+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.86,
+        "median": 8.86,
+        "min": 7.67,
+        "max": 10.05,
+        "count": 2,
+        "sold_samples": [
+          7.67,
+          10.05
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -22304,10 +22572,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 10.05,
+          "avg30": 7.67,
+          "avg7": 10.05,
+          "avg1": 27.88,
+          "lowPrice": 2.0,
+          "averageSellPrice": 7.6
+        },
+        "cardmarket_trend": 10.05,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.52,
+            "low": 7.73,
+            "mid": 13.31
+          }
+        },
+        "tcgplayer_usd": 10.52,
         "graded": {}
       },
       "jp": {
@@ -22487,7 +22768,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "152",
-      "fetched_at": "2026-11-19T15:08:16.027045+00:00",
+      "fetched_at": "2026-11-22T13:58:07.764593+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -22833,7 +23114,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "152",
-      "fetched_at": "2026-11-19T15:08:17.368446+00:00",
+      "fetched_at": "2026-11-22T13:57:20.190525+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -22965,14 +23246,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "153",
-      "fetched_at": "2026-11-19T15:08:18.037910+00:00",
+      "fetched_at": "2026-11-22T13:59:05.298007+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.45,
+        "median": 8.45,
+        "min": 8.39,
+        "max": 8.51,
+        "count": 2,
+        "sold_samples": [
+          8.39,
+          8.51
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -22980,10 +23264,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 8.51,
+          "avg30": 8.39,
+          "avg7": 8.58,
+          "avg1": 7.94,
+          "lowPrice": 4.88,
+          "averageSellPrice": 8.34
+        },
+        "cardmarket_trend": 8.51,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 11.14,
+            "low": 9.48,
+            "mid": 11.99
+          }
+        },
+        "tcgplayer_usd": 11.14,
         "graded": {}
       },
       "jp": {
@@ -23245,7 +23542,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "149",
-      "fetched_at": "2026-11-19T15:09:14.091725+00:00",
+      "fetched_at": "2026-11-22T14:00:05.298441+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -23657,14 +23954,16 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "154",
-      "fetched_at": "2026-11-19T15:10:21.208468+00:00",
+      "fetched_at": "2026-11-22T13:59:06.956064+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 20.84,
+        "median": 20.84,
+        "min": 20.84,
+        "max": 20.84,
+        "count": 1,
+        "sold_samples": [
+          20.84
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -23674,8 +23973,14 @@
         },
         "cardmarket": null,
         "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 22.65,
+            "low": 20.99,
+            "mid": 28.8
+          }
+        },
+        "tcgplayer_usd": 22.65,
         "graded": {}
       },
       "jp": {
@@ -24069,14 +24374,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "155",
-      "fetched_at": "2026-11-19T15:10:23.558185+00:00",
+      "fetched_at": "2026-11-22T13:59:06.643811+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.4,
+        "median": 6.4,
+        "min": 6.24,
+        "max": 6.56,
+        "count": 2,
+        "sold_samples": [
+          6.24,
+          6.56
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -24084,10 +24392,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.24,
+          "avg30": 6.56,
+          "avg7": 6.4,
+          "avg1": 6.55,
+          "lowPrice": 3.8,
+          "averageSellPrice": 6.79
+        },
+        "cardmarket_trend": 6.24,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 9.18,
+            "low": 7.7,
+            "mid": 10.56
+          }
+        },
+        "tcgplayer_usd": 9.18,
         "graded": {}
       },
       "jp": {
@@ -25147,14 +25468,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "155",
-      "fetched_at": "2026-11-19T15:11:21.609542+00:00",
+      "fetched_at": "2026-11-22T13:59:05.138355+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.21,
+        "median": 6.21,
+        "min": 6.16,
+        "max": 6.26,
+        "count": 2,
+        "sold_samples": [
+          6.16,
+          6.26
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -25162,10 +25486,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.16,
+          "avg30": 6.26,
+          "avg7": 6.24,
+          "avg1": 5.73,
+          "lowPrice": 3.5,
+          "averageSellPrice": 6.16
+        },
+        "cardmarket_trend": 6.16,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 16.94,
+            "low": 14.99,
+            "mid": 18.24
+          }
+        },
+        "tcgplayer_usd": 16.94,
         "graded": {}
       },
       "jp": {
@@ -25205,14 +25542,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "156",
-      "fetched_at": "2026-11-19T15:11:22.827951+00:00",
+      "fetched_at": "2026-11-22T13:59:05.035792+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 14.96,
+        "median": 14.96,
+        "min": 13.65,
+        "max": 16.28,
+        "count": 2,
+        "sold_samples": [
+          13.65,
+          16.28
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -25220,10 +25560,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 16.28,
+          "avg30": 13.65,
+          "avg7": 15.02,
+          "avg1": 13.89,
+          "lowPrice": 6.0,
+          "averageSellPrice": 13.61
+        },
+        "cardmarket_trend": 16.28,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 21.66,
+            "low": 20.99,
+            "mid": 30.26
+          }
+        },
+        "tcgplayer_usd": 21.66,
         "graded": {}
       },
       "jp": {
@@ -25625,14 +25978,16 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "158",
-      "fetched_at": "2026-11-19T15:11:32.113970+00:00",
+      "fetched_at": "2026-11-22T14:00:16.704970+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 29.4,
+        "median": 29.4,
+        "min": 29.4,
+        "max": 29.4,
+        "count": 1,
+        "sold_samples": [
+          29.4
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -25642,8 +25997,14 @@
         },
         "cardmarket": null,
         "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 31.96,
+            "low": 29.0,
+            "mid": 34.94
+          }
+        },
+        "tcgplayer_usd": 31.96,
         "graded": {}
       },
       "jp": {
@@ -25683,14 +26044,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "160",
-      "fetched_at": "2026-11-19T15:11:36.135817+00:00",
+      "fetched_at": "2026-11-22T13:59:05.409224+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.5,
+        "median": 9.5,
+        "min": 9.4,
+        "max": 9.61,
+        "count": 2,
+        "sold_samples": [
+          9.4,
+          9.61
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -25698,10 +26062,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.61,
+          "avg30": 9.4,
+          "avg7": 10.68,
+          "avg1": 8.6,
+          "lowPrice": 5.0,
+          "averageSellPrice": 9.46
+        },
+        "cardmarket_trend": 9.61,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 47.78,
+            "low": 42.0,
+            "mid": 53.36
+          }
+        },
+        "tcgplayer_usd": 47.78,
         "graded": {}
       },
       "jp": {
@@ -26753,14 +27130,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "161",
-      "fetched_at": "2026-11-19T15:13:26.875216+00:00",
+      "fetched_at": "2026-11-22T13:59:05.810334+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.9,
+        "median": 2.9,
+        "min": 2.88,
+        "max": 2.91,
+        "count": 2,
+        "sold_samples": [
+          2.88,
+          2.91
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -26768,10 +27148,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.88,
+          "avg30": 2.91,
+          "avg7": 2.69,
+          "avg1": 2.99,
+          "lowPrice": 1.4,
+          "averageSellPrice": 2.91
+        },
+        "cardmarket_trend": 2.88,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 11.4,
+            "low": 8.0,
+            "mid": 11.75
+          }
+        },
+        "tcgplayer_usd": 11.4,
         "graded": {}
       },
       "jp": {
@@ -26811,14 +27204,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "161",
-      "fetched_at": "2026-11-19T15:13:27.995125+00:00",
+      "fetched_at": "2026-11-22T13:59:05.786633+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 17.62,
+        "median": 17.62,
+        "min": 15.56,
+        "max": 19.67,
+        "count": 2,
+        "sold_samples": [
+          15.56,
+          19.67
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -26826,10 +27222,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 15.56,
+          "avg30": 19.67,
+          "avg7": 17.38,
+          "avg1": 15.33,
+          "lowPrice": 10.0,
+          "averageSellPrice": 24.37
+        },
+        "cardmarket_trend": 15.56,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.1,
+            "low": 11.0,
+            "mid": 17.68
+          }
+        },
+        "tcgplayer_usd": 15.1,
         "graded": {}
       },
       "jp": {
@@ -26869,14 +27278,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "163",
-      "fetched_at": "2026-11-19T15:13:28.287007+00:00",
+      "fetched_at": "2026-11-22T13:59:07.755369+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.34,
+        "median": 2.34,
+        "min": 2.33,
+        "max": 2.35,
+        "count": 2,
+        "sold_samples": [
+          2.33,
+          2.35
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -26884,10 +27296,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.33,
+          "avg30": 2.35,
+          "avg7": 2.39,
+          "avg1": 2.87,
+          "lowPrice": 0.9,
+          "averageSellPrice": 2.38
+        },
+        "cardmarket_trend": 2.33,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.06,
+            "low": 2.75,
+            "mid": 4.66
+          }
+        },
+        "tcgplayer_usd": 4.06,
         "graded": {}
       },
       "jp": {
@@ -26927,14 +27352,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "163",
-      "fetched_at": "2026-11-19T15:13:28.854972+00:00",
+      "fetched_at": "2026-11-22T14:00:14.023236+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.07,
+        "median": 8.07,
+        "min": 7.9,
+        "max": 8.23,
+        "count": 2,
+        "sold_samples": [
+          7.9,
+          8.23
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -26942,10 +27370,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 8.23,
+          "avg30": 7.9,
+          "avg7": 7.88,
+          "avg1": 6.79,
+          "lowPrice": 5.99,
+          "averageSellPrice": 8.16
+        },
+        "cardmarket_trend": 8.23,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.07,
+            "low": 8.5,
+            "mid": 11.97
+          }
+        },
+        "tcgplayer_usd": 10.07,
         "graded": {}
       },
       "jp": {
@@ -26985,14 +27426,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "164",
-      "fetched_at": "2026-11-19T15:13:28.911641+00:00",
+      "fetched_at": "2026-11-22T13:59:06.977967+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.92,
+        "median": 4.92,
+        "min": 4.8,
+        "max": 5.05,
+        "count": 2,
+        "sold_samples": [
+          4.8,
+          5.05
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -27000,10 +27444,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.8,
+          "avg30": 5.05,
+          "avg7": 5.58,
+          "avg1": 3.83,
+          "lowPrice": 2.4,
+          "averageSellPrice": 4.91
+        },
+        "cardmarket_trend": 4.8,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.72,
+            "low": 4.5,
+            "mid": 7.99
+          }
+        },
+        "tcgplayer_usd": 6.72,
         "graded": {}
       },
       "jp": {
@@ -27191,14 +27648,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "163",
-      "fetched_at": "2026-11-19T15:13:29.474338+00:00",
+      "fetched_at": "2026-11-22T14:00:07.362413+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.73,
+        "median": 3.73,
+        "min": 3.63,
+        "max": 3.83,
+        "count": 2,
+        "sold_samples": [
+          3.63,
+          3.83
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -27206,10 +27666,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.63,
+          "avg30": 3.83,
+          "avg7": 3.57,
+          "avg1": 2.35,
+          "lowPrice": 1.0,
+          "averageSellPrice": 3.84
+        },
+        "cardmarket_trend": 3.63,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.54,
+            "low": 2.89,
+            "mid": 4.72
+          }
+        },
+        "tcgplayer_usd": 3.54,
         "graded": {}
       },
       "jp": {
@@ -27471,14 +27944,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "163",
-      "fetched_at": "2026-11-19T15:13:30.601357+00:00",
+      "fetched_at": "2026-11-22T13:59:07.407962+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.97,
+        "median": 0.97,
+        "min": 0.92,
+        "max": 1.02,
+        "count": 2,
+        "sold_samples": [
+          0.92,
+          1.02
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -27486,10 +27962,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 0.92,
+          "avg30": 1.02,
+          "avg7": 0.96,
+          "avg1": 1.06,
+          "lowPrice": 0.25,
+          "averageSellPrice": 1.04
+        },
+        "cardmarket_trend": 0.92,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.84,
+            "low": 0.45,
+            "mid": 1.18
+          }
+        },
+        "tcgplayer_usd": 0.84,
         "graded": {}
       },
       "jp": {
@@ -27603,14 +28092,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "164",
-      "fetched_at": "2026-11-19T15:14:28.393552+00:00",
+      "fetched_at": "2026-11-22T13:59:07.628725+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.91,
+        "median": 1.91,
+        "min": 1.83,
+        "max": 1.99,
+        "count": 2,
+        "sold_samples": [
+          1.83,
+          1.99
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -27618,10 +28110,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.83,
+          "avg30": 1.99,
+          "avg7": 2.17,
+          "avg1": 1.99,
+          "lowPrice": 1.0,
+          "averageSellPrice": 2.13
+        },
+        "cardmarket_trend": 1.83,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.69,
+            "low": 1.25,
+            "mid": 2.99
+          }
+        },
+        "tcgplayer_usd": 2.69,
         "graded": {}
       },
       "jp": {
@@ -27727,14 +28232,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "165",
-      "fetched_at": "2026-11-19T15:14:30.159815+00:00",
+      "fetched_at": "2026-11-22T14:00:10.644350+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.21,
+        "median": 1.21,
+        "min": 1.18,
+        "max": 1.23,
+        "count": 2,
+        "sold_samples": [
+          1.18,
+          1.23
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -27742,10 +28250,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.23,
+          "avg30": 1.18,
+          "avg7": 1.21,
+          "avg1": 1.16,
+          "lowPrice": 0.2,
+          "averageSellPrice": 1.16
+        },
+        "cardmarket_trend": 1.23,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.86,
+            "low": 0.58,
+            "mid": 1.05
+          }
+        },
+        "tcgplayer_usd": 0.86,
         "graded": {}
       },
       "jp": {
@@ -28287,14 +28808,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "166",
-      "fetched_at": "2026-11-19T15:14:35.447165+00:00",
+      "fetched_at": "2026-11-22T13:59:08.239843+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 41.91,
+        "median": 41.91,
+        "min": 41.29,
+        "max": 42.52,
+        "count": 2,
+        "sold_samples": [
+          41.29,
+          42.52
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -28302,10 +28826,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 41.29,
+          "avg30": 42.52,
+          "avg7": 39.89,
+          "avg1": 47.5,
+          "lowPrice": 19.99,
+          "averageSellPrice": 42.61
+        },
+        "cardmarket_trend": 41.29,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 61.35,
+            "low": 50.79,
+            "mid": 75.13
+          }
+        },
+        "tcgplayer_usd": 61.35,
         "graded": {}
       },
       "jp": {
@@ -29003,14 +29540,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "167",
-      "fetched_at": "2026-11-19T15:14:37.968688+00:00",
+      "fetched_at": "2026-11-22T13:59:08.489256+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.55,
+        "median": 9.55,
+        "min": 9.43,
+        "max": 9.68,
+        "count": 2,
+        "sold_samples": [
+          9.43,
+          9.68
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -29018,10 +29558,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.43,
+          "avg30": 9.68,
+          "avg7": 9.11,
+          "avg1": 9.5,
+          "lowPrice": 6.45,
+          "averageSellPrice": 9.59
+        },
+        "cardmarket_trend": 9.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 37.74,
+            "low": 33.5,
+            "mid": 40.93
+          }
+        },
+        "tcgplayer_usd": 37.74,
         "graded": {}
       },
       "jp": {
@@ -29357,14 +29910,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "166",
-      "fetched_at": "2026-11-19T15:15:32.695052+00:00",
+      "fetched_at": "2026-11-22T14:00:10.284783+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.81,
+        "median": 2.81,
+        "min": 2.76,
+        "max": 2.86,
+        "count": 2,
+        "sold_samples": [
+          2.76,
+          2.86
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -29372,10 +29928,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.76,
+          "avg30": 2.86,
+          "avg7": 2.62,
+          "avg1": 2.0,
+          "lowPrice": 1.5,
+          "averageSellPrice": 3.06
+        },
+        "cardmarket_trend": 2.76,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.68,
+            "low": 4.0,
+            "mid": 6.83
+          }
+        },
+        "tcgplayer_usd": 6.68,
         "graded": {}
       },
       "jp": {
@@ -29637,14 +30206,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "168",
-      "fetched_at": "2026-11-19T15:15:34.978558+00:00",
+      "fetched_at": "2026-11-22T14:00:12.904828+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.6,
+        "median": 4.6,
+        "min": 4.56,
+        "max": 4.64,
+        "count": 2,
+        "sold_samples": [
+          4.56,
+          4.64
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -29652,10 +30224,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.56,
+          "avg30": 4.64,
+          "avg7": 4.56,
+          "avg1": 3.94,
+          "lowPrice": 1.9,
+          "averageSellPrice": 4.93
+        },
+        "cardmarket_trend": 4.56,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.0,
+            "low": 4.0,
+            "mid": 8.0
+          }
+        },
+        "tcgplayer_usd": 6.0,
         "graded": {}
       },
       "jp": {
@@ -30781,7 +31366,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "170",
-      "fetched_at": "2026-11-19T15:16:44.001061+00:00",
+      "fetched_at": "2026-11-22T14:00:08.924731+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -30839,7 +31424,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "170",
-      "fetched_at": "2026-11-19T15:16:44.152414+00:00",
+      "fetched_at": "2026-11-22T14:00:10.513481+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -30971,14 +31556,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "171",
-      "fetched_at": "2026-11-19T15:16:45.881500+00:00",
+      "fetched_at": "2026-11-22T14:00:12.788255+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.49,
+        "median": 2.49,
+        "min": 2.4,
+        "max": 2.58,
+        "count": 2,
+        "sold_samples": [
+          2.4,
+          2.58
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -30986,10 +31574,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.4,
+          "avg30": 2.58,
+          "avg7": 2.54,
+          "avg1": 2.14,
+          "lowPrice": 1.79,
+          "averageSellPrice": 2.56
+        },
+        "cardmarket_trend": 2.4,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.36,
+            "low": 3.15,
+            "mid": 4.53
+          }
+        },
+        "tcgplayer_usd": 4.36,
         "graded": {}
       },
       "jp": {
@@ -31465,7 +32066,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "172",
-      "fetched_at": "2026-11-19T15:16:49.963500+00:00",
+      "fetched_at": "2026-11-22T14:00:12.131210+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -31819,7 +32420,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "171",
-      "fetched_at": "2026-11-19T15:17:45.644322+00:00",
+      "fetched_at": "2026-11-22T14:01:18.306735+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -31877,7 +32478,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "171",
-      "fetched_at": "2026-11-19T15:17:46.545214+00:00",
+      "fetched_at": "2026-11-22T14:01:12.426981+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -32799,7 +33400,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "173",
-      "fetched_at": "2026-11-19T15:18:53.352544+00:00",
+      "fetched_at": "2026-11-22T14:01:13.164915+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -33219,14 +33820,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "172",
-      "fetched_at": "2026-11-19T15:18:55.802255+00:00",
+      "fetched_at": "2026-11-22T14:00:13.469421+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.99,
+        "median": 1.99,
+        "min": 1.91,
+        "max": 2.07,
+        "count": 2,
+        "sold_samples": [
+          1.91,
+          2.07
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -33234,10 +33838,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.91,
+          "avg30": 2.07,
+          "avg7": 2.08,
+          "avg1": 1.73,
+          "lowPrice": 0.5,
+          "averageSellPrice": 2.15
+        },
+        "cardmarket_trend": 1.91,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.48,
+            "low": 0.98,
+            "mid": 1.99
+          }
+        },
+        "tcgplayer_usd": 1.48,
         "graded": {}
       },
       "jp": {
@@ -33713,14 +34330,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "176",
-      "fetched_at": "2026-11-19T15:19:00.596174+00:00",
+      "fetched_at": "2026-11-22T14:00:15.119229+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.86,
+        "median": 1.86,
+        "min": 1.85,
+        "max": 1.87,
+        "count": 2,
+        "sold_samples": [
+          1.85,
+          1.87
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -33728,10 +34348,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.87,
+          "avg30": 1.85,
+          "avg7": 1.8,
+          "avg1": 1.3,
+          "lowPrice": 1.0,
+          "averageSellPrice": 1.99
+        },
+        "cardmarket_trend": 1.87,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.17,
+            "low": 1.24,
+            "mid": 2.33
+          }
+        },
+        "tcgplayer_usd": 2.17,
         "graded": {}
       },
       "jp": {
@@ -33771,7 +34404,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "176",
-      "fetched_at": "2026-11-19T15:19:00.670559+00:00",
+      "fetched_at": "2026-11-22T14:02:20.158439+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -34051,14 +34684,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "175",
-      "fetched_at": "2026-11-19T15:19:55.939079+00:00",
+      "fetched_at": "2026-11-22T14:02:18.923612+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.94,
+        "median": 5.94,
+        "min": 5.72,
+        "max": 6.16,
+        "count": 2,
+        "sold_samples": [
+          5.72,
+          6.16
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -34066,10 +34702,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.72,
+          "avg30": 6.16,
+          "avg7": 5.98,
+          "avg1": 5.59,
+          "lowPrice": 2.98,
+          "averageSellPrice": 6.32
+        },
+        "cardmarket_trend": 5.72,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 13.87,
+            "low": 10.75,
+            "mid": 14.73
+          }
+        },
+        "tcgplayer_usd": 13.87,
         "graded": {}
       },
       "jp": {
@@ -35417,14 +36066,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "178",
-      "fetched_at": "2026-11-19T15:21:01.235948+00:00",
+      "fetched_at": "2026-11-22T14:01:20.029115+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.17,
+        "median": 1.17,
+        "min": 1.14,
+        "max": 1.19,
+        "count": 2,
+        "sold_samples": [
+          1.14,
+          1.19
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -35432,10 +36084,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.14,
+          "avg30": 1.19,
+          "avg7": 1.17,
+          "avg1": 1.4,
+          "lowPrice": 0.6,
+          "averageSellPrice": 1.18
+        },
+        "cardmarket_trend": 1.14,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.44,
+            "low": 0.75,
+            "mid": 1.5
+          }
+        },
+        "tcgplayer_usd": 1.44,
         "graded": {}
       },
       "jp": {
@@ -36199,14 +36864,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "181",
-      "fetched_at": "2026-11-19T15:22:04.452602+00:00",
+      "fetched_at": "2026-11-22T14:01:19.253104+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.23,
+        "median": 7.23,
+        "min": 7.19,
+        "max": 7.27,
+        "count": 2,
+        "sold_samples": [
+          7.19,
+          7.27
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -36214,10 +36882,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.19,
+          "avg30": 7.27,
+          "avg7": 7.08,
+          "avg1": 7.17,
+          "lowPrice": 5.95,
+          "averageSellPrice": 7.12
+        },
+        "cardmarket_trend": 7.19,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 12.57,
+            "low": 9.93,
+            "mid": 12.99
+          }
+        },
+        "tcgplayer_usd": 12.57,
         "graded": {}
       },
       "jp": {
@@ -37515,14 +38196,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "185",
-      "fetched_at": "2026-11-20T00:12:56.107252+00:00",
+      "fetched_at": "2026-11-22T14:02:18.926777+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.27,
+        "median": 5.27,
+        "min": 5.19,
+        "max": 5.35,
+        "count": 2,
+        "sold_samples": [
+          5.19,
+          5.35
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -37530,10 +38214,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.19,
+          "avg30": 5.35,
+          "avg7": 5.12,
+          "avg1": 5.04,
+          "lowPrice": 3.8,
+          "averageSellPrice": 5.5
+        },
+        "cardmarket_trend": 5.19,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.02,
+            "low": 3.51,
+            "mid": 6.55
+          }
+        },
+        "tcgplayer_usd": 5.02,
         "graded": {}
       },
       "jp": {
@@ -37573,14 +38270,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "185",
-      "fetched_at": "2026-11-20T00:12:57.918003+00:00",
+      "fetched_at": "2026-11-22T14:02:20.451596+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.9,
+        "median": 3.9,
+        "min": 3.84,
+        "max": 3.96,
+        "count": 2,
+        "sold_samples": [
+          3.84,
+          3.96
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -37588,10 +38288,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.84,
+          "avg30": 3.96,
+          "avg7": 3.72,
+          "avg1": 2.44,
+          "lowPrice": 1.85,
+          "averageSellPrice": 4.09
+        },
+        "cardmarket_trend": 3.84,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.01,
+            "low": 10.49,
+            "mid": 15.02
+          }
+        },
+        "tcgplayer_usd": 15.01,
         "graded": {}
       },
       "jp": {
@@ -38001,7 +38714,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "181",
-      "fetched_at": "2026-11-20T00:13:44.026093+00:00",
+      "fetched_at": "2026-11-22T14:02:20.866943+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -38059,14 +38772,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-20T00:13:45.693396+00:00",
+      "fetched_at": "2026-11-22T14:01:20.420606+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.79,
+        "median": 9.79,
+        "min": 9.33,
+        "max": 10.25,
+        "count": 2,
+        "sold_samples": [
+          9.33,
+          10.25
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38074,10 +38790,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.33,
+          "avg30": 10.25,
+          "avg7": 9.31,
+          "avg1": 6.49,
+          "lowPrice": 6.2,
+          "averageSellPrice": 10.1
+        },
+        "cardmarket_trend": 9.33,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 19.85,
+            "low": 19.18,
+            "mid": 23.47
+          }
+        },
+        "tcgplayer_usd": 19.85,
         "graded": {}
       },
       "jp": {
@@ -38265,7 +38994,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "185",
-      "fetched_at": "2026-11-20T00:13:59.949298+00:00",
+      "fetched_at": "2026-11-22T14:01:21.951576+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -38323,7 +39052,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-20T00:14:14.116990+00:00",
+      "fetched_at": "2026-11-22T14:02:23.693310+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -38381,14 +39110,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "184",
-      "fetched_at": "2026-11-20T00:14:51.109161+00:00",
+      "fetched_at": "2026-11-22T14:04:19.474145+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 12.95,
+        "median": 12.95,
+        "min": 12.63,
+        "max": 13.27,
+        "count": 2,
+        "sold_samples": [
+          12.63,
+          13.27
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38396,10 +39128,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 12.63,
+          "avg30": 13.27,
+          "avg7": 12.81,
+          "avg1": 13.35,
+          "lowPrice": 5.89,
+          "averageSellPrice": 13.36
+        },
+        "cardmarket_trend": 12.63,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 9.59,
+            "low": 4.5,
+            "mid": 11.86
+          }
+        },
+        "tcgplayer_usd": 9.59,
         "graded": {}
       },
       "jp": {
@@ -38439,14 +39184,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "187",
-      "fetched_at": "2026-11-20T00:14:52.914284+00:00",
+      "fetched_at": "2026-11-22T14:03:19.383864+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.71,
+        "median": 4.71,
+        "min": 4.49,
+        "max": 4.94,
+        "count": 2,
+        "sold_samples": [
+          4.49,
+          4.94
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38454,10 +39202,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.49,
+          "avg30": 4.94,
+          "avg7": 4.4,
+          "avg1": 3.78,
+          "lowPrice": 2.87,
+          "averageSellPrice": 4.91
+        },
+        "cardmarket_trend": 4.49,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.85,
+            "low": 2.4,
+            "mid": 5.0
+          }
+        },
+        "tcgplayer_usd": 3.85,
         "graded": {}
       },
       "jp": {
@@ -38497,7 +39258,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "187",
-      "fetched_at": "2026-11-20T00:14:53.100775+00:00",
+      "fetched_at": "2026-11-22T14:03:21.825022+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -38555,14 +39316,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-20T00:14:54.825429+00:00",
+      "fetched_at": "2026-11-22T14:02:21.665371+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.23,
+        "median": 2.23,
+        "min": 2.13,
+        "max": 2.34,
+        "count": 2,
+        "sold_samples": [
+          2.13,
+          2.34
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38570,10 +39334,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.13,
+          "avg30": 2.34,
+          "avg7": 2.43,
+          "avg1": 2.82,
+          "lowPrice": 1.45,
+          "averageSellPrice": 2.56
+        },
+        "cardmarket_trend": 2.13,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.72,
+            "low": 1.75,
+            "mid": 2.99
+          }
+        },
+        "tcgplayer_usd": 2.72,
         "graded": {}
       },
       "jp": {
@@ -38835,14 +39612,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "187",
-      "fetched_at": "2026-11-20T00:15:04.807658+00:00",
+      "fetched_at": "2026-11-22T14:03:21.217725+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.42,
+        "median": 2.42,
+        "min": 2.37,
+        "max": 2.47,
+        "count": 2,
+        "sold_samples": [
+          2.37,
+          2.47
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38850,10 +39630,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.37,
+          "avg30": 2.47,
+          "avg7": 2.47,
+          "avg1": 2.88,
+          "lowPrice": 1.0,
+          "averageSellPrice": 2.55
+        },
+        "cardmarket_trend": 2.37,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.26,
+            "low": 1.95,
+            "mid": 3.43
+          }
+        },
+        "tcgplayer_usd": 3.26,
         "graded": {}
       },
       "jp": {
@@ -38893,7 +39686,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "188",
-      "fetched_at": "2026-11-20T00:15:06.541691+00:00",
+      "fetched_at": "2026-11-22T14:03:23.588468+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -38951,14 +39744,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "187",
-      "fetched_at": "2026-11-20T00:15:08.125773+00:00",
+      "fetched_at": "2026-11-22T14:02:23.995924+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.1,
+        "median": 2.1,
+        "min": 2.08,
+        "max": 2.13,
+        "count": 2,
+        "sold_samples": [
+          2.08,
+          2.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -38966,10 +39762,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.13,
+          "avg30": 2.08,
+          "avg7": 2.13,
+          "avg1": 3.9,
+          "lowPrice": 0.99,
+          "averageSellPrice": 2.28
+        },
+        "cardmarket_trend": 2.13,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.65,
+            "low": 1.5,
+            "mid": 2.99
+          }
+        },
+        "tcgplayer_usd": 2.65,
         "graded": {}
       },
       "jp": {
@@ -39157,14 +39966,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "188",
-      "fetched_at": "2026-11-20T00:15:12.836602+00:00",
+      "fetched_at": "2026-11-22T14:04:26.344196+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 12.25,
+        "median": 12.25,
+        "min": 11.86,
+        "max": 12.64,
+        "count": 2,
+        "sold_samples": [
+          11.86,
+          12.64
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39172,10 +39984,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 12.64,
+          "avg30": 11.86,
+          "avg7": 13.02,
+          "avg1": 13.08,
+          "lowPrice": 8.23,
+          "averageSellPrice": 11.87
+        },
+        "cardmarket_trend": 12.64,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 8.1,
+            "low": 7.0,
+            "mid": 10.49
+          }
+        },
+        "tcgplayer_usd": 8.1,
         "graded": {}
       },
       "jp": {
@@ -39215,7 +40040,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "188",
-      "fetched_at": "2026-11-20T00:15:13.282384+00:00",
+      "fetched_at": "2026-11-22T14:03:21.223278+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -39347,7 +40172,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-20T00:15:14.550873+00:00",
+      "fetched_at": "2026-11-22T14:04:25.388964+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -39627,14 +40452,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "187",
-      "fetched_at": "2026-11-20T00:16:11.427919+00:00",
+      "fetched_at": "2026-11-22T14:03:21.491065+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 62.69,
+        "median": 62.69,
+        "min": 60.24,
+        "max": 65.13,
+        "count": 2,
+        "sold_samples": [
+          60.24,
+          65.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39642,10 +40470,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 60.24,
+          "avg30": 65.13,
+          "avg7": 60.82,
+          "avg1": 71.5,
+          "lowPrice": 43.95,
+          "averageSellPrice": 69.96
+        },
+        "cardmarket_trend": 60.24,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 42.32,
+            "low": 37.0,
+            "mid": 53.17
+          }
+        },
+        "tcgplayer_usd": 42.32,
         "graded": {}
       },
       "jp": {
@@ -39685,14 +40526,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "189",
-      "fetched_at": "2026-11-20T00:16:53.440461+00:00",
+      "fetched_at": "2026-11-22T14:03:21.956277+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.24,
+        "median": 9.24,
+        "min": 8.71,
+        "max": 9.77,
+        "count": 2,
+        "sold_samples": [
+          8.71,
+          9.77
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39700,10 +40544,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.77,
+          "avg30": 8.71,
+          "avg7": 9.79,
+          "avg1": 8.77,
+          "lowPrice": 5.5,
+          "averageSellPrice": 8.67
+        },
+        "cardmarket_trend": 9.77,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.08,
+            "low": 4.43,
+            "mid": 7.15
+          }
+        },
+        "tcgplayer_usd": 6.08,
         "graded": {}
       },
       "jp": {
@@ -39743,14 +40600,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "190",
-      "fetched_at": "2026-11-20T00:16:55.046771+00:00",
+      "fetched_at": "2026-11-22T14:03:22.064763+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 26.41,
+        "median": 26.41,
+        "min": 26.07,
+        "max": 26.76,
+        "count": 2,
+        "sold_samples": [
+          26.07,
+          26.76
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39758,10 +40618,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 26.76,
+          "avg30": 26.07,
+          "avg7": 25.7,
+          "avg1": 23.89,
+          "lowPrice": 18.98,
+          "averageSellPrice": 26.29
+        },
+        "cardmarket_trend": 26.76,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 18.06,
+            "low": 15.5,
+            "mid": 23.0
+          }
+        },
+        "tcgplayer_usd": 18.06,
         "graded": {}
       },
       "jp": {
@@ -39801,14 +40674,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-20T00:17:13.607856+00:00",
+      "fetched_at": "2026-11-22T14:03:22.987230+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 13.48,
+        "median": 13.48,
+        "min": 12.69,
+        "max": 14.27,
+        "count": 2,
+        "sold_samples": [
+          12.69,
+          14.27
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39816,10 +40692,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 14.27,
+          "avg30": 12.69,
+          "avg7": 13.79,
+          "avg1": 12.86,
+          "lowPrice": 8.4,
+          "averageSellPrice": 12.72
+        },
+        "cardmarket_trend": 14.27,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 14.11,
+            "low": 11.4,
+            "mid": 15.45
+          }
+        },
+        "tcgplayer_usd": 14.11,
         "graded": {}
       },
       "jp": {
@@ -39859,14 +40748,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "189",
-      "fetched_at": "2026-11-20T00:17:14.113580+00:00",
+      "fetched_at": "2026-11-22T14:03:23.092604+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 12.75,
+        "median": 12.75,
+        "min": 12.06,
+        "max": 13.43,
+        "count": 2,
+        "sold_samples": [
+          12.06,
+          13.43
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39874,10 +40766,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 13.43,
+          "avg30": 12.06,
+          "avg7": 13.03,
+          "avg1": 11.83,
+          "lowPrice": 6.0,
+          "averageSellPrice": 11.95
+        },
+        "cardmarket_trend": 13.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 30.92,
+            "low": 26.5,
+            "mid": 34.24
+          }
+        },
+        "tcgplayer_usd": 30.92,
         "graded": {}
       },
       "jp": {
@@ -39991,14 +40896,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "188",
-      "fetched_at": "2026-11-20T00:17:16.408552+00:00",
+      "fetched_at": "2026-11-22T14:03:24.959024+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 18.26,
+        "median": 18.26,
+        "min": 17.8,
+        "max": 18.71,
+        "count": 2,
+        "sold_samples": [
+          17.8,
+          18.71
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40006,10 +40914,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 17.8,
+          "avg30": 18.71,
+          "avg7": 17.53,
+          "avg1": 18.0,
+          "lowPrice": 13.9,
+          "averageSellPrice": 19.72
+        },
+        "cardmarket_trend": 17.8,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.15,
+            "low": 7.5,
+            "mid": 12.24
+          }
+        },
+        "tcgplayer_usd": 10.15,
         "graded": {}
       },
       "jp": {
@@ -40123,7 +41044,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "189",
-      "fetched_at": "2026-11-20T00:17:24.655775+00:00",
+      "fetched_at": "2026-11-22T14:03:26.636685+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -40181,14 +41102,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "189",
-      "fetched_at": "2026-11-20T00:17:28.029090+00:00",
+      "fetched_at": "2026-11-22T14:05:24.400121+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.25,
+        "median": 1.25,
+        "min": 1.19,
+        "max": 1.3,
+        "count": 2,
+        "sold_samples": [
+          1.19,
+          1.3
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40196,10 +41120,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.19,
+          "avg30": 1.3,
+          "avg7": 1.14,
+          "avg1": 0.68,
+          "lowPrice": 0.5,
+          "averageSellPrice": 1.33
+        },
+        "cardmarket_trend": 1.19,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.5,
+            "low": 0.99,
+            "mid": 1.65
+          }
+        },
+        "tcgplayer_usd": 1.5,
         "graded": {}
       },
       "jp": {
@@ -40313,14 +41250,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "190",
-      "fetched_at": "2026-11-20T00:18:28.544984+00:00",
+      "fetched_at": "2026-11-22T14:03:25.437465+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.73,
+        "median": 1.73,
+        "min": 1.66,
+        "max": 1.79,
+        "count": 2,
+        "sold_samples": [
+          1.66,
+          1.79
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40328,10 +41268,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.79,
+          "avg30": 1.66,
+          "avg7": 1.86,
+          "avg1": 2.12,
+          "lowPrice": 0.5,
+          "averageSellPrice": 1.62
+        },
+        "cardmarket_trend": 1.79,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.56,
+            "low": 0.8,
+            "mid": 1.88
+          }
+        },
+        "tcgplayer_usd": 1.56,
         "graded": {}
       },
       "jp": {
@@ -40519,14 +41472,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "191",
-      "fetched_at": "2026-11-20T00:18:32.537980+00:00",
+      "fetched_at": "2026-11-22T14:03:27.313518+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 16.05,
+        "median": 16.05,
+        "min": 15.85,
+        "max": 16.25,
+        "count": 2,
+        "sold_samples": [
+          15.85,
+          16.25
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40534,10 +41490,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 15.85,
+          "avg30": 16.25,
+          "avg7": 15.5,
+          "avg1": 13.78,
+          "lowPrice": 9.5,
+          "averageSellPrice": 16.28
+        },
+        "cardmarket_trend": 15.85,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 8.79,
+            "low": 7.0,
+            "mid": 11.09
+          }
+        },
+        "tcgplayer_usd": 8.79,
         "graded": {}
       },
       "jp": {
@@ -40725,14 +41694,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "192",
-      "fetched_at": "2026-11-20T00:18:39.874501+00:00",
+      "fetched_at": "2026-11-22T14:05:24.886191+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.89,
+        "median": 1.89,
+        "min": 1.84,
+        "max": 1.93,
+        "count": 2,
+        "sold_samples": [
+          1.84,
+          1.93
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40740,10 +41712,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.93,
+          "avg30": 1.84,
+          "avg7": 1.89,
+          "avg1": 1.33,
+          "lowPrice": 0.9,
+          "averageSellPrice": 1.92
+        },
+        "cardmarket_trend": 1.93,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.57,
+            "low": 1.35,
+            "mid": 2.7
+          }
+        },
+        "tcgplayer_usd": 2.57,
         "graded": {}
       },
       "jp": {
@@ -40783,14 +41768,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "191",
-      "fetched_at": "2026-11-20T00:18:40.147641+00:00",
+      "fetched_at": "2026-11-22T14:05:25.126363+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.79,
+        "median": 6.79,
+        "min": 5.94,
+        "max": 7.65,
+        "count": 2,
+        "sold_samples": [
+          5.94,
+          7.65
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40798,10 +41786,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.65,
+          "avg30": 5.94,
+          "avg7": 9.67,
+          "avg1": 7.0,
+          "lowPrice": 3.49,
+          "averageSellPrice": 5.42
+        },
+        "cardmarket_trend": 7.65,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 9.66,
+            "low": 8.0,
+            "mid": 10.5
+          }
+        },
+        "tcgplayer_usd": 9.66,
         "graded": {}
       },
       "jp": {
@@ -40915,14 +41916,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "192",
-      "fetched_at": "2026-11-20T00:18:41.472133+00:00",
+      "fetched_at": "2026-11-22T14:05:24.798079+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.93,
+        "median": 1.93,
+        "min": 1.86,
+        "max": 2.0,
+        "count": 2,
+        "sold_samples": [
+          1.86,
+          2.0
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40930,10 +41934,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.86,
+          "avg30": 2.0,
+          "avg7": 1.77,
+          "avg1": 1.94,
+          "lowPrice": 0.75,
+          "averageSellPrice": 2.19
+        },
+        "cardmarket_trend": 1.86,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.7,
+            "low": 1.07,
+            "mid": 2.0
+          }
+        },
+        "tcgplayer_usd": 1.7,
         "graded": {}
       },
       "jp": {
@@ -41121,14 +42138,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "193",
-      "fetched_at": "2026-11-20T00:19:05.917366+00:00",
+      "fetched_at": "2026-11-22T14:05:24.994719+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 18.89,
+        "median": 18.89,
+        "min": 18.45,
+        "max": 19.34,
+        "count": 2,
+        "sold_samples": [
+          18.45,
+          19.34
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41136,10 +42156,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 19.34,
+          "avg30": 18.45,
+          "avg7": 19.04,
+          "avg1": 25.0,
+          "lowPrice": 13.99,
+          "averageSellPrice": 18.4
+        },
+        "cardmarket_trend": 19.34,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 45.58,
+            "low": 38.0,
+            "mid": 48.38
+          }
+        },
+        "tcgplayer_usd": 45.58,
         "graded": {}
       },
       "jp": {
@@ -41327,14 +42360,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "191",
-      "fetched_at": "2026-11-20T00:19:34.411826+00:00",
+      "fetched_at": "2026-11-22T14:05:24.998379+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.49,
+        "median": 8.49,
+        "min": 8.42,
+        "max": 8.56,
+        "count": 2,
+        "sold_samples": [
+          8.42,
+          8.56
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41342,10 +42378,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 8.42,
+          "avg30": 8.56,
+          "avg7": 8.38,
+          "avg1": 9.96,
+          "lowPrice": 3.99,
+          "averageSellPrice": 8.7
+        },
+        "cardmarket_trend": 8.42,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.28,
+            "low": 3.46,
+            "mid": 6.3
+          }
+        },
+        "tcgplayer_usd": 5.28,
         "graded": {}
       },
       "jp": {
@@ -41385,7 +42434,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "193",
-      "fetched_at": "2026-11-20T00:19:34.425373+00:00",
+      "fetched_at": "2026-11-22T14:05:26.304275+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -41443,14 +42492,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "192",
-      "fetched_at": "2026-11-20T00:19:40.770441+00:00",
+      "fetched_at": "2026-11-22T14:06:25.478989+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.55,
+        "median": 4.55,
+        "min": 4.39,
+        "max": 4.71,
+        "count": 2,
+        "sold_samples": [
+          4.39,
+          4.71
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41458,10 +42510,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.39,
+          "avg30": 4.71,
+          "avg7": 4.45,
+          "avg1": 3.43,
+          "lowPrice": 2.89,
+          "averageSellPrice": 5.09
+        },
+        "cardmarket_trend": 4.39,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.8,
+            "low": 6.26,
+            "mid": 8.0
+          }
+        },
+        "tcgplayer_usd": 6.8,
         "graded": {}
       },
       "jp": {
@@ -41501,14 +42566,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "192",
-      "fetched_at": "2026-11-20T00:19:45.094874+00:00",
+      "fetched_at": "2026-11-22T14:06:25.604865+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 12.54,
+        "median": 12.54,
+        "min": 12.26,
+        "max": 12.81,
+        "count": 2,
+        "sold_samples": [
+          12.26,
+          12.81
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41516,10 +42584,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 12.81,
+          "avg30": 12.26,
+          "avg7": 13.43,
+          "avg1": 12.3,
+          "lowPrice": 7.0,
+          "averageSellPrice": 12.35
+        },
+        "cardmarket_trend": 12.81,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.38,
+            "low": 8.0,
+            "mid": 11.35
+          }
+        },
+        "tcgplayer_usd": 10.38,
         "graded": {}
       },
       "jp": {
@@ -41633,14 +42714,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "191",
-      "fetched_at": "2026-11-20T00:20:42.036243+00:00",
+      "fetched_at": "2026-11-22T14:05:27.352344+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.38,
+        "median": 1.38,
+        "min": 1.36,
+        "max": 1.39,
+        "count": 2,
+        "sold_samples": [
+          1.36,
+          1.39
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41648,10 +42732,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.36,
+          "avg30": 1.39,
+          "avg7": 1.41,
+          "avg1": 1.27,
+          "lowPrice": 0.75,
+          "averageSellPrice": 1.43
+        },
+        "cardmarket_trend": 1.36,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.6,
+            "low": 0.72,
+            "mid": 1.85
+          }
+        },
+        "tcgplayer_usd": 1.6,
         "graded": {}
       },
       "jp": {
@@ -41691,14 +42788,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "194",
-      "fetched_at": "2026-11-20T00:20:42.268051+00:00",
+      "fetched_at": "2026-11-22T14:06:25.500193+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 23.19,
+        "median": 23.19,
+        "min": 22.73,
+        "max": 23.65,
+        "count": 2,
+        "sold_samples": [
+          22.73,
+          23.65
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41706,10 +42806,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 22.73,
+          "avg30": 23.65,
+          "avg7": 22.4,
+          "avg1": 19.48,
+          "lowPrice": 11.0,
+          "averageSellPrice": 23.8
+        },
+        "cardmarket_trend": 22.73,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 22.15,
+            "low": 18.5,
+            "mid": 27.46
+          }
+        },
+        "tcgplayer_usd": 22.15,
         "graded": {}
       },
       "jp": {
@@ -41749,14 +42862,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "194",
-      "fetched_at": "2026-11-20T00:20:44.000527+00:00",
+      "fetched_at": "2026-11-22T14:06:26.892353+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.76,
+        "median": 2.76,
+        "min": 2.75,
+        "max": 2.78,
+        "count": 2,
+        "sold_samples": [
+          2.75,
+          2.78
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41764,10 +42880,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.75,
+          "avg30": 2.78,
+          "avg7": 2.55,
+          "avg1": 1.98,
+          "lowPrice": 1.45,
+          "averageSellPrice": 2.74
+        },
+        "cardmarket_trend": 2.75,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.49,
+            "low": 2.45,
+            "mid": 4.04
+          }
+        },
+        "tcgplayer_usd": 3.49,
         "graded": {}
       },
       "jp": {
@@ -41807,14 +42936,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "194",
-      "fetched_at": "2026-11-20T00:20:46.691609+00:00",
+      "fetched_at": "2026-11-22T14:05:26.584365+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 18.83,
+        "median": 18.83,
+        "min": 18.53,
+        "max": 19.13,
+        "count": 2,
+        "sold_samples": [
+          18.53,
+          19.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -41822,10 +42954,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 18.53,
+          "avg30": 19.13,
+          "avg7": 18.36,
+          "avg1": 20.24,
+          "lowPrice": 11.0,
+          "averageSellPrice": 19.11
+        },
+        "cardmarket_trend": 18.53,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 44.54,
+            "low": 40.0,
+            "mid": 45.75
+          }
+        },
+        "tcgplayer_usd": 44.54,
         "graded": {}
       },
       "jp": {
@@ -42087,14 +43232,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "193",
-      "fetched_at": "2026-11-20T00:21:30.045157+00:00",
+      "fetched_at": "2026-11-22T14:05:27.268925+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.06,
+        "median": 2.06,
+        "min": 1.99,
+        "max": 2.12,
+        "count": 2,
+        "sold_samples": [
+          1.99,
+          2.12
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42102,10 +43250,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.99,
+          "avg30": 2.12,
+          "avg7": 1.91,
+          "avg1": 1.69,
+          "lowPrice": 1.11,
+          "averageSellPrice": 2.2
+        },
+        "cardmarket_trend": 1.99,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.94,
+            "low": 1.0,
+            "mid": 2.21
+          }
+        },
+        "tcgplayer_usd": 1.94,
         "graded": {}
       },
       "jp": {
@@ -42219,14 +43380,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "194",
-      "fetched_at": "2026-11-20T00:21:43.669551+00:00",
+      "fetched_at": "2026-11-22T14:05:29.111822+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.82,
+        "median": 2.82,
+        "min": 2.74,
+        "max": 2.89,
+        "count": 2,
+        "sold_samples": [
+          2.74,
+          2.89
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42234,10 +43398,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.74,
+          "avg30": 2.89,
+          "avg7": 2.74,
+          "avg1": 2.67,
+          "lowPrice": 1.89,
+          "averageSellPrice": 3.09
+        },
+        "cardmarket_trend": 2.74,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.62,
+            "low": 3.05,
+            "mid": 5.17
+          }
+        },
+        "tcgplayer_usd": 4.62,
         "graded": {}
       },
       "jp": {
@@ -42277,14 +43454,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "194",
-      "fetched_at": "2026-11-20T00:21:48.937352+00:00",
+      "fetched_at": "2026-11-22T14:06:28.417961+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 15.74,
+        "median": 15.74,
+        "min": 15.0,
+        "max": 16.49,
+        "count": 2,
+        "sold_samples": [
+          15.0,
+          16.49
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42292,10 +43472,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 15.0,
+          "avg30": 16.49,
+          "avg7": 15.01,
+          "avg1": 13.92,
+          "lowPrice": 12.0,
+          "averageSellPrice": 17.15
+        },
+        "cardmarket_trend": 15.0,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 31.76,
+            "low": 26.99,
+            "mid": 33.0
+          }
+        },
+        "tcgplayer_usd": 31.76,
         "graded": {}
       },
       "jp": {
@@ -42335,14 +43528,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "195",
-      "fetched_at": "2026-11-20T00:21:50.812248+00:00",
+      "fetched_at": "2026-11-22T14:05:29.489571+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.09,
+        "median": 6.09,
+        "min": 6.03,
+        "max": 6.15,
+        "count": 2,
+        "sold_samples": [
+          6.03,
+          6.15
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42350,10 +43546,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.15,
+          "avg30": 6.03,
+          "avg7": 6.06,
+          "avg1": 6.79,
+          "lowPrice": 3.0,
+          "averageSellPrice": 5.92
+        },
+        "cardmarket_trend": 6.15,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 11.02,
+            "low": 6.95,
+            "mid": 12.0
+          }
+        },
+        "tcgplayer_usd": 11.02,
         "graded": {}
       },
       "jp": {
@@ -42689,14 +43898,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "195",
-      "fetched_at": "2026-11-20T00:22:00.528010+00:00",
+      "fetched_at": "2026-11-22T14:05:30.691676+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.29,
+        "median": 3.29,
+        "min": 2.98,
+        "max": 3.61,
+        "count": 2,
+        "sold_samples": [
+          2.98,
+          3.61
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42704,10 +43916,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.98,
+          "avg30": 3.61,
+          "avg7": 3.33,
+          "avg1": 2.49,
+          "lowPrice": 2.0,
+          "averageSellPrice": 3.58
+        },
+        "cardmarket_trend": 2.98,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.32,
+            "low": 3.14,
+            "mid": 5.0
+          }
+        },
+        "tcgplayer_usd": 4.32,
         "graded": {}
       },
       "jp": {
@@ -42747,14 +43972,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "195",
-      "fetched_at": "2026-11-20T00:22:03.035371+00:00",
+      "fetched_at": "2026-11-22T14:05:30.950788+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.89,
+        "median": 6.89,
+        "min": 6.55,
+        "max": 7.24,
+        "count": 2,
+        "sold_samples": [
+          6.55,
+          7.24
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42762,10 +43990,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.55,
+          "avg30": 7.24,
+          "avg7": 6.89,
+          "avg1": 6.22,
+          "lowPrice": 4.49,
+          "averageSellPrice": 7.24
+        },
+        "cardmarket_trend": 6.55,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 14.46,
+            "low": 12.0,
+            "mid": 15.0
+          }
+        },
+        "tcgplayer_usd": 14.46,
         "graded": {}
       },
       "jp": {
@@ -42805,14 +44046,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "196",
-      "fetched_at": "2026-11-20T00:22:04.347977+00:00",
+      "fetched_at": "2026-11-22T14:06:31.509120+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.62,
+        "median": 6.62,
+        "min": 6.59,
+        "max": 6.65,
+        "count": 2,
+        "sold_samples": [
+          6.59,
+          6.65
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -42820,10 +44064,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.65,
+          "avg30": 6.59,
+          "avg7": 6.66,
+          "avg1": 5.93,
+          "lowPrice": 4.3,
+          "averageSellPrice": 6.4
+        },
+        "cardmarket_trend": 6.65,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 7.33,
+            "low": 4.73,
+            "mid": 8.0
+          }
+        },
+        "tcgplayer_usd": 7.33,
         "graded": {}
       },
       "jp": {
@@ -42863,7 +44120,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "195",
-      "fetched_at": "2026-11-20T00:22:05.053620+00:00",
+      "fetched_at": "2026-11-22T14:07:28.595754+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -42995,14 +44252,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "196",
-      "fetched_at": "2026-11-20T00:22:16.384398+00:00",
+      "fetched_at": "2026-11-22T14:06:25.793172+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.98,
+        "median": 1.98,
+        "min": 1.94,
+        "max": 2.03,
+        "count": 2,
+        "sold_samples": [
+          1.94,
+          2.03
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -43010,10 +44270,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.94,
+          "avg30": 2.03,
+          "avg7": 1.67,
+          "avg1": 1.58,
+          "lowPrice": 1.0,
+          "averageSellPrice": 2.16
+        },
+        "cardmarket_trend": 1.94,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.62,
+            "low": 1.4,
+            "mid": 2.79
+          }
+        },
+        "tcgplayer_usd": 2.62,
         "graded": {}
       },
       "jp": {
@@ -43053,14 +44326,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "196",
-      "fetched_at": "2026-11-20T00:22:16.708583+00:00",
+      "fetched_at": "2026-11-22T14:06:25.876934+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.3,
+        "median": 2.3,
+        "min": 2.21,
+        "max": 2.39,
+        "count": 2,
+        "sold_samples": [
+          2.21,
+          2.39
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -43068,10 +44344,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.21,
+          "avg30": 2.39,
+          "avg7": 2.09,
+          "avg1": 2.93,
+          "lowPrice": 1.0,
+          "averageSellPrice": 2.39
+        },
+        "cardmarket_trend": 2.21,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.62,
+            "low": 1.85,
+            "mid": 2.99
+          }
+        },
+        "tcgplayer_usd": 2.62,
         "graded": {}
       },
       "jp": {
@@ -43111,7 +44400,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "196",
-      "fetched_at": "2026-11-20T00:22:17.417271+00:00",
+      "fetched_at": "2026-11-22T14:07:26.245895+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -43169,14 +44458,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "197",
-      "fetched_at": "2026-11-20T00:22:18.139549+00:00",
+      "fetched_at": "2026-11-22T14:06:26.102018+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.31,
+        "median": 3.31,
+        "min": 3.18,
+        "max": 3.43,
+        "count": 2,
+        "sold_samples": [
+          3.18,
+          3.43
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -43184,10 +44476,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.43,
+          "avg30": 3.18,
+          "avg7": 3.27,
+          "avg1": 3.18,
+          "lowPrice": 2.0,
+          "averageSellPrice": 3.2
+        },
+        "cardmarket_trend": 3.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.22,
+            "low": 2.16,
+            "mid": 4.0
+          }
+        },
+        "tcgplayer_usd": 3.22,
         "graded": {}
       },
       "jp": {
@@ -43227,14 +44532,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "197",
-      "fetched_at": "2026-11-20T00:22:21.258925+00:00",
+      "fetched_at": "2026-11-22T14:06:26.456882+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.61,
+        "median": 5.61,
+        "min": 5.6,
+        "max": 5.61,
+        "count": 2,
+        "sold_samples": [
+          5.6,
+          5.61
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -43242,10 +44550,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.6,
+          "avg30": 5.61,
+          "avg7": 5.65,
+          "avg1": 4.0,
+          "lowPrice": 3.9,
+          "averageSellPrice": 5.66
+        },
+        "cardmarket_trend": 5.6,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.04,
+            "low": 3.91,
+            "mid": 5.64
+          }
+        },
+        "tcgplayer_usd": 5.04,
         "graded": {}
       },
       "jp": {
@@ -43951,7 +45272,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "195",
-      "fetched_at": "2026-11-20T00:23:00.529809+00:00",
+      "fetched_at": "2026-11-22T14:07:28.108097+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -44083,14 +45404,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "197",
-      "fetched_at": "2026-11-20T00:23:39.965735+00:00",
+      "fetched_at": "2026-11-22T14:06:27.160703+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.02,
+        "median": 9.02,
+        "min": 8.95,
+        "max": 9.1,
+        "count": 2,
+        "sold_samples": [
+          8.95,
+          9.1
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44098,10 +45422,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.1,
+          "avg30": 8.95,
+          "avg7": 8.08,
+          "avg1": 6.48,
+          "lowPrice": 3.14,
+          "averageSellPrice": 8.94
+        },
+        "cardmarket_trend": 9.1,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 18.4,
+            "low": 14.28,
+            "mid": 20.5
+          }
+        },
+        "tcgplayer_usd": 18.4,
         "graded": {}
       },
       "jp": {
@@ -44141,14 +45478,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "198",
-      "fetched_at": "2026-11-20T00:24:01.572134+00:00",
+      "fetched_at": "2026-11-22T14:07:27.621829+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.99,
+        "median": 3.99,
+        "min": 3.93,
+        "max": 4.05,
+        "count": 2,
+        "sold_samples": [
+          3.93,
+          4.05
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44156,10 +45496,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.93,
+          "avg30": 4.05,
+          "avg7": 3.95,
+          "avg1": 3.0,
+          "lowPrice": 1.0,
+          "averageSellPrice": 4.14
+        },
+        "cardmarket_trend": 3.93,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 7.15,
+            "low": 6.66,
+            "mid": 8.49
+          }
+        },
+        "tcgplayer_usd": 7.15,
         "graded": {}
       },
       "jp": {
@@ -44199,14 +45552,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "197",
-      "fetched_at": "2026-11-20T00:24:31.018369+00:00",
+      "fetched_at": "2026-11-22T14:06:30.244631+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.5,
+        "median": 1.5,
+        "min": 1.48,
+        "max": 1.52,
+        "count": 2,
+        "sold_samples": [
+          1.48,
+          1.52
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44214,10 +45570,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.48,
+          "avg30": 1.52,
+          "avg7": 1.42,
+          "avg1": 1.2,
+          "lowPrice": 0.7,
+          "averageSellPrice": 1.6
+        },
+        "cardmarket_trend": 1.48,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.38,
+            "low": 1.9,
+            "mid": 2.75
+          }
+        },
+        "tcgplayer_usd": 2.38,
         "graded": {}
       },
       "jp": {
@@ -44257,14 +45626,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "196",
-      "fetched_at": "2026-11-20T00:25:16.901646+00:00",
+      "fetched_at": "2026-11-22T14:06:30.973476+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.8,
+        "median": 9.8,
+        "min": 9.47,
+        "max": 10.13,
+        "count": 2,
+        "sold_samples": [
+          9.47,
+          10.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44272,10 +45644,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 10.13,
+          "avg30": 9.47,
+          "avg7": 10.26,
+          "avg1": 8.6,
+          "lowPrice": 4.0,
+          "averageSellPrice": 9.22
+        },
+        "cardmarket_trend": 10.13,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.54,
+            "low": 4.45,
+            "mid": 6.9
+          }
+        },
+        "tcgplayer_usd": 5.54,
         "graded": {}
       },
       "jp": {
@@ -44315,14 +45700,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "198",
-      "fetched_at": "2026-11-20T00:25:19.142371+00:00",
+      "fetched_at": "2026-11-22T14:07:29.257687+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 86.29,
+        "median": 86.29,
+        "min": 79.88,
+        "max": 92.7,
+        "count": 2,
+        "sold_samples": [
+          79.88,
+          92.7
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44330,10 +45718,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 79.88,
+          "avg30": 92.7,
+          "avg7": 96.78,
+          "avg1": 71.0,
+          "lowPrice": 65.0,
+          "averageSellPrice": 90.43
+        },
+        "cardmarket_trend": 79.88,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 92.52,
+            "low": 77.16,
+            "mid": 105.28
+          }
+        },
+        "tcgplayer_usd": 92.52,
         "graded": {}
       },
       "jp": {
@@ -44373,14 +45774,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:25:28.358842+00:00",
+      "fetched_at": "2026-11-22T14:08:30.827794+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.79,
+        "median": 9.79,
+        "min": 9.59,
+        "max": 9.98,
+        "count": 2,
+        "sold_samples": [
+          9.59,
+          9.98
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44388,10 +45792,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.59,
+          "avg30": 9.98,
+          "avg7": 9.59,
+          "avg1": 11.22,
+          "lowPrice": 5.5,
+          "averageSellPrice": 10.01
+        },
+        "cardmarket_trend": 9.59,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.74,
+            "low": 4.0,
+            "mid": 7.5
+          }
+        },
+        "tcgplayer_usd": 5.74,
         "graded": {}
       },
       "jp": {
@@ -44431,14 +45848,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "198",
-      "fetched_at": "2026-11-20T00:25:29.066610+00:00",
+      "fetched_at": "2026-11-22T14:07:29.527943+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 10.91,
+        "median": 10.91,
+        "min": 10.54,
+        "max": 11.28,
+        "count": 2,
+        "sold_samples": [
+          10.54,
+          11.28
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44446,10 +45866,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 10.54,
+          "avg30": 11.28,
+          "avg7": 10.18,
+          "avg1": 9.23,
+          "lowPrice": 4.99,
+          "averageSellPrice": 11.45
+        },
+        "cardmarket_trend": 10.54,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 17.57,
+            "low": 14.49,
+            "mid": 20.39
+          }
+        },
+        "tcgplayer_usd": 17.57,
         "graded": {}
       },
       "jp": {
@@ -44489,14 +45922,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "198",
-      "fetched_at": "2026-11-20T00:25:29.360326+00:00",
+      "fetched_at": "2026-11-22T14:08:29.120297+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 6.98,
+        "median": 6.98,
+        "min": 6.84,
+        "max": 7.13,
+        "count": 2,
+        "sold_samples": [
+          6.84,
+          7.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44504,10 +45940,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.13,
+          "avg30": 6.84,
+          "avg7": 4.7,
+          "avg1": 5.65,
+          "lowPrice": 3.0,
+          "averageSellPrice": 7.26
+        },
+        "cardmarket_trend": 7.13,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.64,
+            "low": 8.0,
+            "mid": 11.23
+          }
+        },
+        "tcgplayer_usd": 10.64,
         "graded": {}
       },
       "jp": {
@@ -44547,14 +45996,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:25:30.135455+00:00",
+      "fetched_at": "2026-11-22T14:08:29.391756+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.06,
+        "median": 3.06,
+        "min": 2.98,
+        "max": 3.15,
+        "count": 2,
+        "sold_samples": [
+          2.98,
+          3.15
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44562,10 +46014,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.15,
+          "avg30": 2.98,
+          "avg7": 3.13,
+          "avg1": 3.22,
+          "lowPrice": 1.5,
+          "averageSellPrice": 2.83
+        },
+        "cardmarket_trend": 3.15,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.87,
+            "low": 2.83,
+            "mid": 4.76
+          }
+        },
+        "tcgplayer_usd": 4.87,
         "graded": {}
       },
       "jp": {
@@ -44679,14 +46144,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:25:31.096625+00:00",
+      "fetched_at": "2026-11-22T14:07:29.190474+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.25,
+        "median": 2.25,
+        "min": 2.18,
+        "max": 2.31,
+        "count": 2,
+        "sold_samples": [
+          2.18,
+          2.31
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44694,10 +46162,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.31,
+          "avg30": 2.18,
+          "avg7": 2.2,
+          "avg1": 2.06,
+          "lowPrice": 1.0,
+          "averageSellPrice": 2.13
+        },
+        "cardmarket_trend": 2.31,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.71,
+            "low": 1.97,
+            "mid": 2.89
+          }
+        },
+        "tcgplayer_usd": 2.71,
         "graded": {}
       },
       "jp": {
@@ -44737,14 +46218,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:25:33.285642+00:00",
+      "fetched_at": "2026-11-22T14:07:29.451000+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 254.22,
+        "median": 254.22,
+        "min": 235.71,
+        "max": 272.73,
+        "count": 2,
+        "sold_samples": [
+          235.71,
+          272.73
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44752,10 +46236,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 235.71,
+          "avg30": 272.73,
+          "avg7": 273.75,
+          "avg1": 233.5,
+          "lowPrice": 170.0,
+          "averageSellPrice": 273.51
+        },
+        "cardmarket_trend": 235.71,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 323.37,
+            "low": 296.0,
+            "mid": 354.07
+          }
+        },
+        "tcgplayer_usd": 323.37,
         "graded": {}
       },
       "jp": {
@@ -44795,14 +46292,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:26:17.805477+00:00",
+      "fetched_at": "2026-11-22T14:08:29.798739+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 82.34,
+        "median": 82.34,
+        "min": 78.9,
+        "max": 85.79,
+        "count": 2,
+        "sold_samples": [
+          78.9,
+          85.79
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44810,10 +46310,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 78.9,
+          "avg30": 85.79,
+          "avg7": 77.82,
+          "avg1": 40.0,
+          "lowPrice": 40.0,
+          "averageSellPrice": 83.03
+        },
+        "cardmarket_trend": 78.9,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 102.0,
+            "low": 84.93,
+            "mid": 109.99
+          }
+        },
+        "tcgplayer_usd": 102.0,
         "graded": {}
       },
       "jp": {
@@ -44853,14 +46366,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:26:22.492217+00:00",
+      "fetched_at": "2026-11-22T14:07:33.203283+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.96,
+        "median": 3.96,
+        "min": 3.89,
+        "max": 4.04,
+        "count": 2,
+        "sold_samples": [
+          3.89,
+          4.04
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44868,10 +46384,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.04,
+          "avg30": 3.89,
+          "avg7": 4.17,
+          "avg1": 3.95,
+          "lowPrice": 1.5,
+          "averageSellPrice": 3.72
+        },
+        "cardmarket_trend": 4.04,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.59,
+            "low": 2.69,
+            "mid": 3.96
+          }
+        },
+        "tcgplayer_usd": 3.59,
         "graded": {}
       },
       "jp": {
@@ -44911,14 +46440,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:26:31.528620+00:00",
+      "fetched_at": "2026-11-22T14:07:29.780721+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 20.2,
+        "median": 20.2,
+        "min": 19.69,
+        "max": 20.72,
+        "count": 2,
+        "sold_samples": [
+          19.69,
+          20.72
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44926,10 +46458,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 20.72,
+          "avg30": 19.69,
+          "avg7": 19.38,
+          "avg1": 18.78,
+          "lowPrice": 9.95,
+          "averageSellPrice": 19.97
+        },
+        "cardmarket_trend": 20.72,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 34.41,
+            "low": 25.65,
+            "mid": 38.61
+          }
+        },
+        "tcgplayer_usd": 34.41,
         "graded": {}
       },
       "jp": {
@@ -44969,14 +46514,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:26:36.578604+00:00",
+      "fetched_at": "2026-11-22T14:08:30.135285+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.62,
+        "median": 7.62,
+        "min": 7.25,
+        "max": 7.98,
+        "count": 2,
+        "sold_samples": [
+          7.25,
+          7.98
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -44984,10 +46532,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.25,
+          "avg30": 7.98,
+          "avg7": 7.39,
+          "avg1": 6.72,
+          "lowPrice": 4.5,
+          "averageSellPrice": 7.97
+        },
+        "cardmarket_trend": 7.25,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.66,
+            "low": 4.45,
+            "mid": 7.02
+          }
+        },
+        "tcgplayer_usd": 5.66,
         "graded": {}
       },
       "jp": {
@@ -45027,14 +46588,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:26:40.700903+00:00",
+      "fetched_at": "2026-11-22T14:08:33.657117+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.15,
+        "median": 9.15,
+        "min": 9.1,
+        "max": 9.2,
+        "count": 2,
+        "sold_samples": [
+          9.1,
+          9.2
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45042,10 +46606,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.2,
+          "avg30": 9.1,
+          "avg7": 9.0,
+          "avg1": 9.5,
+          "lowPrice": 5.99,
+          "averageSellPrice": 9.26
+        },
+        "cardmarket_trend": 9.2,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 18.41,
+            "low": 15.0,
+            "mid": 20.03
+          }
+        },
+        "tcgplayer_usd": 18.41,
         "graded": {}
       },
       "jp": {
@@ -45085,14 +46662,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:27:22.799399+00:00",
+      "fetched_at": "2026-11-22T14:08:29.755018+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.03,
+        "median": 7.03,
+        "min": 6.83,
+        "max": 7.23,
+        "count": 2,
+        "sold_samples": [
+          6.83,
+          7.23
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45100,10 +46680,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.83,
+          "avg30": 7.23,
+          "avg7": 7.23,
+          "avg1": 9.32,
+          "lowPrice": 3.78,
+          "averageSellPrice": 7.29
+        },
+        "cardmarket_trend": 6.83,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 8.91,
+            "low": 7.0,
+            "mid": 9.87
+          }
+        },
+        "tcgplayer_usd": 8.91,
         "graded": {}
       },
       "jp": {
@@ -45143,7 +46736,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "199",
-      "fetched_at": "2026-11-20T00:27:29.443399+00:00",
+      "fetched_at": "2026-11-22T14:10:30.254498+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -45201,7 +46794,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:27:34.399122+00:00",
+      "fetched_at": "2026-11-22T14:08:31.429011+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -45259,14 +46852,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:27:42.303523+00:00",
+      "fetched_at": "2026-11-22T14:08:30.534894+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.49,
+        "median": 2.49,
+        "min": 2.21,
+        "max": 2.77,
+        "count": 2,
+        "sold_samples": [
+          2.21,
+          2.77
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45274,10 +46870,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.77,
+          "avg30": 2.21,
+          "avg7": 2.31,
+          "avg1": 2.5,
+          "lowPrice": 0.95,
+          "averageSellPrice": 2.11
+        },
+        "cardmarket_trend": 2.77,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.26,
+            "low": 1.0,
+            "mid": 2.79
+          }
+        },
+        "tcgplayer_usd": 2.26,
         "graded": {}
       },
       "jp": {
@@ -45317,14 +46926,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:27:45.611443+00:00",
+      "fetched_at": "2026-11-22T14:08:30.480777+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.19,
+        "median": 7.19,
+        "min": 6.94,
+        "max": 7.43,
+        "count": 2,
+        "sold_samples": [
+          6.94,
+          7.43
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45332,10 +46944,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.43,
+          "avg30": 6.94,
+          "avg7": 7.08,
+          "avg1": 5.83,
+          "lowPrice": 4.0,
+          "averageSellPrice": 7.04
+        },
+        "cardmarket_trend": 7.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 10.28,
+            "low": 6.99,
+            "mid": 12.51
+          }
+        },
+        "tcgplayer_usd": 10.28,
         "graded": {}
       },
       "jp": {
@@ -45375,14 +47000,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:28:29.830469+00:00",
+      "fetched_at": "2026-11-22T14:08:32.520776+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 4.03,
+        "median": 4.03,
+        "min": 3.95,
+        "max": 4.11,
+        "count": 2,
+        "sold_samples": [
+          3.95,
+          4.11
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45390,10 +47018,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.11,
+          "avg30": 3.95,
+          "avg7": 3.79,
+          "avg1": 4.53,
+          "lowPrice": 1.5,
+          "averageSellPrice": 4.1
+        },
+        "cardmarket_trend": 4.11,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 7.6,
+            "low": 4.98,
+            "mid": 7.65
+          }
+        },
+        "tcgplayer_usd": 7.6,
         "graded": {}
       },
       "jp": {
@@ -45433,14 +47074,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T00:28:46.827327+00:00",
+      "fetched_at": "2026-11-22T14:08:32.294825+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.76,
+        "median": 2.76,
+        "min": 2.73,
+        "max": 2.79,
+        "count": 2,
+        "sold_samples": [
+          2.73,
+          2.79
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45448,10 +47092,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.73,
+          "avg30": 2.79,
+          "avg7": 2.7,
+          "avg1": 2.31,
+          "lowPrice": 1.5,
+          "averageSellPrice": 2.78
+        },
+        "cardmarket_trend": 2.73,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.46,
+            "low": 3.5,
+            "mid": 4.9
+          }
+        },
+        "tcgplayer_usd": 4.46,
         "graded": {}
       },
       "jp": {
@@ -45565,14 +47222,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:00.909310+00:00",
+      "fetched_at": "2026-11-22T14:08:31.102330+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.98,
+        "median": 3.98,
+        "min": 3.96,
+        "max": 4.0,
+        "count": 2,
+        "sold_samples": [
+          3.96,
+          4.0
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45580,10 +47240,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 4.0,
+          "avg30": 3.96,
+          "avg7": 3.78,
+          "avg1": 3.88,
+          "lowPrice": 1.95,
+          "averageSellPrice": 3.98
+        },
+        "cardmarket_trend": 4.0,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.8,
+            "low": 3.5,
+            "mid": 5.36
+          }
+        },
+        "tcgplayer_usd": 4.8,
         "graded": {}
       },
       "jp": {
@@ -45623,7 +47296,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:04.643506+00:00",
+      "fetched_at": "2026-11-22T14:09:31.590807+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -45681,14 +47354,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:08.855241+00:00",
+      "fetched_at": "2026-11-22T14:09:31.796456+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.29,
+        "median": 2.29,
+        "min": 2.23,
+        "max": 2.36,
+        "count": 2,
+        "sold_samples": [
+          2.23,
+          2.36
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45696,10 +47372,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.23,
+          "avg30": 2.36,
+          "avg7": 2.04,
+          "avg1": 2.59,
+          "lowPrice": 0.99,
+          "averageSellPrice": 2.36
+        },
+        "cardmarket_trend": 2.23,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.93,
+            "low": 1.89,
+            "mid": 3.09
+          }
+        },
+        "tcgplayer_usd": 2.93,
         "graded": {}
       },
       "jp": {
@@ -45739,14 +47428,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T14:47:11.358228+00:00",
+      "fetched_at": "2026-11-22T14:08:32.575128+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.96,
+        "median": 7.96,
+        "min": 7.68,
+        "max": 8.23,
+        "count": 2,
+        "sold_samples": [
+          7.68,
+          8.23
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45754,10 +47446,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.68,
+          "avg30": 8.23,
+          "avg7": 8.12,
+          "avg1": 6.97,
+          "lowPrice": 4.0,
+          "averageSellPrice": 8.13
+        },
+        "cardmarket_trend": 7.68,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.5,
+            "low": 12.3,
+            "mid": 17.32
+          }
+        },
+        "tcgplayer_usd": 15.5,
         "graded": {}
       },
       "jp": {
@@ -45797,7 +47502,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "200",
-      "fetched_at": "2026-11-20T14:47:11.579613+00:00",
+      "fetched_at": "2026-11-22T14:09:34.689003+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -45855,14 +47560,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:13.927230+00:00",
+      "fetched_at": "2026-11-22T14:08:33.017929+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.4,
+        "median": 2.4,
+        "min": 2.37,
+        "max": 2.42,
+        "count": 2,
+        "sold_samples": [
+          2.37,
+          2.42
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45870,10 +47578,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.37,
+          "avg30": 2.42,
+          "avg7": 2.33,
+          "avg1": 2.54,
+          "lowPrice": 1.3,
+          "averageSellPrice": 2.47
+        },
+        "cardmarket_trend": 2.37,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.99,
+            "low": 1.0,
+            "mid": 3.19
+          }
+        },
+        "tcgplayer_usd": 2.99,
         "graded": {}
       },
       "jp": {
@@ -45913,14 +47634,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:15.299359+00:00",
+      "fetched_at": "2026-11-22T14:10:33.484286+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 15.14,
+        "median": 15.14,
+        "min": 14.04,
+        "max": 16.24,
+        "count": 2,
+        "sold_samples": [
+          14.04,
+          16.24
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45928,10 +47652,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 14.04,
+          "avg30": 16.24,
+          "avg7": 14.72,
+          "avg1": 14.13,
+          "lowPrice": 6.0,
+          "averageSellPrice": 16.76
+        },
+        "cardmarket_trend": 14.04,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 43.25,
+            "low": 29.89,
+            "mid": 46.79
+          }
+        },
+        "tcgplayer_usd": 43.25,
         "graded": {}
       },
       "jp": {
@@ -45971,14 +47708,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:15.765104+00:00",
+      "fetched_at": "2026-11-22T14:09:35.391701+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 53.73,
+        "median": 53.73,
+        "min": 53.05,
+        "max": 54.42,
+        "count": 2,
+        "sold_samples": [
+          53.05,
+          54.42
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -45986,10 +47726,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 53.05,
+          "avg30": 54.42,
+          "avg7": 52.51,
+          "avg1": 48.0,
+          "lowPrice": 33.9,
+          "averageSellPrice": 55.08
+        },
+        "cardmarket_trend": 53.05,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 58.0,
+            "low": 49.98,
+            "mid": 70.0
+          }
+        },
+        "tcgplayer_usd": 58.0,
         "graded": {}
       },
       "jp": {
@@ -46029,7 +47782,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "201",
-      "fetched_at": "2026-11-20T14:47:16.794097+00:00",
+      "fetched_at": "2026-11-22T14:10:33.203169+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -46087,14 +47840,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:17.900181+00:00",
+      "fetched_at": "2026-11-22T14:09:35.796934+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.69,
+        "median": 7.69,
+        "min": 7.57,
+        "max": 7.81,
+        "count": 2,
+        "sold_samples": [
+          7.57,
+          7.81
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46102,10 +47858,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 7.57,
+          "avg30": 7.81,
+          "avg7": 7.22,
+          "avg1": 5.4,
+          "lowPrice": 4.4,
+          "averageSellPrice": 7.76
+        },
+        "cardmarket_trend": 7.57,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.97,
+            "low": 3.25,
+            "mid": 5.75
+          }
+        },
+        "tcgplayer_usd": 4.97,
         "graded": {}
       },
       "jp": {
@@ -46145,14 +47914,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:21.305433+00:00",
+      "fetched_at": "2026-11-22T14:09:34.929633+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.71,
+        "median": 3.71,
+        "min": 3.63,
+        "max": 3.79,
+        "count": 2,
+        "sold_samples": [
+          3.63,
+          3.79
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46160,10 +47932,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.79,
+          "avg30": 3.63,
+          "avg7": 3.66,
+          "avg1": 3.45,
+          "lowPrice": 1.25,
+          "averageSellPrice": 3.62
+        },
+        "cardmarket_trend": 3.79,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.81,
+            "low": 3.5,
+            "mid": 6.47
+          }
+        },
+        "tcgplayer_usd": 5.81,
         "graded": {}
       },
       "jp": {
@@ -46203,14 +47988,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:22.076013+00:00",
+      "fetched_at": "2026-11-22T14:11:35.611307+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.95,
+        "median": 2.95,
+        "min": 2.91,
+        "max": 2.99,
+        "count": 2,
+        "sold_samples": [
+          2.91,
+          2.99
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46218,10 +48006,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.99,
+          "avg30": 2.91,
+          "avg7": 2.96,
+          "avg1": 3.71,
+          "lowPrice": 1.5,
+          "averageSellPrice": 3.06
+        },
+        "cardmarket_trend": 2.99,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.7,
+            "low": 0.95,
+            "mid": 2.19
+          }
+        },
+        "tcgplayer_usd": 1.7,
         "graded": {}
       },
       "jp": {
@@ -46261,14 +48062,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:23.126225+00:00",
+      "fetched_at": "2026-11-22T14:10:38.616118+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 13.38,
+        "median": 13.38,
+        "min": 13.35,
+        "max": 13.42,
+        "count": 2,
+        "sold_samples": [
+          13.35,
+          13.42
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46276,10 +48080,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 13.35,
+          "avg30": 13.42,
+          "avg7": 13.66,
+          "avg1": 9.9,
+          "lowPrice": 7.9,
+          "averageSellPrice": 13.51
+        },
+        "cardmarket_trend": 13.35,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 47.77,
+            "low": 37.27,
+            "mid": 53.34
+          }
+        },
+        "tcgplayer_usd": 47.77,
         "graded": {}
       },
       "jp": {
@@ -46319,14 +48136,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:23.668449+00:00",
+      "fetched_at": "2026-11-22T14:10:34.235184+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 1.67,
+        "median": 1.67,
+        "min": 1.64,
+        "max": 1.71,
+        "count": 2,
+        "sold_samples": [
+          1.64,
+          1.71
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46334,10 +48154,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 1.64,
+          "avg30": 1.71,
+          "avg7": 1.48,
+          "avg1": 1.7,
+          "lowPrice": 0.9,
+          "averageSellPrice": 1.73
+        },
+        "cardmarket_trend": 1.64,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.57,
+            "low": 1.0,
+            "mid": 2.19
+          }
+        },
+        "tcgplayer_usd": 1.57,
         "graded": {}
       },
       "jp": {
@@ -46377,14 +48210,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:23.905463+00:00",
+      "fetched_at": "2026-11-22T14:10:34.022091+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.28,
+        "median": 3.28,
+        "min": 3.27,
+        "max": 3.29,
+        "count": 2,
+        "sold_samples": [
+          3.27,
+          3.29
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46392,10 +48228,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.27,
+          "avg30": 3.29,
+          "avg7": 3.03,
+          "avg1": 3.05,
+          "lowPrice": 1.98,
+          "averageSellPrice": 3.27
+        },
+        "cardmarket_trend": 3.27,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.55,
+            "low": 4.0,
+            "mid": 6.6
+          }
+        },
+        "tcgplayer_usd": 5.55,
         "graded": {}
       },
       "jp": {
@@ -46509,14 +48358,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:25.684112+00:00",
+      "fetched_at": "2026-11-22T14:10:38.843091+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 7.2,
+        "median": 7.2,
+        "min": 6.92,
+        "max": 7.47,
+        "count": 2,
+        "sold_samples": [
+          6.92,
+          7.47
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46524,10 +48376,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 6.92,
+          "avg30": 7.47,
+          "avg7": 7.03,
+          "avg1": 6.66,
+          "lowPrice": 4.68,
+          "averageSellPrice": 7.67
+        },
+        "cardmarket_trend": 6.92,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 15.7,
+            "low": 13.0,
+            "mid": 18.21
+          }
+        },
+        "tcgplayer_usd": 15.7,
         "graded": {}
       },
       "jp": {
@@ -46567,14 +48432,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "202",
-      "fetched_at": "2026-11-20T14:47:26.612345+00:00",
+      "fetched_at": "2026-11-22T14:10:35.440676+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 16.74,
+        "median": 16.74,
+        "min": 15.66,
+        "max": 17.83,
+        "count": 2,
+        "sold_samples": [
+          15.66,
+          17.83
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -46582,10 +48450,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 15.66,
+          "avg30": 17.83,
+          "avg7": 16.81,
+          "avg1": 12.98,
+          "lowPrice": 9.5,
+          "averageSellPrice": 19.71
+        },
+        "cardmarket_trend": 15.66,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 34.58,
+            "low": 26.5,
+            "mid": 37.6
+          }
+        },
+        "tcgplayer_usd": 34.58,
         "graded": {}
       },
       "jp": {
@@ -46625,7 +48506,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "203",
-      "fetched_at": "2026-11-20T14:47:28.249554+00:00",
+      "fetched_at": "2026-11-22T14:11:35.647146+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -47201,14 +49082,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "203",
-      "fetched_at": "2026-11-20T14:48:48.203667+00:00",
+      "fetched_at": "2026-11-22T14:10:36.077720+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.33,
+        "median": 2.33,
+        "min": 2.17,
+        "max": 2.49,
+        "count": 2,
+        "sold_samples": [
+          2.17,
+          2.49
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -47216,10 +49100,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.17,
+          "avg30": 2.49,
+          "avg7": 2.4,
+          "avg1": 1.98,
+          "lowPrice": 1.89,
+          "averageSellPrice": 2.53
+        },
+        "cardmarket_trend": 2.17,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.3,
+            "low": 2.6,
+            "mid": 3.46
+          }
+        },
+        "tcgplayer_usd": 3.3,
         "graded": {}
       },
       "jp": {
@@ -48375,14 +50272,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "203",
-      "fetched_at": "2026-11-20T14:50:28.281178+00:00",
+      "fetched_at": "2026-11-22T14:10:41.077781+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 196.97,
+        "median": 196.97,
+        "min": 191.17,
+        "max": 202.77,
+        "count": 2,
+        "sold_samples": [
+          191.17,
+          202.77
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -48390,10 +50290,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 191.17,
+          "avg30": 202.77,
+          "avg7": 177.44,
+          "avg1": 126.23,
+          "lowPrice": 98.33,
+          "averageSellPrice": 206.27
+        },
+        "cardmarket_trend": 191.17,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 346.95,
+            "low": 260.0,
+            "mid": 382.4
+          }
+        },
+        "tcgplayer_usd": 346.95,
         "graded": {}
       },
       "jp": {
@@ -48433,7 +50346,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "205",
-      "fetched_at": "2026-11-20T14:50:28.309378+00:00",
+      "fetched_at": "2026-11-22T14:11:36.776173+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -48787,14 +50700,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "205",
-      "fetched_at": "2026-11-20T14:50:30.440351+00:00",
+      "fetched_at": "2026-11-22T14:10:39.038216+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.92,
+        "median": 5.92,
+        "min": 5.9,
+        "max": 5.94,
+        "count": 2,
+        "sold_samples": [
+          5.9,
+          5.94
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -48802,10 +50718,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.9,
+          "avg30": 5.94,
+          "avg7": 5.84,
+          "avg1": 5.32,
+          "lowPrice": 2.45,
+          "averageSellPrice": 5.9
+        },
+        "cardmarket_trend": 5.9,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 8.48,
+            "low": 4.0,
+            "mid": 9.28
+          }
+        },
+        "tcgplayer_usd": 8.48,
         "graded": {}
       },
       "jp": {
@@ -48845,14 +50774,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "205",
-      "fetched_at": "2026-11-20T14:50:30.688100+00:00",
+      "fetched_at": "2026-11-22T14:10:39.963495+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.67,
+        "median": 8.67,
+        "min": 8.43,
+        "max": 8.91,
+        "count": 2,
+        "sold_samples": [
+          8.43,
+          8.91
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -48860,10 +50792,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 8.43,
+          "avg30": 8.91,
+          "avg7": 8.83,
+          "avg1": 8.43,
+          "lowPrice": 4.0,
+          "averageSellPrice": 10.29
+        },
+        "cardmarket_trend": 8.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 13.13,
+            "low": 8.01,
+            "mid": 14.87
+          }
+        },
+        "tcgplayer_usd": 13.13,
         "graded": {}
       },
       "jp": {
@@ -49273,14 +51218,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "206",
-      "fetched_at": "2026-11-20T14:51:31.530196+00:00",
+      "fetched_at": "2026-11-22T14:11:39.506949+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 5.41,
+        "median": 5.41,
+        "min": 5.13,
+        "max": 5.69,
+        "count": 2,
+        "sold_samples": [
+          5.13,
+          5.69
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -49288,10 +51236,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 5.13,
+          "avg30": 5.69,
+          "avg7": 5.5,
+          "avg1": 6.13,
+          "lowPrice": 2.0,
+          "averageSellPrice": 6.1
+        },
+        "cardmarket_trend": 5.13,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 19.79,
+            "low": 16.5,
+            "mid": 22.23
+          }
+        },
+        "tcgplayer_usd": 19.79,
         "graded": {}
       },
       "jp": {
@@ -49479,14 +51440,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "204",
-      "fetched_at": "2026-11-20T14:51:34.091286+00:00",
+      "fetched_at": "2026-11-22T14:10:40.213830+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 20.91,
+        "median": 20.91,
+        "min": 20.7,
+        "max": 21.11,
+        "count": 2,
+        "sold_samples": [
+          20.7,
+          21.11
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -49494,10 +51458,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 20.7,
+          "avg30": 21.11,
+          "avg7": 20.56,
+          "avg1": 14.17,
+          "lowPrice": 6.99,
+          "averageSellPrice": 21.37
+        },
+        "cardmarket_trend": 20.7,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 48.67,
+            "low": 40.0,
+            "mid": 52.14
+          }
+        },
+        "tcgplayer_usd": 48.67,
         "graded": {}
       },
       "jp": {
@@ -50203,14 +52180,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "207",
-      "fetched_at": "2026-11-20T14:51:36.790312+00:00",
+      "fetched_at": "2026-11-22T14:10:40.611503+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 8.38,
+        "median": 8.38,
+        "min": 8.07,
+        "max": 8.69,
+        "count": 2,
+        "sold_samples": [
+          8.07,
+          8.69
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -50218,10 +52198,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 8.69,
+          "avg30": 8.07,
+          "avg7": 7.68,
+          "avg1": 7.26,
+          "lowPrice": 3.0,
+          "averageSellPrice": 8.06
+        },
+        "cardmarket_trend": 8.69,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 11.98,
+            "low": 8.58,
+            "mid": 13.99
+          }
+        },
+        "tcgplayer_usd": 11.98,
         "graded": {}
       },
       "jp": {
@@ -50335,14 +52328,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "206",
-      "fetched_at": "2026-11-20T14:52:35.693657+00:00",
+      "fetched_at": "2026-11-22T14:11:40.956009+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.4,
+        "median": 3.4,
+        "min": 3.29,
+        "max": 3.5,
+        "count": 2,
+        "sold_samples": [
+          3.29,
+          3.5
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -50350,10 +52346,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.29,
+          "avg30": 3.5,
+          "avg7": 3.54,
+          "avg1": 3.26,
+          "lowPrice": 1.3,
+          "averageSellPrice": 3.52
+        },
+        "cardmarket_trend": 3.29,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.31,
+            "low": 0.96,
+            "mid": 2.9
+          }
+        },
+        "tcgplayer_usd": 2.31,
         "graded": {}
       },
       "jp": {
@@ -51059,14 +53068,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "208",
-      "fetched_at": "2026-11-20T14:52:38.375669+00:00",
+      "fetched_at": "2026-11-22T14:10:41.322754+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 26.09,
+        "median": 26.09,
+        "min": 25.69,
+        "max": 26.48,
+        "count": 2,
+        "sold_samples": [
+          25.69,
+          26.48
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -51074,10 +53086,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 26.48,
+          "avg30": 25.69,
+          "avg7": 21.94,
+          "avg1": 22.5,
+          "lowPrice": 18.0,
+          "averageSellPrice": 25.56
+        },
+        "cardmarket_trend": 26.48,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 36.67,
+            "low": 31.25,
+            "mid": 39.52
+          }
+        },
+        "tcgplayer_usd": 36.67,
         "graded": {}
       },
       "jp": {
@@ -51265,14 +53290,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "209",
-      "fetched_at": "2026-11-20T14:52:39.418059+00:00",
+      "fetched_at": "2026-11-22T14:10:41.581550+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 2.71,
+        "median": 2.71,
+        "min": 2.6,
+        "max": 2.82,
+        "count": 2,
+        "sold_samples": [
+          2.6,
+          2.82
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -51280,10 +53308,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 2.6,
+          "avg30": 2.82,
+          "avg7": 2.53,
+          "avg1": 2.99,
+          "lowPrice": 1.5,
+          "averageSellPrice": 2.97
+        },
+        "cardmarket_trend": 2.6,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.76,
+            "low": 3.4,
+            "mid": 5.37
+          }
+        },
+        "tcgplayer_usd": 4.76,
         "graded": {}
       },
       "jp": {
@@ -51619,7 +53660,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "209",
-      "fetched_at": "2026-11-20T14:53:41.328996+00:00",
+      "fetched_at": "2026-11-22T14:11:44.006610+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -52417,14 +54458,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "210",
-      "fetched_at": "2026-11-20T14:53:44.857119+00:00",
+      "fetched_at": "2026-11-22T14:11:36.819029+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.05,
+        "median": 3.05,
+        "min": 3.03,
+        "max": 3.08,
+        "count": 2,
+        "sold_samples": [
+          3.03,
+          3.08
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -52432,10 +54476,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.08,
+          "avg30": 3.03,
+          "avg7": 3.08,
+          "avg1": 2.6,
+          "lowPrice": 1.45,
+          "averageSellPrice": 3.02
+        },
+        "cardmarket_trend": 3.08,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.02,
+            "low": 0.75,
+            "mid": 1.28
+          }
+        },
+        "tcgplayer_usd": 1.02,
         "graded": {}
       },
       "jp": {
