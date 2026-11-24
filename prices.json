@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "generated_at": "2026-11-23T17:25:44.649028+00:00",
+    "generated_at": "2026-11-24T04:00:51.730616+00:00",
     "source": "global_real_sold_pipeline_v3",
     "total_sets_discovered": 407,
     "total_catalog_cards": 22368,
     "total_chase_cards": 5589,
-    "card_count": 1992,
-    "priced_cards": 1827,
-    "processed_this_run": 240,
+    "card_count": 2052,
+    "priced_cards": 1886,
+    "processed_this_run": 145,
     "circuit_breakers": {
       "ebay_fr": true,
       "mercari_jp": true,
@@ -8787,14 +8787,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "095",
-      "fetched_at": "2026-11-23T17:14:26.361291+00:00",
+      "fetched_at": "2026-11-24T03:50:44.132229+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 28.95,
+        "median": 28.95,
+        "min": 28.59,
+        "max": 29.31,
+        "count": 2,
+        "sold_samples": [
+          28.59,
+          29.31
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -8802,10 +8805,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 29.31,
+          "avg30": 28.59,
+          "avg7": 27.52,
+          "avg1": 37.5,
+          "lowPrice": 17.19,
+          "averageSellPrice": 28.42
+        },
+        "cardmarket_trend": 29.31,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 21.3,
+            "low": 18.5,
+            "mid": 22.13
+          }
+        },
+        "tcgplayer_usd": 21.3,
         "graded": {}
       },
       "jp": {
@@ -13007,14 +13023,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "112",
-      "fetched_at": "2026-11-23T17:14:23.254350+00:00",
+      "fetched_at": "2026-11-24T03:49:42.934119+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 9.05,
+        "median": 9.05,
+        "min": 8.76,
+        "max": 9.35,
+        "count": 2,
+        "sold_samples": [
+          8.76,
+          9.35
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -13022,10 +13041,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 9.35,
+          "avg30": 8.76,
+          "avg7": 9.05,
+          "avg1": 6.8,
+          "lowPrice": 4.5,
+          "averageSellPrice": 9.06
+        },
+        "cardmarket_trend": 9.35,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 12.81,
+            "low": 10.5,
+            "mid": 14.89
+          }
+        },
+        "tcgplayer_usd": 12.81,
         "graded": {}
       },
       "jp": {
@@ -39448,14 +39480,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "186",
-      "fetched_at": "2026-11-23T17:15:23.687064+00:00",
+      "fetched_at": "2026-11-24T03:49:45.100907+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 13.79,
+        "median": 13.79,
+        "min": 13.12,
+        "max": 14.46,
+        "count": 2,
+        "sold_samples": [
+          13.12,
+          14.46
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -39463,10 +39498,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 14.46,
+          "avg30": 13.12,
+          "avg7": 11.8,
+          "avg1": 9.79,
+          "lowPrice": 5.0,
+          "averageSellPrice": 13.27
+        },
+        "cardmarket_trend": 14.46,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 22.04,
+            "low": 18.49,
+            "mid": 24.07
+          }
+        },
+        "tcgplayer_usd": 22.04,
         "graded": {}
       },
       "jp": {
@@ -40468,14 +40516,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "188",
-      "fetched_at": "2026-11-23T17:14:27.950571+00:00",
+      "fetched_at": "2026-11-24T03:50:43.311130+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 3.58,
+        "median": 3.58,
+        "min": 3.54,
+        "max": 3.63,
+        "count": 2,
+        "sold_samples": [
+          3.54,
+          3.63
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -40483,10 +40534,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 3.63,
+          "avg30": 3.54,
+          "avg7": 3.56,
+          "avg1": 3.47,
+          "lowPrice": 1.2,
+          "averageSellPrice": 3.6
+        },
+        "cardmarket_trend": 3.63,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 3.44,
+            "low": 2.25,
+            "mid": 4.04
+          }
+        },
+        "tcgplayer_usd": 3.44,
         "graded": {}
       },
       "jp": {
@@ -49110,7 +49174,7 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "203",
-      "fetched_at": "2026-11-23T17:14:33.381648+00:00",
+      "fetched_at": "2026-11-24T03:50:43.418769+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -75444,14 +75508,17 @@
       "edition": "FR",
       "lang": "fr",
       "local_id": "251",
-      "fetched_at": "2026-11-23T17:16:25.241913+00:00",
+      "fetched_at": "2026-11-24T03:50:44.331581+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 14.22,
+        "median": 14.22,
+        "min": 13.85,
+        "max": 14.6,
+        "count": 2,
+        "sold_samples": [
+          13.85,
+          14.6
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -75459,10 +75526,23 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 13.85,
+          "avg30": 14.6,
+          "avg7": 14.42,
+          "avg1": 11.85,
+          "lowPrice": 9.99,
+          "averageSellPrice": 14.47
+        },
+        "cardmarket_trend": 13.85,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 9.52,
+            "low": 8.0,
+            "mid": 10.5
+          }
+        },
+        "tcgplayer_usd": 9.52,
         "graded": {}
       },
       "jp": {
@@ -97275,14 +97355,17 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "086",
-      "fetched_at": "2026-11-23T17:10:09.279647+00:00",
+      "fetched_at": "2026-11-24T03:43:30.341799+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.11,
+        "median": 0.11,
+        "min": 0.09,
+        "max": 0.13,
+        "count": 2,
+        "sold_samples": [
+          0.09,
+          0.13
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -97290,10 +97373,29 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 0.13,
+          "avg30": 0.09,
+          "avg7": 0.17,
+          "avg1": 0.1,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.14,
+          "reverseHoloTrend": 0.27
+        },
+        "cardmarket_trend": 0.13,
+        "tcgplayer": {
+          "normal": {
+            "market": 0.16,
+            "low": 0.03,
+            "mid": 0.2
+          },
+          "reverseHolofoil": {
+            "market": 0.37,
+            "low": 0.1,
+            "mid": 0.41
+          }
+        },
+        "tcgplayer_usd": 0.16,
         "graded": {}
       },
       "jp": {
@@ -103413,14 +103515,17 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "092",
-      "fetched_at": "2026-11-23T17:11:06.806160+00:00",
+      "fetched_at": "2026-11-24T03:43:34.402504+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 0.52,
+        "median": 0.52,
+        "min": 0.46,
+        "max": 0.58,
+        "count": 2,
+        "sold_samples": [
+          0.46,
+          0.58
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -103428,10 +103533,29 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 0.46,
+          "avg30": 0.58,
+          "avg7": 0.36,
+          "avg1": 0.39,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.72,
+          "reverseHoloTrend": 10.99
+        },
+        "cardmarket_trend": 0.46,
+        "tcgplayer": {
+          "normal": {
+            "market": 0.5,
+            "low": 0.1,
+            "mid": 0.5
+          },
+          "reverseHolofoil": {
+            "market": 9.24,
+            "low": 3.49,
+            "mid": 5.0
+          }
+        },
+        "tcgplayer_usd": 0.5,
         "graded": {}
       },
       "jp": {
@@ -108691,14 +108815,17 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "100",
-      "fetched_at": "2026-11-23T17:10:10.962664+00:00",
+      "fetched_at": "2026-11-24T03:44:25.224672+00:00",
       "fr": {
-        "smoothed_avg": null,
-        "median": null,
-        "min": null,
-        "max": null,
-        "count": 0,
-        "sold_samples": [],
+        "smoothed_avg": 140.13,
+        "median": 140.13,
+        "min": 122.2,
+        "max": 158.06,
+        "count": 2,
+        "sold_samples": [
+          122.2,
+          158.06
+        ],
         "ebay_fr": {
           "sold_prices": [],
           "avg": null,
@@ -108706,10 +108833,24 @@
           "count": 0,
           "source": "ebay_fr_sold"
         },
-        "cardmarket": null,
-        "cardmarket_trend": null,
-        "tcgplayer": null,
-        "tcgplayer_usd": null,
+        "cardmarket": {
+          "trendPrice": 158.06,
+          "avg30": 122.2,
+          "avg7": 150.11,
+          "avg1": 125.0,
+          "lowPrice": 38.0,
+          "averageSellPrice": 145.99,
+          "reverseHoloTrend": 108.32
+        },
+        "cardmarket_trend": 158.06,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 295.26,
+            "low": 196.23,
+            "mid": 249.99
+          }
+        },
+        "tcgplayer_usd": 295.26,
         "graded": {}
       },
       "jp": {
@@ -133463,7 +133604,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "285",
-      "fetched_at": "2026-11-23T17:11:11.538198+00:00",
+      "fetched_at": "2026-11-24T03:43:34.456623+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133521,7 +133662,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "286",
-      "fetched_at": "2026-11-23T17:10:13.133178+00:00",
+      "fetched_at": "2026-11-24T03:43:28.260939+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133653,7 +133794,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "288",
-      "fetched_at": "2026-11-23T17:11:11.644339+00:00",
+      "fetched_at": "2026-11-24T03:44:33.204188+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133711,7 +133852,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "287",
-      "fetched_at": "2026-11-23T17:10:11.807598+00:00",
+      "fetched_at": "2026-11-24T03:43:28.892584+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133769,7 +133910,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "289",
-      "fetched_at": "2026-11-23T17:10:13.437456+00:00",
+      "fetched_at": "2026-11-24T03:43:30.445595+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133827,7 +133968,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "291",
-      "fetched_at": "2026-11-23T17:11:15.635616+00:00",
+      "fetched_at": "2026-11-24T03:44:35.029146+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133885,7 +134026,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "292",
-      "fetched_at": "2026-11-23T17:10:13.064230+00:00",
+      "fetched_at": "2026-11-24T03:44:25.114086+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -133943,7 +134084,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "293",
-      "fetched_at": "2026-11-23T17:10:12.829268+00:00",
+      "fetched_at": "2026-11-24T03:44:26.405563+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134299,7 +134440,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "290",
-      "fetched_at": "2026-11-23T17:11:13.459916+00:00",
+      "fetched_at": "2026-11-24T03:44:34.809307+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134357,7 +134498,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "297",
-      "fetched_at": "2026-11-23T17:11:15.836901+00:00",
+      "fetched_at": "2026-11-24T03:44:25.643764+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134415,7 +134556,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "296",
-      "fetched_at": "2026-11-23T17:10:14.997789+00:00",
+      "fetched_at": "2026-11-24T03:43:32.518850+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134473,7 +134614,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "301",
-      "fetched_at": "2026-11-23T17:10:13.664522+00:00",
+      "fetched_at": "2026-11-24T03:43:31.320152+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134531,7 +134672,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "295",
-      "fetched_at": "2026-11-23T17:11:14.211584+00:00",
+      "fetched_at": "2026-11-24T03:43:34.781287+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134589,7 +134730,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "300",
-      "fetched_at": "2026-11-23T17:10:13.918105+00:00",
+      "fetched_at": "2026-11-24T03:43:32.747092+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134647,7 +134788,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "303",
-      "fetched_at": "2026-11-23T17:11:16.603436+00:00",
+      "fetched_at": "2026-11-24T03:44:35.614161+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134705,7 +134846,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "304",
-      "fetched_at": "2026-11-23T17:11:16.529521+00:00",
+      "fetched_at": "2026-11-24T03:44:35.323076+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134763,7 +134904,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "302",
-      "fetched_at": "2026-11-23T17:11:17.201371+00:00",
+      "fetched_at": "2026-11-24T03:47:39.470334+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134821,7 +134962,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "306",
-      "fetched_at": "2026-11-23T17:11:17.900519+00:00",
+      "fetched_at": "2026-11-24T03:48:39.472624+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134879,7 +135020,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "308",
-      "fetched_at": "2026-11-23T17:11:15.957496+00:00",
+      "fetched_at": "2026-11-24T03:45:27.154756+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134937,7 +135078,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "309",
-      "fetched_at": "2026-11-23T17:11:15.819967+00:00",
+      "fetched_at": "2026-11-24T03:44:25.405218+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -134995,7 +135136,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "310",
-      "fetched_at": "2026-11-23T17:11:18.095452+00:00",
+      "fetched_at": "2026-11-24T03:46:40.615627+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135053,7 +135194,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "305",
-      "fetched_at": "2026-11-23T17:11:15.751716+00:00",
+      "fetched_at": "2026-11-24T03:44:25.347088+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135111,7 +135252,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "312",
-      "fetched_at": "2026-11-23T17:11:15.879638+00:00",
+      "fetched_at": "2026-11-24T03:45:25.664033+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135169,7 +135310,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "313",
-      "fetched_at": "2026-11-23T17:11:16.071030+00:00",
+      "fetched_at": "2026-11-24T03:44:33.378186+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135227,7 +135368,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "314",
-      "fetched_at": "2026-11-23T17:11:16.033438+00:00",
+      "fetched_at": "2026-11-24T03:45:26.744068+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135285,7 +135426,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "298",
-      "fetched_at": "2026-11-23T17:11:17.617894+00:00",
+      "fetched_at": "2026-11-24T03:46:38.267121+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135343,7 +135484,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "316",
-      "fetched_at": "2026-11-23T17:11:16.181241+00:00",
+      "fetched_at": "2026-11-24T03:44:33.714313+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135401,7 +135542,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "299",
-      "fetched_at": "2026-11-23T17:11:16.382027+00:00",
+      "fetched_at": "2026-11-24T03:44:36.213233+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135459,7 +135600,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "294",
-      "fetched_at": "2026-11-23T17:11:16.744582+00:00",
+      "fetched_at": "2026-11-24T03:46:37.879562+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135517,7 +135658,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "317",
-      "fetched_at": "2026-11-23T17:11:16.305559+00:00",
+      "fetched_at": "2026-11-24T03:44:35.437848+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135575,7 +135716,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "320",
-      "fetched_at": "2026-11-23T17:11:16.285019+00:00",
+      "fetched_at": "2026-11-24T03:44:33.889348+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135633,7 +135774,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "321",
-      "fetched_at": "2026-11-23T17:11:18.291205+00:00",
+      "fetched_at": "2026-11-24T03:46:38.930366+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135691,7 +135832,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "307",
-      "fetched_at": "2026-11-23T17:12:19.791731+00:00",
+      "fetched_at": "2026-11-24T03:46:41.112184+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135749,7 +135890,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "323",
-      "fetched_at": "2026-11-23T17:11:17.819777+00:00",
+      "fetched_at": "2026-11-24T03:46:39.496016+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135807,7 +135948,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "311",
-      "fetched_at": "2026-11-23T17:12:19.525191+00:00",
+      "fetched_at": "2026-11-24T03:48:40.293120+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135865,7 +136006,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "315",
-      "fetched_at": "2026-11-23T17:11:16.892071+00:00",
+      "fetched_at": "2026-11-24T03:46:38.740524+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135923,7 +136064,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "318",
-      "fetched_at": "2026-11-23T17:11:18.441804+00:00",
+      "fetched_at": "2026-11-24T03:46:39.137782+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -135981,7 +136122,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "319",
-      "fetched_at": "2026-11-23T17:11:17.108034+00:00",
+      "fetched_at": "2026-11-24T03:46:38.274746+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136039,7 +136180,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "322",
-      "fetched_at": "2026-11-23T17:11:18.888005+00:00",
+      "fetched_at": "2026-11-24T03:46:39.319326+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136097,7 +136238,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "325",
-      "fetched_at": "2026-11-23T17:11:17.527719+00:00",
+      "fetched_at": "2026-11-24T03:46:38.261135+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136155,7 +136296,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "329",
-      "fetched_at": "2026-11-23T17:12:20.419705+00:00",
+      "fetched_at": "2026-11-24T03:46:41.577064+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136213,7 +136354,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "328",
-      "fetched_at": "2026-11-23T17:12:19.202663+00:00",
+      "fetched_at": "2026-11-24T03:46:40.803163+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136271,7 +136412,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "332",
-      "fetched_at": "2026-11-23T17:11:18.021882+00:00",
+      "fetched_at": "2026-11-24T03:46:38.864757+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136329,7 +136470,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "327",
-      "fetched_at": "2026-11-23T17:11:19.813505+00:00",
+      "fetched_at": "2026-11-24T03:46:39.353141+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136387,7 +136528,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "330",
-      "fetched_at": "2026-11-23T17:13:21.135680+00:00",
+      "fetched_at": "2026-11-24T03:48:42.014928+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136445,7 +136586,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "335",
-      "fetched_at": "2026-11-23T17:12:19.094617+00:00",
+      "fetched_at": "2026-11-24T03:46:40.767461+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136503,7 +136644,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "333",
-      "fetched_at": "2026-11-23T17:12:22.194480+00:00",
+      "fetched_at": "2026-11-24T03:46:45.885999+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136561,7 +136702,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "334",
-      "fetched_at": "2026-11-23T17:12:20.807610+00:00",
+      "fetched_at": "2026-11-24T03:46:43.403849+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136619,7 +136760,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "338",
-      "fetched_at": "2026-11-23T17:13:20.875949+00:00",
+      "fetched_at": "2026-11-24T03:48:41.011048+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136677,7 +136818,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "339",
-      "fetched_at": "2026-11-23T17:13:22.276441+00:00",
+      "fetched_at": "2026-11-24T03:49:42.556633+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136735,7 +136876,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "337",
-      "fetched_at": "2026-11-23T17:12:19.546790+00:00",
+      "fetched_at": "2026-11-24T03:46:41.724043+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136793,7 +136934,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "340",
-      "fetched_at": "2026-11-23T17:13:19.670774+00:00",
+      "fetched_at": "2026-11-24T03:48:40.700365+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136851,7 +136992,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "341",
-      "fetched_at": "2026-11-23T17:12:21.237445+00:00",
+      "fetched_at": "2026-11-24T03:47:42.386985+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136909,7 +137050,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "326",
-      "fetched_at": "2026-11-23T17:12:19.943968+00:00",
+      "fetched_at": "2026-11-24T03:46:41.073718+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -136967,7 +137108,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "331",
-      "fetched_at": "2026-11-23T17:12:22.228083+00:00",
+      "fetched_at": "2026-11-24T03:46:44.908153+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137025,7 +137166,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "345",
-      "fetched_at": "2026-11-23T17:12:20.191629+00:00",
+      "fetched_at": "2026-11-24T03:46:44.087067+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137083,7 +137224,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "346",
-      "fetched_at": "2026-11-23T17:12:21.944774+00:00",
+      "fetched_at": "2026-11-24T03:46:44.417931+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137141,7 +137282,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "324",
-      "fetched_at": "2026-11-23T17:12:21.641814+00:00",
+      "fetched_at": "2026-11-24T03:46:43.583299+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137199,7 +137340,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "348",
-      "fetched_at": "2026-11-23T17:12:21.212815+00:00",
+      "fetched_at": "2026-11-24T03:46:42.119896+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137257,7 +137398,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "347",
-      "fetched_at": "2026-11-23T17:12:21.958977+00:00",
+      "fetched_at": "2026-11-24T03:46:44.268442+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137315,7 +137456,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "344",
-      "fetched_at": "2026-11-23T17:12:21.735172+00:00",
+      "fetched_at": "2026-11-24T03:46:43.767513+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137373,7 +137514,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "336",
-      "fetched_at": "2026-11-23T17:13:22.533373+00:00",
+      "fetched_at": "2026-11-24T03:48:42.336867+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137431,7 +137572,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "352",
-      "fetched_at": "2026-11-23T17:12:23.913785+00:00",
+      "fetched_at": "2026-11-24T03:49:40.733688+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137489,7 +137630,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "342",
-      "fetched_at": "2026-11-23T17:14:21.312035+00:00",
+      "fetched_at": "2026-11-24T03:48:44.890672+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137547,7 +137688,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "343",
-      "fetched_at": "2026-11-23T17:13:25.888529+00:00",
+      "fetched_at": "2026-11-24T03:48:42.335009+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137605,7 +137746,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "353",
-      "fetched_at": "2026-11-23T17:12:24.161411+00:00",
+      "fetched_at": "2026-11-24T03:48:41.014032+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137663,7 +137804,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "351",
-      "fetched_at": "2026-11-23T17:14:21.497470+00:00",
+      "fetched_at": "2026-11-24T03:49:43.943495+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137721,7 +137862,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "349",
-      "fetched_at": "2026-11-23T17:13:20.058688+00:00",
+      "fetched_at": "2026-11-24T03:48:40.681367+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137779,7 +137920,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "350",
-      "fetched_at": "2026-11-23T17:14:21.887621+00:00",
+      "fetched_at": "2026-11-24T03:49:41.284611+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137837,7 +137978,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "359",
-      "fetched_at": "2026-11-23T17:13:19.863592+00:00",
+      "fetched_at": "2026-11-24T03:49:43.171974+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137895,7 +138036,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "356",
-      "fetched_at": "2026-11-23T17:14:21.841378+00:00",
+      "fetched_at": "2026-11-24T03:49:45.097665+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -137953,7 +138094,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "357",
-      "fetched_at": "2026-11-23T17:13:20.546388+00:00",
+      "fetched_at": "2026-11-24T03:48:41.113894+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -138011,7 +138152,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "358",
-      "fetched_at": "2026-11-23T17:14:20.927661+00:00",
+      "fetched_at": "2026-11-24T03:48:42.506318+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -138069,7 +138210,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "355",
-      "fetched_at": "2026-11-23T17:13:22.527986+00:00",
+      "fetched_at": "2026-11-24T03:49:42.562613+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -138127,7 +138268,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "354",
-      "fetched_at": "2026-11-23T17:14:23.207960+00:00",
+      "fetched_at": "2026-11-24T03:49:43.692715+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -138185,7 +138326,7 @@
       "edition": "JP",
       "lang": "ja",
       "local_id": "360",
-      "fetched_at": "2026-11-23T17:14:21.870355+00:00",
+      "fetched_at": "2026-11-24T03:49:40.999628+00:00",
       "fr": {
         "smoothed_avg": null,
         "median": null,
@@ -146695,6 +146836,4260 @@
           }
         },
         "tcgplayer_usd": 0.67,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 060/131": {
+      "ref": "sv08.5 060/131",
+      "name": "Noctali-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "060",
+      "fetched_at": "2026-11-24T03:49:48.765757+00:00",
+      "fr": {
+        "smoothed_avg": 7.41,
+        "median": 7.41,
+        "min": 7.41,
+        "max": 7.41,
+        "count": 1,
+        "sold_samples": [
+          7.41
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 8.05,
+            "low": 6.0,
+            "mid": 8.76
+          }
+        },
+        "tcgplayer_usd": 8.05,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv02 061/193": {
+      "ref": "sv02 061/193",
+      "name": "Baojian-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "061",
+      "fetched_at": "2026-11-24T03:50:52.772247+00:00",
+      "fr": {
+        "smoothed_avg": 0.68,
+        "median": 0.68,
+        "min": 0.59,
+        "max": 0.77,
+        "count": 2,
+        "sold_samples": [
+          0.59,
+          0.77
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.59,
+          "avg30": 0.77,
+          "avg7": 0.71,
+          "avg1": 0.72,
+          "lowPrice": 0.08,
+          "averageSellPrice": 0.77
+        },
+        "cardmarket_trend": 0.59,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.05,
+            "low": 0.2,
+            "mid": 1.08
+          }
+        },
+        "tcgplayer_usd": 1.05,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv06 064/167": {
+      "ref": "sv06 064/167",
+      "name": "Ogerpon Masque du Puits-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "064",
+      "fetched_at": "2026-11-24T03:51:45.026784+00:00",
+      "fr": {
+        "smoothed_avg": 0.94,
+        "median": 0.94,
+        "min": 0.89,
+        "max": 0.98,
+        "count": 2,
+        "sold_samples": [
+          0.89,
+          0.98
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.89,
+          "avg30": 0.98,
+          "avg7": 0.88,
+          "avg1": 0.82,
+          "lowPrice": 0.15,
+          "averageSellPrice": 0.99
+        },
+        "cardmarket_trend": 0.89,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.89,
+            "low": 0.4,
+            "mid": 1.0
+          }
+        },
+        "tcgplayer_usd": 0.89,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv06 061/167": {
+      "ref": "sv06 061/167",
+      "name": "Superdofin-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "061",
+      "fetched_at": "2026-11-24T03:51:46.864072+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv02 063/193": {
+      "ref": "sv02 063/193",
+      "name": "Pikachu-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "063",
+      "fetched_at": "2026-11-24T03:52:45.435972+00:00",
+      "fr": {
+        "smoothed_avg": 1.42,
+        "median": 1.42,
+        "min": 1.37,
+        "max": 1.47,
+        "count": 2,
+        "sold_samples": [
+          1.37,
+          1.47
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.47,
+          "avg30": 1.37,
+          "avg7": 1.51,
+          "avg1": 1.22,
+          "lowPrice": 0.29,
+          "averageSellPrice": 1.37
+        },
+        "cardmarket_trend": 1.47,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 4.73,
+            "low": 3.0,
+            "mid": 4.98
+          }
+        },
+        "tcgplayer_usd": 4.73,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv01 065/198": {
+      "ref": "sv01 065/198",
+      "name": "Magnézone-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "065",
+      "fetched_at": "2026-11-24T03:52:45.793244+00:00",
+      "fr": {
+        "smoothed_avg": 0.61,
+        "median": 0.61,
+        "min": 0.61,
+        "max": 0.62,
+        "count": 2,
+        "sold_samples": [
+          0.61,
+          0.62
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.61,
+          "avg30": 0.62,
+          "avg7": 0.59,
+          "avg1": 0.57,
+          "lowPrice": 0.09,
+          "averageSellPrice": 0.65
+        },
+        "cardmarket_trend": 0.61,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.67,
+            "low": 0.25,
+            "mid": 0.92
+          }
+        },
+        "tcgplayer_usd": 0.67,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 064/131": {
+      "ref": "sv08.5 064/131",
+      "name": "Tyranocif-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "064",
+      "fetched_at": "2026-11-24T03:52:45.809193+00:00",
+      "fr": {
+        "smoothed_avg": 0.73,
+        "median": 0.73,
+        "min": 0.73,
+        "max": 0.73,
+        "count": 1,
+        "sold_samples": [
+          0.73
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.79,
+            "low": 0.38,
+            "mid": 0.87
+          }
+        },
+        "tcgplayer_usd": 0.79,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03 066/197": {
+      "ref": "sv03 066/197",
+      "name": "Tyranocif-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "066",
+      "fetched_at": "2026-11-24T03:52:46.019199+00:00",
+      "fr": {
+        "smoothed_avg": 1.59,
+        "median": 1.59,
+        "min": 1.39,
+        "max": 1.79,
+        "count": 2,
+        "sold_samples": [
+          1.39,
+          1.79
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.79,
+          "avg30": 1.39,
+          "avg7": 1.73,
+          "avg1": 1.39,
+          "lowPrice": 0.38,
+          "averageSellPrice": 1.39
+        },
+        "cardmarket_trend": 1.79,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.36,
+            "low": 0.59,
+            "mid": 1.53
+          }
+        },
+        "tcgplayer_usd": 1.36,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv07 067/142": {
+      "ref": "sv07 067/142",
+      "name": "Briochien-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "067",
+      "fetched_at": "2026-11-24T03:52:46.107572+00:00",
+      "fr": {
+        "smoothed_avg": 0.75,
+        "median": 0.75,
+        "min": 0.72,
+        "max": 0.78,
+        "count": 2,
+        "sold_samples": [
+          0.72,
+          0.78
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.78,
+          "avg30": 0.72,
+          "avg7": 0.74,
+          "avg1": 0.96,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.7
+        },
+        "cardmarket_trend": 0.78,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.65,
+            "low": 0.5,
+            "mid": 1.49
+          }
+        },
+        "tcgplayer_usd": 1.65,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10.5b 067/86": {
+      "ref": "sv10.5b 067/86",
+      "name": "Genesect-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "067",
+      "fetched_at": "2026-11-24T03:52:46.239177+00:00",
+      "fr": {
+        "smoothed_avg": 0.58,
+        "median": 0.58,
+        "min": 0.58,
+        "max": 0.59,
+        "count": 2,
+        "sold_samples": [
+          0.58,
+          0.59
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.58,
+          "avg30": 0.59,
+          "avg7": 0.54,
+          "avg1": 0.46,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.6
+        },
+        "cardmarket_trend": 0.58,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.14,
+            "low": 0.66,
+            "mid": 1.19
+          }
+        },
+        "tcgplayer_usd": 1.14,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10 066/182": {
+      "ref": "sv10 066/182",
+      "name": "Oyacata-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "066",
+      "fetched_at": "2026-11-24T03:52:46.252990+00:00",
+      "fr": {
+        "smoothed_avg": 0.45,
+        "median": 0.45,
+        "min": 0.42,
+        "max": 0.48,
+        "count": 2,
+        "sold_samples": [
+          0.42,
+          0.48
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.42,
+          "avg30": 0.48,
+          "avg7": 0.42,
+          "avg1": 0.42,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.46
+        },
+        "cardmarket_trend": 0.42,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.51,
+            "low": 0.2,
+            "mid": 0.75
+          }
+        },
+        "tcgplayer_usd": 0.51,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04 068/182": {
+      "ref": "sv04 068/182",
+      "name": "Tokorico-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "068",
+      "fetched_at": "2026-11-24T03:52:46.491879+00:00",
+      "fr": {
+        "smoothed_avg": 0.67,
+        "median": 0.67,
+        "min": 0.66,
+        "max": 0.67,
+        "count": 2,
+        "sold_samples": [
+          0.66,
+          0.67
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.67,
+          "avg30": 0.66,
+          "avg7": 0.6,
+          "avg1": 0.62,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.67
+        },
+        "cardmarket_trend": 0.67,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.62,
+            "low": 0.24,
+            "mid": 0.95
+          }
+        },
+        "tcgplayer_usd": 0.62,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10.5w 067/86": {
+      "ref": "sv10.5w 067/86",
+      "name": "Trioxhydre-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "067",
+      "fetched_at": "2026-11-24T03:52:46.983904+00:00",
+      "fr": {
+        "smoothed_avg": 0.38,
+        "median": 0.38,
+        "min": 0.35,
+        "max": 0.41,
+        "count": 2,
+        "sold_samples": [
+          0.35,
+          0.41
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.35,
+          "avg30": 0.41,
+          "avg7": 0.37,
+          "avg1": 0.36,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.42
+        },
+        "cardmarket_trend": 0.35,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.68,
+            "low": 0.29,
+            "mid": 0.8
+          }
+        },
+        "tcgplayer_usd": 0.68,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10 065/182": {
+      "ref": "sv10 065/182",
+      "name": "Balbalèze-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "065",
+      "fetched_at": "2026-11-24T03:53:46.742799+00:00",
+      "fr": {
+        "smoothed_avg": 0.51,
+        "median": 0.51,
+        "min": 0.51,
+        "max": 0.51,
+        "count": 2,
+        "sold_samples": [
+          0.51,
+          0.51
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.51,
+          "avg30": 0.51,
+          "avg7": 0.47,
+          "avg1": 0.39,
+          "lowPrice": 0.08,
+          "averageSellPrice": 0.49
+        },
+        "cardmarket_trend": 0.51,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.48,
+            "low": 0.14,
+            "mid": 0.75
+          }
+        },
+        "tcgplayer_usd": 0.48,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv06 068/167": {
+      "ref": "sv06 068/167",
+      "name": "Luxray-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "068",
+      "fetched_at": "2026-11-24T03:53:46.942785+00:00",
+      "fr": {
+        "smoothed_avg": 0.59,
+        "median": 0.59,
+        "min": 0.56,
+        "max": 0.63,
+        "count": 2,
+        "sold_samples": [
+          0.56,
+          0.63
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.56,
+          "avg30": 0.63,
+          "avg7": 0.62,
+          "avg1": 0.68,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.62
+        },
+        "cardmarket_trend": 0.56,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.78,
+            "low": 0.3,
+            "mid": 0.85
+          }
+        },
+        "tcgplayer_usd": 0.78,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03.5 065/165": {
+      "ref": "sv03.5 065/165",
+      "name": "Alakazam-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "065",
+      "fetched_at": "2026-11-24T03:53:47.624905+00:00",
+      "fr": {
+        "smoothed_avg": 2.06,
+        "median": 2.06,
+        "min": 1.95,
+        "max": 2.18,
+        "count": 2,
+        "sold_samples": [
+          1.95,
+          2.18
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 2.18,
+          "avg30": 1.95,
+          "avg7": 1.8,
+          "avg1": 2.71,
+          "lowPrice": 0.43,
+          "averageSellPrice": 1.81
+        },
+        "cardmarket_trend": 2.18,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.93,
+            "low": 0.92,
+            "mid": 2.21
+          }
+        },
+        "tcgplayer_usd": 1.93,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 067/225": {
+      "ref": "svp 067/225",
+      "name": "Rugit-Lune-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "067",
+      "fetched_at": "2026-11-24T03:53:48.091743+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 068/225": {
+      "ref": "svp 068/225",
+      "name": "Garde-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "068",
+      "fetched_at": "2026-11-24T03:53:48.676544+00:00",
+      "fr": {
+        "smoothed_avg": 1.02,
+        "median": 1.02,
+        "min": 0.98,
+        "max": 1.05,
+        "count": 2,
+        "sold_samples": [
+          0.98,
+          1.05
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.98,
+          "avg30": 1.05,
+          "avg7": 0.8,
+          "avg1": 0.6,
+          "lowPrice": 0.24,
+          "averageSellPrice": 1.03
+        },
+        "cardmarket_trend": 0.98,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.91,
+            "low": 0.49,
+            "mid": 0.99
+          }
+        },
+        "tcgplayer_usd": 0.91,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04.5 066/91": {
+      "ref": "sv04.5 066/91",
+      "name": "Roue-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "066",
+      "fetched_at": "2026-11-24T03:53:48.859195+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04 070/182": {
+      "ref": "sv04 070/182",
+      "name": "Paume-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "070",
+      "fetched_at": "2026-11-24T03:53:49.080304+00:00",
+      "fr": {
+        "smoothed_avg": 0.86,
+        "median": 0.86,
+        "min": 0.82,
+        "max": 0.9,
+        "count": 2,
+        "sold_samples": [
+          0.82,
+          0.9
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.82,
+          "avg30": 0.9,
+          "avg7": 0.74,
+          "avg1": 0.82,
+          "lowPrice": 0.29,
+          "averageSellPrice": 1.02
+        },
+        "cardmarket_trend": 0.82,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.81,
+            "low": 0.1,
+            "mid": 0.99
+          }
+        },
+        "tcgplayer_usd": 0.81,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 072/225": {
+      "ref": "svp 072/225",
+      "name": "Fort-Ivoire-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "072",
+      "fetched_at": "2026-11-24T03:53:49.209525+00:00",
+      "fr": {
+        "smoothed_avg": 0.7,
+        "median": 0.7,
+        "min": 0.65,
+        "max": 0.74,
+        "count": 2,
+        "sold_samples": [
+          0.65,
+          0.74
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.74,
+          "avg30": 0.65,
+          "avg7": 0.79,
+          "avg1": 1.47,
+          "lowPrice": 0.08,
+          "averageSellPrice": 0.62
+        },
+        "cardmarket_trend": 0.74,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.96,
+            "low": 0.45,
+            "mid": 1.06
+          }
+        },
+        "tcgplayer_usd": 0.96,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 073/225": {
+      "ref": "svp 073/225",
+      "name": "Roue-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "073",
+      "fetched_at": "2026-11-24T03:53:49.573353+00:00",
+      "fr": {
+        "smoothed_avg": 0.65,
+        "median": 0.65,
+        "min": 0.63,
+        "max": 0.67,
+        "count": 2,
+        "sold_samples": [
+          0.63,
+          0.67
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.63,
+          "avg30": 0.67,
+          "avg7": 0.64,
+          "avg1": 0.58,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.66
+        },
+        "cardmarket_trend": 0.63,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.81,
+            "low": 0.5,
+            "mid": 0.99
+          }
+        },
+        "tcgplayer_usd": 0.81,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 073/131": {
+      "ref": "sv08.5 073/131",
+      "name": "Lanssorien-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "073",
+      "fetched_at": "2026-11-24T03:53:49.868984+00:00",
+      "fr": {
+        "smoothed_avg": 1.57,
+        "median": 1.57,
+        "min": 1.57,
+        "max": 1.57,
+        "count": 1,
+        "sold_samples": [
+          1.57
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.71,
+            "low": 0.61,
+            "mid": 1.56
+          }
+        },
+        "tcgplayer_usd": 1.71,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 074/225": {
+      "ref": "svp 074/225",
+      "name": "Dracaufeu-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "074",
+      "fetched_at": "2026-11-24T03:53:50.186141+00:00",
+      "fr": {
+        "smoothed_avg": 12.77,
+        "median": 12.77,
+        "min": 10.93,
+        "max": 14.62,
+        "count": 2,
+        "sold_samples": [
+          10.93,
+          14.62
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 14.62,
+          "avg30": 10.93,
+          "avg7": 13.55,
+          "avg1": 10.73,
+          "lowPrice": 4.5,
+          "averageSellPrice": 10.34
+        },
+        "cardmarket_trend": 14.62,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 19.55,
+            "low": 16.99,
+            "mid": 22.78
+          }
+        },
+        "tcgplayer_usd": 19.55,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08 068/191": {
+      "ref": "sv08 068/191",
+      "name": "Fulgulairo-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "068",
+      "fetched_at": "2026-11-24T03:53:50.474913+00:00",
+      "fr": {
+        "smoothed_avg": 0.55,
+        "median": 0.55,
+        "min": 0.54,
+        "max": 0.56,
+        "count": 2,
+        "sold_samples": [
+          0.54,
+          0.56
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.54,
+          "avg30": 0.56,
+          "avg7": 0.5,
+          "avg1": 0.53,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.52
+        },
+        "cardmarket_trend": 0.54,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.59,
+            "low": 0.25,
+            "mid": 0.79
+          }
+        },
+        "tcgplayer_usd": 0.59,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 075/131": {
+      "ref": "sv08.5 075/131",
+      "name": "Évoli-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "075",
+      "fetched_at": "2026-11-24T03:53:50.988810+00:00",
+      "fr": {
+        "smoothed_avg": 5.22,
+        "median": 5.22,
+        "min": 5.22,
+        "max": 5.22,
+        "count": 1,
+        "sold_samples": [
+          5.22
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.67,
+            "low": 4.51,
+            "mid": 6.28
+          }
+        },
+        "tcgplayer_usd": 5.67,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv09 075/159": {
+      "ref": "sv09 075/159",
+      "name": "Charmilly-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "075",
+      "fetched_at": "2026-11-24T03:53:51.266078+00:00",
+      "fr": {
+        "smoothed_avg": 0.69,
+        "median": 0.69,
+        "min": 0.66,
+        "max": 0.71,
+        "count": 2,
+        "sold_samples": [
+          0.66,
+          0.71
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.71,
+          "avg30": 0.66,
+          "avg7": 0.68,
+          "avg1": 0.73,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.65
+        },
+        "cardmarket_trend": 0.71,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.76,
+            "low": 0.34,
+            "mid": 0.87
+          }
+        },
+        "tcgplayer_usd": 0.76,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04 076/182": {
+      "ref": "sv04 076/182",
+      "name": "Tutankafer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "076",
+      "fetched_at": "2026-11-24T03:53:54.794643+00:00",
+      "fr": {
+        "smoothed_avg": 0.71,
+        "median": 0.71,
+        "min": 0.68,
+        "max": 0.73,
+        "count": 2,
+        "sold_samples": [
+          0.68,
+          0.73
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.73,
+          "avg30": 0.68,
+          "avg7": 0.62,
+          "avg1": 0.6,
+          "lowPrice": 0.15,
+          "averageSellPrice": 0.66
+        },
+        "cardmarket_trend": 0.73,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.77,
+            "low": 0.25,
+            "mid": 0.96
+          }
+        },
+        "tcgplayer_usd": 0.77,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10 069/182": {
+      "ref": "sv10 069/182",
+      "name": "Élekable-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "069",
+      "fetched_at": "2026-11-24T03:54:49.108526+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04.5 069/91": {
+      "ref": "sv04.5 069/91",
+      "name": "Bruyverne-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "069",
+      "fetched_at": "2026-11-24T03:54:49.756185+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv09 069/159": {
+      "ref": "sv09 069/159",
+      "name": "Mimiqui-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "069",
+      "fetched_at": "2026-11-24T03:54:51.403213+00:00",
+      "fr": {
+        "smoothed_avg": 0.66,
+        "median": 0.66,
+        "min": 0.64,
+        "max": 0.67,
+        "count": 2,
+        "sold_samples": [
+          0.64,
+          0.67
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.64,
+          "avg30": 0.67,
+          "avg7": 0.65,
+          "avg1": 0.65,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.64
+        },
+        "cardmarket_trend": 0.64,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.54,
+            "low": 0.51,
+            "mid": 1.77
+          }
+        },
+        "tcgplayer_usd": 1.54,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04.5 075/91": {
+      "ref": "sv04.5 075/91",
+      "name": "Tapatoès-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "075",
+      "fetched_at": "2026-11-24T03:54:53.332612+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08 076/191": {
+      "ref": "sv08 076/191",
+      "name": "Latias-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "076",
+      "fetched_at": "2026-11-24T03:54:56.763451+00:00",
+      "fr": {
+        "smoothed_avg": 4.98,
+        "median": 4.98,
+        "min": 4.81,
+        "max": 5.16,
+        "count": 2,
+        "sold_samples": [
+          4.81,
+          5.16
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 4.81,
+          "avg30": 5.16,
+          "avg7": 4.68,
+          "avg1": 4.7,
+          "lowPrice": 2.49,
+          "averageSellPrice": 5.39
+        },
+        "cardmarket_trend": 4.81,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 5.48,
+            "low": 4.44,
+            "mid": 6.13
+          }
+        },
+        "tcgplayer_usd": 5.48,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03 073/197": {
+      "ref": "sv03 073/197",
+      "name": "Pohmarmotte-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "073",
+      "fetched_at": "2026-11-24T03:55:53.729920+00:00",
+      "fr": {
+        "smoothed_avg": 0.74,
+        "median": 0.74,
+        "min": 0.71,
+        "max": 0.77,
+        "count": 2,
+        "sold_samples": [
+          0.71,
+          0.77
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.71,
+          "avg30": 0.77,
+          "avg7": 0.75,
+          "avg1": 0.98,
+          "lowPrice": 0.04,
+          "averageSellPrice": 0.77
+        },
+        "cardmarket_trend": 0.71,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.76,
+            "low": 0.2,
+            "mid": 0.89
+          }
+        },
+        "tcgplayer_usd": 0.76,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03.5 076/165": {
+      "ref": "sv03.5 076/165",
+      "name": "Grolem-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "076",
+      "fetched_at": "2026-11-24T03:56:49.471238+00:00",
+      "fr": {
+        "smoothed_avg": 1.52,
+        "median": 1.52,
+        "min": 1.47,
+        "max": 1.56,
+        "count": 2,
+        "sold_samples": [
+          1.47,
+          1.56
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.47,
+          "avg30": 1.56,
+          "avg7": 1.39,
+          "avg1": 1.83,
+          "lowPrice": 0.15,
+          "averageSellPrice": 1.42
+        },
+        "cardmarket_trend": 1.47,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.21,
+            "low": 0.19,
+            "mid": 1.23
+          }
+        },
+        "tcgplayer_usd": 1.21,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 078/225": {
+      "ref": "svp 078/225",
+      "name": "Miascarade-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "078",
+      "fetched_at": "2026-11-24T03:56:49.840566+00:00",
+      "fr": {
+        "smoothed_avg": 1.44,
+        "median": 1.44,
+        "min": 1.43,
+        "max": 1.45,
+        "count": 2,
+        "sold_samples": [
+          1.43,
+          1.45
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.43,
+          "avg30": 1.45,
+          "avg7": 1.47,
+          "avg1": 1.67,
+          "lowPrice": 0.97,
+          "averageSellPrice": 1.45
+        },
+        "cardmarket_trend": 1.43,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 6.77,
+            "low": 4.4,
+            "mid": 7.24
+          }
+        },
+        "tcgplayer_usd": 6.77,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10.5w 077/86": {
+      "ref": "sv10.5w 077/86",
+      "name": "Frison-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "077",
+      "fetched_at": "2026-11-24T03:56:49.870549+00:00",
+      "fr": {
+        "smoothed_avg": 0.36,
+        "median": 0.36,
+        "min": 0.36,
+        "max": 0.36,
+        "count": 2,
+        "sold_samples": [
+          0.36,
+          0.36
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.36,
+          "avg30": 0.36,
+          "avg7": 0.36,
+          "avg1": 0.31,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.36
+        },
+        "cardmarket_trend": 0.36,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.4,
+            "low": 0.19,
+            "mid": 0.89
+          }
+        },
+        "tcgplayer_usd": 0.4,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 076/131": {
+      "ref": "sv08.5 076/131",
+      "name": "Ronflex-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "076",
+      "fetched_at": "2026-11-24T03:56:50.010058+00:00",
+      "fr": {
+        "smoothed_avg": 1.43,
+        "median": 1.43,
+        "min": 1.43,
+        "max": 1.43,
+        "count": 1,
+        "sold_samples": [
+          1.43
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.55,
+            "low": 0.96,
+            "mid": 1.85
+          }
+        },
+        "tcgplayer_usd": 1.55,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv06 077/167": {
+      "ref": "sv06 077/167",
+      "name": "Épine-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "077",
+      "fetched_at": "2026-11-24T03:56:50.024359+00:00",
+      "fr": {
+        "smoothed_avg": 0.66,
+        "median": 0.66,
+        "min": 0.63,
+        "max": 0.68,
+        "count": 2,
+        "sold_samples": [
+          0.63,
+          0.68
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.63,
+          "avg30": 0.68,
+          "avg7": 0.67,
+          "avg1": 0.53,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.68
+        },
+        "cardmarket_trend": 0.63,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.59,
+            "low": 0.25,
+            "mid": 0.85
+          }
+        },
+        "tcgplayer_usd": 0.59,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv09 079/159": {
+      "ref": "sv09 079/159",
+      "name": "Mammochon-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "079",
+      "fetched_at": "2026-11-24T03:56:50.073638+00:00",
+      "fr": {
+        "smoothed_avg": 0.55,
+        "median": 0.55,
+        "min": 0.54,
+        "max": 0.57,
+        "count": 2,
+        "sold_samples": [
+          0.54,
+          0.57
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.54,
+          "avg30": 0.57,
+          "avg7": 0.54,
+          "avg1": 0.63,
+          "lowPrice": 0.09,
+          "averageSellPrice": 0.57
+        },
+        "cardmarket_trend": 0.54,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.58,
+            "low": 0.2,
+            "mid": 0.75
+          }
+        },
+        "tcgplayer_usd": 0.58,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv10 081/182": {
+      "ref": "sv10 081/182",
+      "name": "Mewtwo-ex de la Team Rocket",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "081",
+      "fetched_at": "2026-11-24T03:56:50.213143+00:00",
+      "fr": {
+        "smoothed_avg": 1.0,
+        "median": 1.0,
+        "min": 0.98,
+        "max": 1.03,
+        "count": 2,
+        "sold_samples": [
+          0.98,
+          1.03
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.98,
+          "avg30": 1.03,
+          "avg7": 0.99,
+          "avg1": 1.22,
+          "lowPrice": 0.25,
+          "averageSellPrice": 1.02
+        },
+        "cardmarket_trend": 0.98,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.75,
+            "low": 0.64,
+            "mid": 2.0
+          }
+        },
+        "tcgplayer_usd": 1.75,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv02 079/193": {
+      "ref": "sv02 079/193",
+      "name": "Ampibidou-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "079",
+      "fetched_at": "2026-11-24T03:56:50.227494+00:00",
+      "fr": {
+        "smoothed_avg": 0.66,
+        "median": 0.66,
+        "min": 0.65,
+        "max": 0.66,
+        "count": 2,
+        "sold_samples": [
+          0.65,
+          0.66
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.65,
+          "avg30": 0.66,
+          "avg7": 0.61,
+          "avg1": 0.65,
+          "lowPrice": 0.08,
+          "averageSellPrice": 0.62
+        },
+        "cardmarket_trend": 0.65,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.83,
+            "low": 0.48,
+            "mid": 1.0
+          }
+        },
+        "tcgplayer_usd": 0.83,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv01 081/198": {
+      "ref": "sv01 081/198",
+      "name": "Miraidon-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "081",
+      "fetched_at": "2026-11-24T03:56:50.250767+00:00",
+      "fr": {
+        "smoothed_avg": 2.09,
+        "median": 2.09,
+        "min": 2.02,
+        "max": 2.16,
+        "count": 2,
+        "sold_samples": [
+          2.02,
+          2.16
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 2.16,
+          "avg30": 2.02,
+          "avg7": 2.31,
+          "avg1": 2.4,
+          "lowPrice": 0.5,
+          "averageSellPrice": 2.3
+        },
+        "cardmarket_trend": 2.16,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.56,
+            "low": 0.35,
+            "mid": 0.79
+          }
+        },
+        "tcgplayer_usd": 0.56,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv07 082/142": {
+      "ref": "sv07 082/142",
+      "name": "Lucario-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "082",
+      "fetched_at": "2026-11-24T03:57:50.507613+00:00",
+      "fr": {
+        "smoothed_avg": 0.79,
+        "median": 0.79,
+        "min": 0.76,
+        "max": 0.81,
+        "count": 2,
+        "sold_samples": [
+          0.76,
+          0.81
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.76,
+          "avg30": 0.81,
+          "avg7": 0.79,
+          "avg1": 0.85,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.77
+        },
+        "cardmarket_trend": 0.76,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.94,
+            "low": 0.5,
+            "mid": 1.0
+          }
+        },
+        "tcgplayer_usd": 0.94,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03 082/197": {
+      "ref": "sv03 082/197",
+      "name": "Mélodelfe-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "082",
+      "fetched_at": "2026-11-24T03:57:50.749264+00:00",
+      "fr": {
+        "smoothed_avg": 1.17,
+        "median": 1.17,
+        "min": 1.14,
+        "max": 1.2,
+        "count": 2,
+        "sold_samples": [
+          1.14,
+          1.2
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.14,
+          "avg30": 1.2,
+          "avg7": 1.19,
+          "avg1": 1.13,
+          "lowPrice": 0.4,
+          "averageSellPrice": 1.16
+        },
+        "cardmarket_trend": 1.14,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.84,
+            "low": 0.7,
+            "mid": 1.5
+          }
+        },
+        "tcgplayer_usd": 1.84,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv07 080/142": {
+      "ref": "sv07 080/142",
+      "name": "Charmina-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "080",
+      "fetched_at": "2026-11-24T03:57:50.798274+00:00",
+      "fr": {
+        "smoothed_avg": 1.48,
+        "median": 1.48,
+        "min": 1.41,
+        "max": 1.54,
+        "count": 2,
+        "sold_samples": [
+          1.41,
+          1.54
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.54,
+          "avg30": 1.41,
+          "avg7": 1.06,
+          "avg1": 1.0,
+          "lowPrice": 0.29,
+          "averageSellPrice": 1.0,
+          "reverseHoloTrend": 2.17
+        },
+        "cardmarket_trend": 1.54,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.72,
+            "low": 0.39,
+            "mid": 0.69
+          },
+          "reverseHolofoil": {
+            "market": 0.64,
+            "low": 0.39,
+            "mid": 0.67
+          }
+        },
+        "tcgplayer_usd": 0.72,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 084/225": {
+      "ref": "svp 084/225",
+      "name": "Palmaval-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "084",
+      "fetched_at": "2026-11-24T03:57:50.973213+00:00",
+      "fr": {
+        "smoothed_avg": 1.18,
+        "median": 1.18,
+        "min": 1.14,
+        "max": 1.22,
+        "count": 2,
+        "sold_samples": [
+          1.14,
+          1.22
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 1.14,
+          "avg30": 1.22,
+          "avg7": 1.22,
+          "avg1": 1.18,
+          "lowPrice": 0.5,
+          "averageSellPrice": 1.23
+        },
+        "cardmarket_trend": 1.14,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 2.47,
+            "low": 1.38,
+            "mid": 2.6
+          }
+        },
+        "tcgplayer_usd": 2.47,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv01 086/198": {
+      "ref": "sv01 086/198",
+      "name": "Gardevoir-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "086",
+      "fetched_at": "2026-11-24T03:57:51.983111+00:00",
+      "fr": {
+        "smoothed_avg": 0.72,
+        "median": 0.72,
+        "min": 0.66,
+        "max": 0.78,
+        "count": 2,
+        "sold_samples": [
+          0.66,
+          0.78
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.66,
+          "avg30": 0.78,
+          "avg7": 0.66,
+          "avg1": 0.66,
+          "lowPrice": 0.1,
+          "averageSellPrice": 0.78
+        },
+        "cardmarket_trend": 0.66,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.7,
+            "low": 0.09,
+            "mid": 0.89
+          }
+        },
+        "tcgplayer_usd": 0.7,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv02 086/193": {
+      "ref": "sv02 086/193",
+      "name": "Roigada-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "086",
+      "fetched_at": "2026-11-24T03:57:53.930136+00:00",
+      "fr": {
+        "smoothed_avg": 0.81,
+        "median": 0.81,
+        "min": 0.78,
+        "max": 0.85,
+        "count": 2,
+        "sold_samples": [
+          0.78,
+          0.85
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.85,
+          "avg30": 0.78,
+          "avg7": 0.93,
+          "avg1": 0.59,
+          "lowPrice": 0.14,
+          "averageSellPrice": 0.73
+        },
+        "cardmarket_trend": 0.85,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.06,
+            "low": 0.26,
+            "mid": 1.17
+          }
+        },
+        "tcgplayer_usd": 1.06,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 086/225": {
+      "ref": "svp 086/225",
+      "name": "Dogrino-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "086",
+      "fetched_at": "2026-11-24T03:57:54.157610+00:00",
+      "fr": {
+        "smoothed_avg": 0.76,
+        "median": 0.76,
+        "min": 0.69,
+        "max": 0.83,
+        "count": 2,
+        "sold_samples": [
+          0.69,
+          0.83
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.69,
+          "avg30": 0.83,
+          "avg7": 0.86,
+          "avg1": 0.75,
+          "lowPrice": 0.08,
+          "averageSellPrice": 1.03
+        },
+        "cardmarket_trend": 0.69,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.45,
+            "low": 0.01,
+            "mid": 0.6
+          }
+        },
+        "tcgplayer_usd": 0.45,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 087/225": {
+      "ref": "svp 087/225",
+      "name": "Poussacha-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "087",
+      "fetched_at": "2026-11-24T03:57:55.867588+00:00",
+      "fr": {
+        "smoothed_avg": 0.97,
+        "median": 0.97,
+        "min": 0.96,
+        "max": 0.98,
+        "count": 2,
+        "sold_samples": [
+          0.96,
+          0.98
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.96,
+          "avg30": 0.98,
+          "avg7": 0.96,
+          "avg1": 0.8,
+          "lowPrice": 0.19,
+          "averageSellPrice": 0.98
+        },
+        "cardmarket_trend": 0.96,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.31,
+            "low": 0.89,
+            "mid": 1.39
+          }
+        },
+        "tcgplayer_usd": 1.31,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv01 088/198": {
+      "ref": "sv01 088/198",
+      "name": "Branette-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "088",
+      "fetched_at": "2026-11-24T03:57:56.070490+00:00",
+      "fr": {
+        "smoothed_avg": 0.53,
+        "median": 0.53,
+        "min": 0.49,
+        "max": 0.56,
+        "count": 2,
+        "sold_samples": [
+          0.49,
+          0.56
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.49,
+          "avg30": 0.56,
+          "avg7": 0.49,
+          "avg1": 0.39,
+          "lowPrice": 0.05,
+          "averageSellPrice": 0.63
+        },
+        "cardmarket_trend": 0.49,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.74,
+            "low": 0.3,
+            "mid": 0.92
+          }
+        },
+        "tcgplayer_usd": 0.74,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv04 089/182": {
+      "ref": "sv04 089/182",
+      "name": "Garde-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "089",
+      "fetched_at": "2026-11-24T03:57:57.032381+00:00",
+      "fr": {
+        "smoothed_avg": 0.73,
+        "median": 0.73,
+        "min": 0.72,
+        "max": 0.74,
+        "count": 2,
+        "sold_samples": [
+          0.72,
+          0.74
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.72,
+          "avg30": 0.74,
+          "avg7": 0.65,
+          "avg1": 0.71,
+          "lowPrice": 0.06,
+          "averageSellPrice": 0.81
+        },
+        "cardmarket_trend": 0.72,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.76,
+            "low": 0.45,
+            "mid": 0.9
+          }
+        },
+        "tcgplayer_usd": 0.76,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv03 079/197": {
+      "ref": "sv03 079/197",
+      "name": "Miraidon-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "079",
+      "fetched_at": "2026-11-24T03:58:50.228114+00:00",
+      "fr": {
+        "smoothed_avg": 0.95,
+        "median": 0.95,
+        "min": 0.85,
+        "max": 1.04,
+        "count": 2,
+        "sold_samples": [
+          0.85,
+          1.04
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.85,
+          "avg30": 1.04,
+          "avg7": 0.81,
+          "avg1": 0.79,
+          "lowPrice": 0.25,
+          "averageSellPrice": 1.08
+        },
+        "cardmarket_trend": 0.85,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.98,
+            "low": 0.5,
+            "mid": 1.02
+          }
+        },
+        "tcgplayer_usd": 0.98,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08 091/191": {
+      "ref": "sv08 091/191",
+      "name": "Trépassable-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "091",
+      "fetched_at": "2026-11-24T03:58:51.594330+00:00",
+      "fr": {
+        "smoothed_avg": 0.65,
+        "median": 0.65,
+        "min": 0.64,
+        "max": 0.66,
+        "count": 2,
+        "sold_samples": [
+          0.64,
+          0.66
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.64,
+          "avg30": 0.66,
+          "avg7": 0.65,
+          "avg1": 0.79,
+          "lowPrice": 0.02,
+          "averageSellPrice": 0.63
+        },
+        "cardmarket_trend": 0.64,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.63,
+            "low": 0.28,
+            "mid": 0.8
+          }
+        },
+        "tcgplayer_usd": 0.63,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv05 081/162": {
+      "ref": "sv05 081/162",
+      "name": "Chef-de-Fer-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "081",
+      "fetched_at": "2026-11-24T03:58:51.999720+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv07 089/142": {
+      "ref": "sv07 089/142",
+      "name": "Gigansel-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "089",
+      "fetched_at": "2026-11-24T03:58:57.286960+00:00",
+      "fr": {
+        "smoothed_avg": 0.65,
+        "median": 0.65,
+        "min": 0.62,
+        "max": 0.67,
+        "count": 2,
+        "sold_samples": [
+          0.62,
+          0.67
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": {
+          "trendPrice": 0.62,
+          "avg30": 0.67,
+          "avg7": 0.58,
+          "avg1": 0.84,
+          "lowPrice": 0.05,
+          "averageSellPrice": 0.66
+        },
+        "cardmarket_trend": 0.62,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 0.75,
+            "low": 0.25,
+            "mid": 0.85
+          }
+        },
+        "tcgplayer_usd": 0.75,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08.5 082/131": {
+      "ref": "sv08.5 082/131",
+      "name": "Lugia-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "082",
+      "fetched_at": "2026-11-24T03:59:50.834785+00:00",
+      "fr": {
+        "smoothed_avg": 1.19,
+        "median": 1.19,
+        "min": 1.19,
+        "max": 1.19,
+        "count": 1,
+        "sold_samples": [
+          1.19
+        ],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": {
+          "holofoil": {
+            "market": 1.29,
+            "low": 0.7,
+            "mid": 1.5
+          }
+        },
+        "tcgplayer_usd": 1.29,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "svp 081/225": {
+      "ref": "svp 081/225",
+      "name": "Flâmigator-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "081",
+      "fetched_at": "2026-11-24T04:00:50.779909+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
+        "graded": {}
+      },
+      "jp": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "mercari": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "mercari_jp_sold"
+        },
+        "yahoo_auctions": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "yahoo_jp_sold"
+        },
+        "card_rush": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "cardrush_jp"
+        },
+        "graded": {}
+      }
+    },
+    "sv08 086/191": {
+      "ref": "sv08 086/191",
+      "name": "Nymphali-ex",
+      "edition": "FR",
+      "lang": "fr",
+      "local_id": "086",
+      "fetched_at": "2026-11-24T04:00:51.569026+00:00",
+      "fr": {
+        "smoothed_avg": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "count": 0,
+        "sold_samples": [],
+        "ebay_fr": {
+          "sold_prices": [],
+          "avg": null,
+          "median": null,
+          "count": 0,
+          "source": "ebay_fr_sold"
+        },
+        "cardmarket": null,
+        "cardmarket_trend": null,
+        "tcgplayer": null,
+        "tcgplayer_usd": null,
         "graded": {}
       },
       "jp": {
