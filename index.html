@@ -305,19 +305,26 @@
           </div>
         </div>
 
+        <!-- Strategy Selector (Levier Grading & Multi-Stratégies) -->
+        <select id="strategy-selector" class="text-xs border border-amber-300 bg-amber-50 text-amber-900 font-bold rounded-xl px-2.5 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400" title="Stratégie d'arbitrage">
+          <option value="best">🔥 Meilleure opportunité (Auto : Raw, PSA 10 & Grading)</option>
+          <option value="raw">Raw JP → Raw FR</option>
+          <option value="slab">Slab JP → Slab FR (PSA 10)</option>
+          <option value="grading">⚡ Levier Grading (Raw JP → PSA 10 FR)</option>
+        </select>
+
         <!-- Pricing Reference Selector -->
         <div class="flex items-center gap-1.5 flex-wrap">
           <select id="pricing-ref-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base de revente FR">
-            <option value="avg">📊 FR: Moyenne 3 plateformes FR (Lissée 30j)</option>
-            <option value="ebay">eBay FR uniquement</option>
-            <option value="vinted">Vinted uniquement</option>
-            <option value="lbc">LeBonCoin uniquement</option>
+            <option value="avg">📊 Référentiel EU Global (Cardmarket + Slabs)</option>
+            <option value="cardmarket">Cardmarket (Price Guide EU)</option>
+            <option value="pricecharting">PriceCharting (Ventes Sold)</option>
+            <option value="ebay">eBay FR Sold</option>
           </select>
           <select id="pricing-ref-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base d'achat JP">
-            <option value="min">🏆 JP: Meilleur prix JP (Min)</option>
-            <option value="mercari">Mercari JP</option>
-            <option value="yahoo">Yahoo! Auctions</option>
-            <option value="cardrush">Card Rush</option>
+            <option value="min">🏆 JP: SNKRDUNK (Ventes réelles JPY)</option>
+            <option value="snkrdunk">SNKRDUNK (Sold JPY)</option>
+            <option value="yuyutei">Yuyu-tei (Boutique)</option>
           </select>
         </div>
 
@@ -457,12 +464,13 @@
             <button type="button" class="lib-filter-btn active" data-lib-edition="all">🌐 Tous</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="JP">🇯🇵 JP</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="FR">🇫🇷 FR</button>
-            <button type="button" class="lib-filter-btn" data-lib-edition="EN">🇺🇸 EN</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="EN">🇬🇧 EN</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="KR">🇰🇷 KR</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="CN">🇨🇳 CN</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="DE">🇩🇪 DE</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="IT">🇮🇹 IT</button>
             <button type="button" class="lib-filter-btn" data-lib-edition="ES">🇪🇸 ES</button>
+            <button type="button" class="lib-filter-btn" data-lib-edition="PT">🇵🇹 PT</button>
           </div>
         </div>
         <!-- Priced Only in Library -->
@@ -476,16 +484,15 @@
       <!-- Secondary filters row -->
       <div class="flex flex-wrap gap-2 mb-3">
         <select id="lib-filter-platform-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-          <option value="avg">📊 Moyenne 3 plateformes FR (Lissée 30j)</option>
-          <option value="ebay">eBay FR uniquement</option>
-          <option value="vinted">Vinted uniquement</option>
-          <option value="lbc">LeBonCoin uniquement</option>
+          <option value="avg">📊 Référentiel EU Global (Cardmarket + Slabs)</option>
+          <option value="cardmarket">Cardmarket (Price Guide EU)</option>
+          <option value="pricecharting">PriceCharting (Ventes Sold)</option>
+          <option value="ebay">eBay FR Sold</option>
         </select>
         <select id="lib-filter-platform-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-          <option value="min">🏆 Meilleur prix JP (Min)</option>
-          <option value="mercari">Mercari JP</option>
-          <option value="yahoo">Yahoo! Auctions</option>
-          <option value="cardrush">Card Rush</option>
+          <option value="min">🏆 JP: SNKRDUNK (Ventes réelles JPY)</option>
+          <option value="snkrdunk">SNKRDUNK (Sold JPY)</option>
+          <option value="yuyutei">Yuyu-tei (Boutique)</option>
         </select>
         <select id="lib-filter-year" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
           <option value="all">📅 Toutes années</option>
@@ -733,7 +740,7 @@
           <p class="text-[11px] text-slate-500 leading-relaxed">
             Personnalisez vos frais pour refléter votre marge nette réelle après commission de vente et frais d'importation.
           </p>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             <div>
               <label for="input-resale-fee" class="block font-semibold text-slate-700 text-[11px] mb-1">Commission revente (%) :</label>
               <input type="number" id="input-resale-fee" min="0" max="50" step="0.5" placeholder="0"
@@ -751,6 +758,12 @@
               <input type="number" id="input-shipping-cost" min="0" max="100" step="0.5" placeholder="0"
                      class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-400">
               <span class="text-[9px] text-slate-400 block mt-0.5">Frais d'envoi par carte</span>
+            </div>
+            <div>
+              <label for="input-grading-cost" class="block font-semibold text-slate-700 text-[11px] mb-1">Coût Grading (€/carte) :</label>
+              <input type="number" id="input-grading-cost" min="0" max="200" step="1" placeholder="25"
+                     class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-400">
+              <span class="text-[9px] text-slate-400 block mt-0.5">Défaut 25€ (PSA, ARS, PCA)</span>
             </div>
           </div>
           <div class="flex items-center gap-2 pt-2 border-t border-slate-200">

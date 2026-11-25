@@ -1,27 +1,27 @@
 {
   "_meta": {
-    "generated_at": "2026-11-19T19:32:06.808614+00:00",
-    "version": "4.0.0",
-    "source": "pokespread_verified_sold_pipeline_v4",
+    "generated_at": "2026-11-25T05:04:46.568317+00:00",
+    "version": "5.0.0",
+    "source": "pokespread_verified_sold_pipeline_v5",
     "fx_rates": {
-      "EUR_JPY": 174.8869,
-      "EUR_USD": 1.0974,
-      "USD_JPY": 159.3661,
-      "JPY_EUR": 0.005718,
-      "USD_EUR": 0.911252
+      "EUR_JPY": 174.4891,
+      "EUR_USD": 1.096,
+      "USD_JPY": 159.2122,
+      "JPY_EUR": 0.005731,
+      "USD_EUR": 0.912448
     },
-    "card_count": 115,
-    "total_priced": 80,
-    "total_priced_both": 52,
-    "fr_only": 9,
-    "jp_only": 19,
-    "processed_this_run": 10,
+    "card_count": 140,
+    "total_priced": 74,
+    "total_priced_both": 51,
+    "fr_only": 10,
+    "jp_only": 13,
+    "processed_this_run": 140,
     "circuit_breakers": {
-      "ebay_fr": true,
-      "yuyutei": false,
       "snkrdunk": false,
+      "cardmarket": false,
       "pricecharting": false,
-      "pokemontcg_api": false
+      "ebay_browse": false,
+      "mercari_jp": false
     }
   },
   "prices": {
@@ -2025,7 +2025,7 @@
     },
     "SV2a 201/165": {
       "ref": "SV2a 201/165",
-      "card_id": "ja-SV2a-201",
+      "card_id": "",
       "set_id": "SV2a",
       "local_id": "201",
       "official_count": "165",
@@ -2034,56 +2034,58 @@
       "name_en": "Charizard ex",
       "edition": "JP",
       "lang": "ja",
-      "image": "https://assets.tcgdex.net/ja/SV/SV2a/201",
-      "fetched_at": "2026-11-19T19:32:04.787248+00:00",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:38.937058+00:00",
       "fr": {
-        "smoothed_avg": 282.1,
-        "raw_eur": 282.1,
-        "sample_count": 15,
-        "source_name": "PriceCharting (JP Resale)",
-        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/charizard-ex-201",
-        "matched_title": "Charizard EX #201 | Pokemon Japanese Scarlet & Violet 151",
-        "cardmarket_trend": null,
+        "smoothed_avg": 297.54,
+        "raw_eur": 297.54,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Charizard-ex-%5BBrave-Wing-%7C-Explosive-Vortex%5D",
+        "matched_title": "Charizard ex [Brave Wing | Explosive Vortex]",
+        "cardmarket_trend": 297.54,
         "graded": {
           "PSA 10": {
-            "price": 472.03,
+            "price": 465.35,
+            "price_usd": 510.0,
             "source": "PriceCharting",
-            "volume": ""
+            "volume": "15+"
           },
           "PSA 9": {
-            "price": 300.71,
+            "price": 271.91,
+            "price_usd": 298.0,
             "source": "PriceCharting",
-            "volume": ""
+            "volume": "10+"
           }
         },
         "data_type": "sold"
       },
       "jp": {
-        "smoothed_avg": 54568,
-        "raw_jpy": 54568,
-        "raw_eur": 312.02,
-        "sample_count": 17,
-        "source_name": "PriceCharting (JP Sold)",
-        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/charizard-ex-201",
-        "matched_title": "Charizard EX #201 | Pokemon Japanese Scarlet & Violet 151",
+        "smoothed_avg": 49400,
+        "raw_jpy": 49400,
+        "raw_eur": 283.11,
+        "sample_count": 11,
         "graded": {
           "PSA 10": {
-            "price": 472.03,
-            "price_usd": 518.0,
-            "price_eur": 472.03,
-            "price_jpy": 82552,
-            "source": "PriceCharting"
+            "price_jpy": 99311,
+            "price_eur": 569.15,
+            "sample_count": 33,
+            "source": "SNKRDUNK JP Sold"
           },
           "PSA 9": {
-            "price": 300.71,
-            "price_usd": 330.0,
-            "price_eur": 300.71,
-            "price_jpy": 52591,
-            "source": "PriceCharting"
+            "price_jpy": 46150,
+            "price_eur": 264.49,
+            "sample_count": 6,
+            "source": "SNKRDUNK JP Sold"
           }
         },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128117",
         "data_type": "sold"
-      }
+      },
+      "best_direct_spread_eur": 14.43,
+      "best_grading_spread_eur": 157.24,
+      "is_high_value": true
     },
     "sv2a 202/165": {
       "ref": "sv2a 202/165",
@@ -2255,7 +2257,7 @@
     },
     "SV2a 205/165": {
       "ref": "SV2a 205/165",
-      "card_id": "ja-SV2a-205",
+      "card_id": "",
       "set_id": "SV2a",
       "local_id": "205",
       "official_count": "165",
@@ -2264,56 +2266,58 @@
       "name_en": "Mew ex",
       "edition": "JP",
       "lang": "ja",
-      "image": "https://assets.tcgdex.net/ja/SV/SV2a/205",
-      "fetched_at": "2026-11-19T19:32:04.419031+00:00",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:39.548196+00:00",
       "fr": {
-        "smoothed_avg": 166.3,
-        "raw_eur": 166.3,
-        "sample_count": 15,
-        "source_name": "PriceCharting (JP Resale)",
-        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/mew-ex-205",
-        "matched_title": "Mew EX #205 | Pokemon Japanese Scarlet & Violet 151",
-        "cardmarket_trend": null,
+        "smoothed_avg": 213.46,
+        "raw_eur": 213.46,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Mew-ex-%5BRestart-%7C-Genome-Hacking%5D",
+        "matched_title": "Mew ex [Restart | Genome Hacking]",
+        "cardmarket_trend": 213.46,
         "graded": {
           "PSA 10": {
-            "price": 387.5,
+            "price": 327.39,
+            "price_usd": 358.8,
             "source": "PriceCharting",
-            "volume": ""
+            "volume": "15+"
           },
           "PSA 9": {
-            "price": 128.39,
+            "price": 127.01,
+            "price_usd": 139.2,
             "source": "PriceCharting",
-            "volume": ""
+            "volume": "10+"
           }
         },
         "data_type": "sold"
       },
       "jp": {
-        "smoothed_avg": 34442,
-        "raw_jpy": 34442,
-        "raw_eur": 196.94,
-        "sample_count": 17,
-        "source_name": "PriceCharting (JP Sold)",
-        "source_url": "https://www.pricecharting.com/game/pokemon-japanese-scarlet-violet-151/mew-ex-205",
-        "matched_title": "Mew EX #205 | Pokemon Japanese Scarlet & Violet 151",
+        "smoothed_avg": 29662,
+        "raw_jpy": 29662,
+        "raw_eur": 169.99,
+        "sample_count": 10,
         "graded": {
           "PSA 10": {
-            "price": 387.5,
-            "price_usd": 425.24,
-            "price_eur": 387.5,
-            "price_jpy": 67769,
-            "source": "PriceCharting"
+            "price_jpy": 61068,
+            "price_eur": 349.98,
+            "sample_count": 37,
+            "source": "SNKRDUNK JP Sold"
           },
           "PSA 9": {
-            "price": 128.39,
-            "price_usd": 140.89,
-            "price_eur": 128.39,
-            "price_jpy": 22453,
-            "source": "PriceCharting"
+            "price_jpy": 24700,
+            "price_eur": 141.56,
+            "sample_count": 3,
+            "source": "SNKRDUNK JP Sold"
           }
         },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128121",
         "data_type": "sold"
-      }
+      },
+      "best_direct_spread_eur": 43.47,
+      "best_grading_spread_eur": 132.4,
+      "is_high_value": true
     },
     "sv2a 206/165": {
       "ref": "sv2a 206/165",
@@ -6300,6 +6304,1549 @@
         },
         "data_type": "sold"
       }
+    },
+    "MF 044/40": {
+      "ref": "MF 044/40",
+      "card_id": "ja-MF-044",
+      "set_id": "MF",
+      "local_id": "044",
+      "official_count": "40",
+      "name_ja": "ブラッキーex",
+      "name_fr": "Noctali ex",
+      "name_en": "Umbreon ex",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:41.961294+00:00",
+      "fr": {
+        "smoothed_avg": 85.65,
+        "raw_eur": 85.65,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 389.6,
+            "price_usd": 426.98,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 75.3,
+            "price_usd": 82.52,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-30th-Celebration-Premium-Deck/Umbreon-ex-%2344",
+        "matched_title": "Umbreon ex #44 | Pokemon Japanese 30th Celebration Premium Deck",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 11736,
+        "raw_jpy": 11736,
+        "raw_eur": 67.26,
+        "sample_count": 45,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 74933,
+            "price_eur": 429.44,
+            "sample_count": 5,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/881431",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 18.39,
+      "best_grading_spread_eur": 297.34,
+      "is_high_value": true
+    },
+    "SM3H 058/51": {
+      "ref": "SM3H 058/51",
+      "card_id": "ja-SM3H-058",
+      "set_id": "SM3H",
+      "local_id": "058",
+      "official_count": "51",
+      "name_ja": "リザードンGX",
+      "name_fr": "Dracaufeu GX",
+      "name_en": "Charizard GX",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:42.096586+00:00",
+      "fr": {
+        "smoothed_avg": 362.16,
+        "raw_eur": 362.16,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 4487.61,
+            "price_usd": 4918.21,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 1025.68,
+            "price_usd": 1124.1,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Battle-Rainbow/Charizard-GX-%2358",
+        "matched_title": "Charizard GX #58 | Pokemon Japanese Battle Rainbow",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 45000,
+        "raw_jpy": 45000,
+        "raw_eur": 257.89,
+        "sample_count": 6,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 108427,
+            "price_eur": 621.4,
+            "sample_count": 41,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 41933,
+            "price_eur": 240.32,
+            "sample_count": 3,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/91335",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 3866.21,
+      "best_grading_spread_eur": 4204.72,
+      "is_high_value": true
+    },
+    "SM11b 054/49": {
+      "ref": "SM11b 054/49",
+      "card_id": "ja-SM11b-054",
+      "set_id": "SM11b",
+      "local_id": "054",
+      "official_count": "49",
+      "name_ja": "ピカチュウ",
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:42.110475+00:00",
+      "fr": {
+        "smoothed_avg": 135.95,
+        "raw_eur": 135.95,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 297.91,
+            "price_usd": 326.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 169.53,
+            "price_usd": 185.8,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Dream-League/Pikachu-%2354",
+        "matched_title": "Pikachu #54 | Pokemon Japanese Dream League",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 33111,
+        "raw_jpy": 33111,
+        "raw_eur": 189.76,
+        "sample_count": 11,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 75221,
+            "price_eur": 431.09,
+            "sample_count": 36,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 26633,
+            "price_eur": 152.63,
+            "sample_count": 3,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/126664",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -53.81,
+      "best_grading_spread_eur": 83.15,
+      "is_high_value": true
+    },
+    "SV2a 025/165": {
+      "ref": "SV2a 025/165",
+      "card_id": "ja-SV2a-025",
+      "set_id": "SV2a",
+      "local_id": "025",
+      "official_count": "165",
+      "name_ja": "ピカチュウ",
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/025",
+      "fetched_at": "2026-11-25T05:03:25.120179+00:00",
+      "fr": {
+        "smoothed_avg": 0.41,
+        "raw_eur": 0.41,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Pikachu-%5BCharge-%7C-Pika-Punch%5D",
+        "matched_title": "Pikachu [Charge | Pika Punch]",
+        "cardmarket_trend": 0.41,
+        "graded": {
+          "PSA 10": {
+            "price": 5748.42,
+            "price_usd": 6300.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 2023.19,
+            "price_usd": 2217.32,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 1400,
+        "raw_jpy": 1400,
+        "raw_eur": 8.02,
+        "sample_count": 5,
+        "graded": {
+          "PSA 9": {
+            "price_jpy": 2079,
+            "price_eur": 11.91,
+            "sample_count": 30,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 10": {
+            "price_jpy": 18322,
+            "price_eur": 105.0,
+            "sample_count": 15,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/127809",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 5643.42,
+      "best_grading_spread_eur": 5715.4,
+      "is_high_value": true
+    },
+    "SM3H 052/51": {
+      "ref": "SM3H 052/51",
+      "card_id": "ja-SM3H-052",
+      "set_id": "SM3H",
+      "local_id": "052",
+      "official_count": "51",
+      "name_ja": "リザードンGX",
+      "name_fr": "Dracaufeu GX",
+      "name_en": "Charizard GX",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:42.576354+00:00",
+      "fr": {
+        "smoothed_avg": 157.4,
+        "raw_eur": 157.4,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 1369.59,
+            "price_usd": 1501.01,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 404.21,
+            "price_usd": 443.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Battle-Rainbow/Charizard-GX-%2352",
+        "matched_title": "Charizard GX #52 | Pokemon Japanese Battle Rainbow",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 77500,
+        "raw_jpy": 77500,
+        "raw_eur": 444.15,
+        "sample_count": 4,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 314554,
+            "price_eur": 1802.71,
+            "sample_count": 37,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 91814,
+            "price_eur": 526.19,
+            "sample_count": 9,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/91349",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -286.75,
+      "best_grading_spread_eur": 900.44,
+      "is_high_value": true
+    },
+    "SM1M 069/60": {
+      "ref": "SM1M 069/60",
+      "card_id": "ja-SM1M-069",
+      "set_id": "SM1M",
+      "local_id": "069",
+      "official_count": "60",
+      "name_ja": "ブラッキーGX",
+      "name_fr": "Noctali GX",
+      "name_en": "Umbreon GX",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:42.849831+00:00",
+      "fr": {
+        "smoothed_avg": 160.03,
+        "raw_eur": 160.03,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 1049.32,
+            "price_usd": 1150.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 269.56,
+            "price_usd": 295.43,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Collection-Moon/Umbreon-GX-%2369",
+        "matched_title": "Umbreon GX #69 | Pokemon Japanese Collection Moon",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 67000,
+        "raw_jpy": 67000,
+        "raw_eur": 383.98,
+        "sample_count": 4,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 248080,
+            "price_eur": 1421.75,
+            "sample_count": 43,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 84500,
+            "price_eur": 484.27,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "ARS 10": {
+            "price_jpy": 160000,
+            "price_eur": 916.96,
+            "sample_count": 1,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/93117",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -223.95,
+      "best_grading_spread_eur": 640.34,
+      "is_high_value": true
+    },
+    "SM1M 063/60": {
+      "ref": "SM1M 063/60",
+      "card_id": "ja-SM1M-063",
+      "set_id": "SM1M",
+      "local_id": "063",
+      "official_count": "60",
+      "name_ja": "ブラッキーGX",
+      "name_fr": "Noctali GX",
+      "name_en": "Umbreon GX",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:42.852501+00:00",
+      "fr": {
+        "smoothed_avg": 69.96,
+        "raw_eur": 69.96,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 458.51,
+            "price_usd": 502.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 173.17,
+            "price_usd": 189.79,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Collection-Moon/Umbreon-GX-%2363",
+        "matched_title": "Umbreon GX #63 | Pokemon Japanese Collection Moon",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 40000,
+        "raw_jpy": 40000,
+        "raw_eur": 229.24,
+        "sample_count": 0,
+        "graded": {
+          "PSA 9": {
+            "price_jpy": 41828,
+            "price_eur": 239.72,
+            "sample_count": 16,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 10": {
+            "price_jpy": 122123,
+            "price_eur": 699.89,
+            "sample_count": 32,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "ARS 10": {
+            "price_jpy": 64500,
+            "price_eur": 369.65,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/91365",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -159.28,
+      "best_grading_spread_eur": 204.27,
+      "is_high_value": true
+    },
+    "SM3p 075/72": {
+      "ref": "SM3p 075/72",
+      "card_id": "ja-SM3p-075",
+      "set_id": "SM3p",
+      "local_id": "075",
+      "official_count": "72",
+      "name_ja": "ミュウツーGX",
+      "name_fr": "Mewtwo GX",
+      "name_en": "Mewtwo GX",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T04:32:43.086627+00:00",
+      "fr": {
+        "smoothed_avg": 49.26,
+        "raw_eur": 49.26,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 556.59,
+            "price_usd": 610.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 91.88,
+            "price_usd": 100.7,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Shining-Legends/Mewtwo-GX-%2375",
+        "matched_title": "Mewtwo GX #75 | Pokemon Japanese Shining Legends",
+        "data_type": "sold"
+      },
+      "jp": null,
+      "best_direct_spread_eur": null,
+      "best_grading_spread_eur": null,
+      "is_high_value": true
+    },
+    "S10a 073/71": {
+      "ref": "S10a 073/71",
+      "card_id": "ja-S10a-073",
+      "set_id": "S10a",
+      "local_id": "073",
+      "official_count": "71",
+      "name_ja": "ピカチュウ",
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/S/S10a/073",
+      "fetched_at": "2026-11-25T04:32:43.132393+00:00",
+      "fr": {
+        "smoothed_avg": 29.85,
+        "raw_eur": 29.85,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 98.54,
+            "price_usd": 108.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 56.22,
+            "price_usd": 61.61,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Dark-Phantasma/Pikachu-%2373",
+        "matched_title": "Pikachu #73 | Pokemon Japanese Dark Phantasma",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 4550,
+        "raw_jpy": 4550,
+        "raw_eur": 26.08,
+        "sample_count": 8,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 19282,
+            "price_eur": 110.51,
+            "sample_count": 34,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 6417,
+            "price_eur": 36.78,
+            "sample_count": 8,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/96667",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 3.77,
+      "best_grading_spread_eur": 47.46,
+      "is_high_value": true
+    },
+    "S10a 074/71": {
+      "ref": "S10a 074/71",
+      "card_id": "ja-S10a-074",
+      "set_id": "S10a",
+      "local_id": "074",
+      "official_count": "71",
+      "name_ja": "ゲンガー",
+      "name_fr": "Ectoplasma",
+      "name_en": "Gengar",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/S/S10a/074",
+      "fetched_at": "2026-11-25T04:32:43.273578+00:00",
+      "fr": {
+        "smoothed_avg": 22.36,
+        "raw_eur": 22.36,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 99.91,
+            "price_usd": 109.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 47.21,
+            "price_usd": 51.74,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Dark-Phantasma/Gengar-%2374",
+        "matched_title": "Gengar #74 | Pokemon Japanese Dark Phantasma",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 4150,
+        "raw_jpy": 4150,
+        "raw_eur": 23.78,
+        "sample_count": 10,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 13487,
+            "price_eur": 77.29,
+            "sample_count": 40,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/126676",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 22.62,
+      "best_grading_spread_eur": 51.13,
+      "is_high_value": true
+    },
+    "SV2a 094/165": {
+      "ref": "SV2a 094/165",
+      "card_id": "ja-SV2a-094",
+      "set_id": "SV2a",
+      "local_id": "094",
+      "official_count": "165",
+      "name_ja": "ゲンガー",
+      "name_fr": "Ectoplasma",
+      "name_en": "Gengar",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/094",
+      "fetched_at": "2026-11-25T05:03:25.401028+00:00",
+      "fr": {
+        "smoothed_avg": 1.42,
+        "raw_eur": 1.42,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Gengar-%5BPoltergeist-%7C-Hollow-Dive%5D",
+        "matched_title": "Gengar [Poltergeist | Hollow Dive]",
+        "cardmarket_trend": 1.42,
+        "graded": {
+          "PSA 10": {
+            "price": 7441.57,
+            "price_usd": 8155.61,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 1459.92,
+            "price_usd": 1600.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 4764,
+        "raw_jpy": 4764,
+        "raw_eur": 27.3,
+        "sample_count": 16,
+        "graded": {
+          "PSA 9": {
+            "price_jpy": 4140,
+            "price_eur": 23.73,
+            "sample_count": 27,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 10": {
+            "price_jpy": 11630,
+            "price_eur": 66.65,
+            "sample_count": 7,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/127943",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 7374.92,
+      "best_grading_spread_eur": 7389.27,
+      "is_high_value": true
+    },
+    "SV8a 095/187": {
+      "ref": "SV8a 095/187",
+      "card_id": "ja-SV8a-095",
+      "set_id": "SV8a",
+      "local_id": "095",
+      "official_count": "187",
+      "name_ja": "ダストダス",
+      "name_fr": "Miasmax",
+      "name_en": "Garbodor",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV8a/095",
+      "fetched_at": "2026-11-25T05:03:25.700574+00:00",
+      "fr": {
+        "smoothed_avg": 0.03,
+        "raw_eur": 0.03,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Terastal-Festival-ex/Garbodor-%5BChuck-%7C-Venomous-Hit%5D",
+        "matched_title": "Garbodor [Chuck | Venomous Hit]",
+        "cardmarket_trend": 0.03,
+        "graded": {
+          "PSA 10": {
+            "price": 41.52,
+            "price_usd": 45.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 17.16,
+            "price_usd": 18.81,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 5999,
+        "raw_jpy": 5999,
+        "raw_eur": 34.38,
+        "sample_count": 0,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 6100,
+            "price_eur": 34.96,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/471635",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 6.56,
+      "best_grading_spread_eur": -17.86,
+      "is_high_value": false
+    },
+    "S11 111/100": {
+      "ref": "S11 111/100",
+      "card_id": "ja-S11-111",
+      "set_id": "S11",
+      "local_id": "111",
+      "official_count": "100",
+      "name_ja": "ギラティナV",
+      "name_fr": "Giratina V",
+      "name_en": "Giratina V",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/S/S11/111",
+      "fetched_at": "2026-11-25T05:03:25.707881+00:00",
+      "fr": {
+        "smoothed_avg": 1607.99,
+        "raw_eur": 1607.99,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Lost-Abyss/Giratina-V-%5BAbyss-Seeking-%7C-Shred%5D",
+        "matched_title": "Giratina V [Abyss Seeking | Shred]",
+        "cardmarket_trend": 1607.99,
+        "graded": {
+          "PSA 10": {
+            "price": 1467.44,
+            "price_usd": 1608.25,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 912.45,
+            "price_usd": 1000.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 153000,
+        "raw_jpy": 153000,
+        "raw_eur": 876.84,
+        "sample_count": 5,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 276611,
+            "price_eur": 1585.26,
+            "sample_count": 45,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/93379",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 731.15,
+      "best_grading_spread_eur": 565.6,
+      "is_high_value": true
+    },
+    "SV2a 133/165": {
+      "ref": "SV2a 133/165",
+      "card_id": "ja-SV2a-133",
+      "set_id": "SV2a",
+      "local_id": "133",
+      "official_count": "165",
+      "name_ja": "イーブイ",
+      "name_fr": "Évoli",
+      "name_en": "Eevee",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/133",
+      "fetched_at": "2026-11-25T05:03:26.076533+00:00",
+      "fr": {
+        "smoothed_avg": 0.6,
+        "raw_eur": 0.6,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Eevee-%5BColorful-Friends-%7C-Skip%5D",
+        "matched_title": "Eevee [Colorful Friends | Skip]",
+        "cardmarket_trend": 0.6,
+        "graded": {
+          "PSA 10": {
+            "price": 17808.25,
+            "price_usd": 19517.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 14840.49,
+            "price_usd": 16264.48,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 7150,
+        "raw_jpy": 7150,
+        "raw_eur": 40.98,
+        "sample_count": 2,
+        "graded": {
+          "PSA 9": {
+            "price_jpy": 3500,
+            "price_eur": 20.06,
+            "sample_count": 1,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 10": {
+            "price_jpy": 14955,
+            "price_eur": 85.71,
+            "sample_count": 47,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128249",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 17722.54,
+      "best_grading_spread_eur": 17742.27,
+      "is_high_value": true
+    },
+    "SV8 132/106": {
+      "ref": "SV8 132/106",
+      "card_id": "ja-SV8-132",
+      "set_id": "SV8",
+      "local_id": "132",
+      "official_count": "106",
+      "name_ja": "ピカチュウex",
+      "name_fr": "Pikachu ex",
+      "name_en": "Pikachu ex",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:03:26.224176+00:00",
+      "fr": {
+        "smoothed_avg": 248.86,
+        "raw_eur": 248.86,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Super-Electric-Breaker/Pikachu-ex-%5BResolute-Heart-%7C-Topaz-Bolt%5D",
+        "matched_title": "Pikachu ex [Resolute Heart | Topaz Bolt]",
+        "cardmarket_trend": 248.86,
+        "graded": {
+          "PSA 10": {
+            "price": 406.5,
+            "price_usd": 445.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 181.58,
+            "price_usd": 199.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 61250,
+        "raw_jpy": 61250,
+        "raw_eur": 351.02,
+        "sample_count": 6,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 95124,
+            "price_eur": 545.16,
+            "sample_count": 40,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 45500,
+            "price_eur": 260.76,
+            "sample_count": 4,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/408333",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -102.16,
+      "best_grading_spread_eur": 30.48,
+      "is_high_value": true
+    },
+    "SV9 125/100": {
+      "ref": "SV9 125/100",
+      "card_id": "ja-SV9-125",
+      "set_id": "SV9",
+      "local_id": "125",
+      "official_count": "100",
+      "name_ja": "ナンジャモのハラバリーex",
+      "name_fr": "Ampibidou ex de Mashynn",
+      "name_en": "Bellibolt ex (de Mashynn)",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV9/125",
+      "fetched_at": "2026-11-25T05:03:26.347200+00:00",
+      "fr": {
+        "smoothed_avg": 271.01,
+        "raw_eur": 271.01,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 408.32,
+            "price_usd": 447.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 261.28,
+            "price_usd": 286.35,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Glory-of-Team-Rocket/Team-Rocket%27s-Mewtwo-ex-%23125",
+        "matched_title": "Team Rocket's Mewtwo ex #125 | Pokemon Japanese Glory of Team Rocket",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 7933,
+        "raw_jpy": 7933,
+        "raw_eur": 45.46,
+        "sample_count": 5,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 16960,
+            "price_eur": 97.2,
+            "sample_count": 44,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 8000,
+            "price_eur": 45.85,
+            "sample_count": 1,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/485655",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 311.12,
+      "best_grading_spread_eur": 337.86,
+      "is_high_value": true
+    },
+    "SV2a 150/165": {
+      "ref": "SV2a 150/165",
+      "card_id": "ja-SV2a-150",
+      "set_id": "SV2a",
+      "local_id": "150",
+      "official_count": "165",
+      "name_ja": "ミュウツー",
+      "name_fr": "Mewtwo",
+      "name_en": "Mewtwo",
+      "edition": "JA",
+      "lang": "ja",
+      "image": "https://assets.tcgdex.net/ja/SV/SV2a/150",
+      "fetched_at": "2026-11-25T05:03:26.350703+00:00",
+      "fr": {
+        "smoothed_avg": 0.5,
+        "raw_eur": 0.5,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Mewtwo-%5BReflective-Barrier-%7C-Psyslash%5D",
+        "matched_title": "Mewtwo [Reflective Barrier | Psyslash]",
+        "cardmarket_trend": 0.5,
+        "graded": {
+          "PSA 10": {
+            "price": 1838.58,
+            "price_usd": 2015.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 327.23,
+            "price_usd": 358.63,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 8000,
+        "raw_jpy": 8000,
+        "raw_eur": 45.85,
+        "sample_count": 0,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 27251,
+            "price_eur": 156.18,
+            "sample_count": 48,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 13500,
+            "price_eur": 77.37,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128265",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 1682.4,
+      "best_grading_spread_eur": 1767.73,
+      "is_high_value": true
+    },
+    "SV2a 173/165": {
+      "ref": "SV2a 173/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "173",
+      "official_count": "165",
+      "name_ja": "ピカチュウ",
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:41.381347+00:00",
+      "fr": {
+        "smoothed_avg": 22.37,
+        "raw_eur": 22.37,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Pikachu-%5BCharge-%7C-Pika-Punch%5D",
+        "matched_title": "Pikachu [Charge | Pika Punch]",
+        "cardmarket_trend": 22.37,
+        "graded": {
+          "PSA 10": {
+            "price": 87.14,
+            "price_usd": 95.5,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 36.49,
+            "price_usd": 39.99,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 3297,
+        "raw_jpy": 3297,
+        "raw_eur": 18.9,
+        "sample_count": 9,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 13791,
+            "price_eur": 79.04,
+            "sample_count": 34,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 4516,
+            "price_eur": 25.88,
+            "sample_count": 7,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128089",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 8.1,
+      "best_grading_spread_eur": 43.24,
+      "is_high_value": true
+    },
+    "SV2a 183/165": {
+      "ref": "SV2a 183/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "183",
+      "official_count": "165",
+      "name_ja": "ミュウツー",
+      "name_fr": "Mewtwo",
+      "name_en": "Mewtwo",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:41.756295+00:00",
+      "fr": {
+        "smoothed_avg": 21.72,
+        "raw_eur": 21.72,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Mewtwo-%5BReflective-Barrier-%7C-Psyslash%5D",
+        "matched_title": "Mewtwo [Reflective Barrier | Psyslash]",
+        "cardmarket_trend": 21.72,
+        "graded": {
+          "PSA 10": {
+            "price": 85.3,
+            "price_usd": 93.49,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 31.94,
+            "price_usd": 35.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 2900,
+        "raw_jpy": 2900,
+        "raw_eur": 16.62,
+        "sample_count": 5,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 11570,
+            "price_eur": 66.31,
+            "sample_count": 44,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 5000,
+            "price_eur": 28.66,
+            "sample_count": 1,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128099",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 18.99,
+      "best_grading_spread_eur": 43.68,
+      "is_high_value": true
+    },
+    "SV2a 202/165": {
+      "ref": "SV2a 202/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "202",
+      "official_count": "165",
+      "name_ja": "カメックスex",
+      "name_fr": "Tortank ex",
+      "name_en": "Blastoise ex",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:40.253029+00:00",
+      "fr": {
+        "smoothed_avg": 110.67,
+        "raw_eur": 110.67,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Blastoise-ex-%5BSolid-Shell-%7C-Twin-Cannons%5D",
+        "matched_title": "Blastoise ex [Solid Shell | Twin Cannons]",
+        "cardmarket_trend": 110.67,
+        "graded": {
+          "PSA 10": {
+            "price": 168.8,
+            "price_usd": 185.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 95.74,
+            "price_usd": 104.93,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 15120,
+        "raw_jpy": 15120,
+        "raw_eur": 86.65,
+        "sample_count": 7,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 30993,
+            "price_eur": 177.62,
+            "sample_count": 42,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 14499,
+            "price_eur": 83.09,
+            "sample_count": 1,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128118",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 24.02,
+      "best_grading_spread_eur": 57.15,
+      "is_high_value": true
+    },
+    "SV2a 200/165": {
+      "ref": "SV2a 200/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "200",
+      "official_count": "165",
+      "name_ja": "フシギバナex",
+      "name_fr": "Florizarre ex",
+      "name_en": "Venusaur ex",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:40.969604+00:00",
+      "fr": {
+        "smoothed_avg": 92.44,
+        "raw_eur": 92.44,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Venusaur-ex-%5BTranquil-Flower-%7C-Dangerous-Toxwhip%5D",
+        "matched_title": "Venusaur ex [Tranquil Flower | Dangerous Toxwhip]",
+        "cardmarket_trend": 92.44,
+        "graded": {
+          "PSA 10": {
+            "price": 159.67,
+            "price_usd": 174.99,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 105.84,
+            "price_usd": 116.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 14333,
+        "raw_jpy": 14333,
+        "raw_eur": 82.14,
+        "sample_count": 5,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 28309,
+            "price_eur": 162.24,
+            "sample_count": 43,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 15800,
+            "price_eur": 90.55,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128116",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 10.3,
+      "best_grading_spread_eur": 52.53,
+      "is_high_value": true
+    },
+    "SV2a 185/165": {
+      "ref": "SV2a 185/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "185",
+      "official_count": "165",
+      "name_ja": "リザードンex",
+      "name_fr": "Dracaufeu ex",
+      "name_en": "Charizard ex",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:42.912123+00:00",
+      "fr": {
+        "smoothed_avg": 20.13,
+        "raw_eur": 20.13,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Charizard-ex-%5BBrave-Wing-%7C-Explosive-Vortex%5D",
+        "matched_title": "Charizard ex [Brave Wing | Explosive Vortex]",
+        "cardmarket_trend": 20.13,
+        "graded": {
+          "PSA 10": {
+            "price": 73.91,
+            "price_usd": 81.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 33.31,
+            "price_usd": 36.51,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 4438,
+        "raw_jpy": 4438,
+        "raw_eur": 25.43,
+        "sample_count": 6,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 16518,
+            "price_eur": 94.66,
+            "sample_count": 44,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128101",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": -5.3,
+      "best_grading_spread_eur": 23.48,
+      "is_high_value": true
+    },
+    "SV2a 206/165": {
+      "ref": "SV2a 206/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "206",
+      "official_count": "165",
+      "name_ja": "エリカの招待",
+      "name_fr": "招待 d'Erika",
+      "name_en": "招待 (d'Erika)",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:44.459648+00:00",
+      "fr": {
+        "smoothed_avg": 46.46,
+        "raw_eur": 46.46,
+        "sample_count": 15,
+        "graded": {
+          "PSA 10": {
+            "price": 88.73,
+            "price_usd": 97.24,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 56.57,
+            "price_usd": 62.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "source_name": "PriceCharting (JP Resale)",
+        "source_url": "https://www.pricecharting.com/game/Pokemon-Japanese-Terastal-Festival/Glaceon-Ex-%23206",
+        "matched_title": "Glaceon Ex #206 | Pokemon Japanese Terastal Festival",
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 5727,
+        "raw_jpy": 5727,
+        "raw_eur": 32.82,
+        "sample_count": 7,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 24053,
+            "price_eur": 137.85,
+            "sample_count": 40,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 5467,
+            "price_eur": 31.33,
+            "sample_count": 3,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128122",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 13.64,
+      "best_grading_spread_eur": 30.91,
+      "is_high_value": true
+    },
+    "SV2a 204/165": {
+      "ref": "SV2a 204/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "204",
+      "official_count": "165",
+      "name_ja": "サンダーex",
+      "name_fr": "Électhor ex",
+      "name_en": "Zapdos ex",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:45.681884+00:00",
+      "fr": {
+        "smoothed_avg": 92.99,
+        "raw_eur": 92.99,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Zapdos-ex-%5BVoltaic-Float-%7C-Multishot-Lightning%5D",
+        "matched_title": "Zapdos ex [Voltaic Float | Multishot Lightning]",
+        "cardmarket_trend": 92.99,
+        "graded": {
+          "PSA 10": {
+            "price": 134.64,
+            "price_usd": 147.56,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 69.35,
+            "price_usd": 76.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 10650,
+        "raw_jpy": 10650,
+        "raw_eur": 61.04,
+        "sample_count": 5,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 24271,
+            "price_eur": 139.1,
+            "sample_count": 45,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128120",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 31.95,
+      "best_grading_spread_eur": 48.6,
+      "is_high_value": true
+    },
+    "SV2a 203/165": {
+      "ref": "SV2a 203/165",
+      "card_id": "",
+      "set_id": "SV2a",
+      "local_id": "203",
+      "official_count": "165",
+      "name_ja": "フーディンex",
+      "name_fr": "Alakazam ex",
+      "name_en": "Alakazam ex",
+      "edition": "JP",
+      "lang": "ja",
+      "image": "",
+      "fetched_at": "2026-11-25T05:04:46.567976+00:00",
+      "fr": {
+        "smoothed_avg": 66.46,
+        "raw_eur": 66.46,
+        "sample_count": 30,
+        "source_name": "Cardmarket (Price Guide EU)",
+        "source_url": "https://www.cardmarket.com/en/Pokemon/Products/Singles/Pok%C3%A9mon-Card-151/Alakazam-ex-%5BMind-Jack-%7C-Dimensional-Hand%5D",
+        "matched_title": "Alakazam ex [Mind Jack | Dimensional Hand]",
+        "cardmarket_trend": 66.46,
+        "graded": {
+          "PSA 10": {
+            "price": 108.58,
+            "price_usd": 119.0,
+            "source": "PriceCharting",
+            "volume": "15+"
+          },
+          "PSA 9": {
+            "price": 64.78,
+            "price_usd": 71.0,
+            "source": "PriceCharting",
+            "volume": "10+"
+          }
+        },
+        "data_type": "sold"
+      },
+      "jp": {
+        "smoothed_avg": 7433,
+        "raw_jpy": 7433,
+        "raw_eur": 42.6,
+        "sample_count": 8,
+        "graded": {
+          "PSA 10": {
+            "price_jpy": 21106,
+            "price_eur": 120.96,
+            "sample_count": 40,
+            "source": "SNKRDUNK JP Sold"
+          },
+          "PSA 9": {
+            "price_jpy": 6750,
+            "price_eur": 38.68,
+            "sample_count": 2,
+            "source": "SNKRDUNK JP Sold"
+          }
+        },
+        "source_name": "SNKRDUNK (Sold JPY)",
+        "source_url": "https://snkrdunk.com/apparels/128119",
+        "data_type": "sold"
+      },
+      "best_direct_spread_eur": 23.86,
+      "best_grading_spread_eur": 40.98,
+      "is_high_value": true
     }
   }
 }

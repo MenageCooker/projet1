@@ -1,19 +1,21 @@
 // ============================================================
-//  PokéSpread JP→FR — Clean Production Architecture v4.0
+//  PokéSpread JP→FR — Clean Production Architecture v5.0
 //  High-Performance Pokémon TCG Arbitrage Platform
 // ============================================================
 
 // ── 1. GLOBAL STATE ──────────────────────────────────────────
 const state = {
-  rate: 174.88,                                        // EUR/JPY live exchange rate
-  usdRate: 1.097,                                      // EUR/USD live rate
+  rate: 174.49,                                        // EUR/JPY live exchange rate
+  usdRate: 1.096,                                      // EUR/USD live rate
   fee: 0,                                              // Platform fee % (0% default)
   shippingCostEur: 0,                                  // Shipping / import fee per card (€)
   costs: {
     resaleFeePct: 0,                                   // Commission revente % (0% default for Vinted/LBC, 13% for eBay)
     importVatPct: 0,                                    // TVA Import % (0% for hand-carry, 20% for shipped)
-    shippingPerCardEur: 0                              // Frais de port / proxy par carte (€)
+    shippingPerCardEur: 0,                             // Frais de port / proxy par carte (€)
+    gradingCostEur: 25                                 // Coût Grading standard par carte (€)
   },
+  arbitrageStrategy: 'best',                           // 'best' (Auto) | 'raw' | 'slab' | 'grading'
   purchasedCards: [],
   visibleCount: { margin: 25, roi: 25, velocity: 25 }, // Pagination steps: 25 -> 100 -> 250 -> 500
   searchQuery: '',
@@ -21,7 +23,7 @@ const state = {
   activeMobileTab: 'margin',                           // 'margin' | 'roi' | 'velocity'
   isLoadingCatalog: false,
   pricingRefFr: 'avg',                                 // 'avg' | 'cardmarket' | 'pricecharting' | 'ebay'
-  pricingRefJp: 'min',                                 // 'min' | 'yuyutei' | 'pricecharting' | 'snkrdunk'
+  pricingRefJp: 'min',                                 // 'min' | 'snkrdunk' | 'yuyutei'
   condition: {
     mode: 'raw',                                       // 'raw' | 'graded'
     rawCondition: 'NM',                                // 'NM' | 'EX' | 'LP' | 'PL'
@@ -65,7 +67,7 @@ function eurToJpy(eur) {
   return Number(eur) * state.rate;
 }
 
-// ── 3. GRADING SCALES & MULTIPLIERS (FALLBACK BENCHMARKS) ────
+// ── 3. GRADING SCALES (STRICT SOLD TRANSACTIONS ONLY — ZERO MULTIPLIERS) ──
 const GRADING_COMPANIES = {
   PSA: { name: 'PSA', grades: ['PSA 10', 'PSA 9', 'PSA 8', 'PSA ≤ 7'] },
   BGS: { name: 'BGS', grades: ['BGS 10 Black Label', 'BGS 10 Pristine', 'BGS 9.5', 'BGS 9', 'BGS ≤ 8.5'] },
@@ -73,27 +75,6 @@ const GRADING_COMPANIES = {
   PCA: { name: 'PCA', grades: ['PCA 10+', 'PCA 10', 'PCA 9.5', 'PCA 9', 'PCA ≤ 8'] },
   ARS: { name: 'ARS', grades: ['ARS 10+', 'ARS 10', 'ARS 9', 'ARS ≤ 8'] },
   ALL: { name: 'Toutes compagnies', grades: ['PSA 10', 'PSA 9', 'BGS 10', 'BGS 9.5', 'CGC 10', 'PCA 10', 'ARS 10'] }
-};
-
-const GRADE_MULTIPLIERS = {
-  'PSA 10': { fr: 2.60, jp: 2.30 },
-  'PSA 9':  { fr: 1.30, jp: 1.25 },
-  'PSA 8':  { fr: 1.00, jp: 0.98 },
-  'BGS 10 Black Label': { fr: 4.80, jp: 4.20 },
-  'BGS 10 Pristine':    { fr: 3.40, jp: 3.00 },
-  'BGS 9.5':            { fr: 1.90, jp: 1.80 },
-  'BGS 9':              { fr: 1.30, jp: 1.25 },
-  'CGC 10 Pristine':    { fr: 3.20, jp: 2.80 },
-  'CGC 10':             { fr: 2.35, jp: 2.15 },
-  'CGC 9.5':            { fr: 1.65, jp: 1.55 },
-  'CGC 9':              { fr: 1.22, jp: 1.18 },
-  'PCA 10+':            { fr: 3.00, jp: 2.60 },
-  'PCA 10':             { fr: 2.20, jp: 2.00 },
-  'PCA 9.5':            { fr: 1.55, jp: 1.45 },
-  'PCA 9':              { fr: 1.20, jp: 1.15 },
-  'ARS 10+':            { fr: 3.60, jp: 3.20 },
-  'ARS 10':             { fr: 2.75, jp: 2.50 },
-  'ARS 9':              { fr: 1.35, jp: 1.30 },
 };
 
 const RAW_CONDITION_MULTIPLIERS = {
@@ -106,13 +87,62 @@ const RAW_CONDITION_MULTIPLIERS = {
 const COUNTRIES = [
   { code: 'JP', name: 'Japon', flag: '🇯🇵' },
   { code: 'FR', name: 'France', flag: '🇫🇷' },
-  { code: 'EN', name: 'Anglais', flag: '🇺🇸' },
+  { code: 'EN', name: 'USA / UK', flag: '🇬🇧' },
   { code: 'KR', name: 'Corée', flag: '🇰🇷' },
-  { code: 'CN', name: 'Chine', flag: '🇨🇳' },
+  { code: 'CN', name: 'Chine / Taïwan', flag: '🇨🇳' },
   { code: 'DE', name: 'Allemagne', flag: '🇩🇪' },
   { code: 'IT', name: 'Italie', flag: '🇮🇹' },
   { code: 'ES', name: 'Espagne', flag: '🇪🇸' },
+  { code: 'PT', name: 'Portugal / Brésil', flag: '🇵🇹' }
 ];
+
+// ── 3B. POKÉAPI SPECIES TRANSLATION SERVICE ──────────────────
+const SpeciesService = {
+  data: null,
+  async load() {
+    try {
+      const res = await fetch('data/species_fr.json');
+      if (res.ok) {
+        this.data = await res.json();
+        console.log(`Loaded ${this.data._meta?.total_mappings || 0} species translations.`);
+      }
+    } catch (e) {
+      console.warn('Could not load species_fr.json:', e);
+    }
+  },
+  translate(rawName) {
+    if (!rawName) return '';
+    if (!this.data) return rawName;
+    const names = this.data.names || {};
+    const trainers = this.data.trainers || {};
+    if (names[rawName]) return names[rawName];
+
+    let clean = rawName;
+    let trainerPfx = '';
+    for (const [pfx, pfxFr] of Object.entries(trainers)) {
+      if (clean.startsWith(pfx)) {
+        trainerPfx = pfxFr;
+        clean = clean.substring(pfx.length);
+        break;
+      }
+    }
+
+    let suffix = '';
+    for (const sfx of ['ex', 'EX', 'VMAX', 'VSTAR', 'V', 'GX', 'LV.X', 'Break']) {
+      if (clean.endsWith(sfx) || clean.endsWith(' ' + sfx)) {
+        suffix = sfx;
+        clean = clean.replace(new RegExp(`\\s*${sfx}$`), '').trim();
+        break;
+      }
+    }
+
+    let baseFr = names[clean] || clean;
+    let res = baseFr;
+    if (suffix) res += ' ' + suffix;
+    if (trainerPfx) res += ' ' + trainerPfx;
+    return res.trim();
+  }
+};
 
 const PRICE_PRESETS_EUR = [
   { label: '0 - 15 €', min: 0, max: 15 },
@@ -249,7 +279,7 @@ const CatalogService = {
 
   async initDB() {
     return new Promise((resolve) => {
-      const request = indexedDB.open('PokéSpreadCatalogDB', 2);
+      const request = indexedDB.open('PokéSpreadCatalogDB', 3);
       request.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains('catalog')) {
@@ -277,10 +307,12 @@ const CatalogService = {
       console.log(`Loaded ${cached.length} cards from IndexedDB cache.`);
       this.populateCards(cached);
       state.isLoadingCatalog = false;
+      // Trigger background hydration in case new sets/editions were added
+      setTimeout(() => this.hydrateBackgroundLanguages(), 2500);
       return cached;
     }
 
-    // 2. Fetch fresh catalog from TCGdex API
+    // 2. Fetch fresh catalog from TCGdex API (Priority 1 blocking: JA, FR, EN)
     try {
       const cards = await this.fetchRemoteTCGdexCatalog();
       if (cards && cards.length > 0) {
@@ -351,62 +383,103 @@ const CatalogService = {
   },
 
   async fetchRemoteTCGdexCatalog() {
-    const languages = [
+    // Priority 1: Blocking boot (JA, FR, EN)
+    const priority1 = [
       { lang: 'ja', edition: 'JP' },
       { lang: 'fr', edition: 'FR' },
+      { lang: 'en', edition: 'EN' }
     ];
 
-    const allCards = [];
+    const initialCards = [];
+    for (const { lang, edition } of priority1) {
+      const cards = await this.fetchLanguageCards(lang, edition);
+      initialCards.push(...cards);
+    }
 
-    for (const { lang, edition } of languages) {
+    // Priority 2: Asynchronous background hydration (non-blocking)
+    setTimeout(() => {
+      this.hydrateBackgroundLanguages();
+    }, 2000);
+
+    return initialCards;
+  },
+
+  async hydrateBackgroundLanguages() {
+    const backgroundLangs = [
+      { lang: 'ko', edition: 'KR' },
+      { lang: 'de', edition: 'DE' },
+      { lang: 'it', edition: 'IT' },
+      { lang: 'es', edition: 'ES' },
+      { lang: 'pt', edition: 'PT' }
+    ];
+
+    let hasNewCards = false;
+    for (const { lang, edition } of backgroundLangs) {
       try {
-        // Fetch sets for official counts
-        const setsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/sets`);
-        const setMap = new Map();
-        if (setsRes.ok) {
-          const setsList = await setsRes.json();
-          for (const s of setsList) {
-            const cc = s.cardCount || {};
-            setMap.set(s.id, {
-              official: String(cc.official || cc.total || '---'),
-              name: s.name || s.id
-            });
-          }
+        const cards = await this.fetchLanguageCards(lang, edition);
+        if (cards && cards.length > 0) {
+          this.cards.push(...cards);
+          hasNewCards = true;
         }
-
-        // Fetch cards bulk
-        const cardsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/cards`);
-        if (cardsRes.ok) {
-          const cardItems = await cardsRes.json();
-          for (const c of cardItems) {
-            if (!c.id || !c.localId || !c.name || !c.image) continue;
-            const setId = c.id.includes('-') ? c.id.split('-')[0] : c.id;
-            const sMeta = setMap.get(setId) || {};
-            const officialCount = sMeta.official || '---';
-
-            const ref = officialCount !== '---' ? `${setId} ${c.localId}/${officialCount}` : `${setId} ${c.localId}`;
-
-            allCards.push({
-              id: `${lang}-${c.id}`,
-              raw_id: c.id,
-              ref: ref,
-              local_id: String(c.localId),
-              official_count: officialCount,
-              set_id: setId,
-              name: c.name,
-              name_ja: edition === 'JP' ? c.name : '',
-              edition: edition,
-              lang: lang,
-              image: c.image
-            });
-          }
-        }
-      } catch (err) {
-        console.warn(`Failed loading cards for ${lang}:`, err);
+      } catch (e) {
+        console.warn(`Background hydration skipped for ${lang}:`, e);
       }
     }
 
-    return allCards;
+    if (hasNewCards) {
+      this.populateCards(this.cards);
+      this.cacheCards(this.cards);
+      if (!state.searchQuery && !state.focusCol) {
+        renderAllColumns();
+      }
+    }
+  },
+
+  async fetchLanguageCards(lang, edition) {
+    try {
+      const setsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/sets`);
+      const setMap = new Map();
+      if (setsRes.ok) {
+        const setsList = await setsRes.json();
+        for (const s of setsList) {
+          const cc = s.cardCount || {};
+          setMap.set(s.id, {
+            official: String(cc.official || cc.total || '---'),
+            name: s.name || s.id
+          });
+        }
+      }
+
+      const cardsRes = await fetch(`https://api.tcgdex.net/v2/${lang}/cards`);
+      if (!cardsRes.ok) return [];
+      const cardItems = await cardsRes.json();
+      const result = [];
+      for (const c of cardItems) {
+        if (!c.id || !c.localId || !c.name || !c.image) continue;
+        const setId = c.id.includes('-') ? c.id.split('-')[0] : c.id;
+        const sMeta = setMap.get(setId) || {};
+        const officialCount = sMeta.official || '---';
+        const ref = officialCount !== '---' ? `${setId} ${c.localId}/${officialCount}` : `${setId} ${c.localId}`;
+
+        result.push({
+          id: `${lang}-${c.id}`,
+          raw_id: c.id,
+          ref: ref,
+          local_id: String(c.localId),
+          official_count: officialCount,
+          set_id: setId,
+          name: c.name,
+          name_ja: edition === 'JP' ? c.name : '',
+          edition: edition,
+          lang: lang,
+          image: c.image
+        });
+      }
+      return result;
+    } catch (e) {
+      console.warn(`Failed loading cards for ${lang}:`, e);
+      return [];
+    }
   },
 
   populateCards(cardList) {
@@ -420,19 +493,23 @@ const CatalogService = {
       this.indexedCardsMap.set(c.id.toLowerCase(), c);
     }
 
-    // Attach prices from priceMap directly
+    // Attach prices and translations
     for (const c of this.cards) {
       const priced = PriceService.getExactPrice(c);
       if (priced) {
         c.pricedRecord = priced;
-        if (priced.name_fr && c.edition === 'JP') {
+        c.best_direct_spread_eur = priced.best_direct_spread_eur;
+        c.best_grading_spread_eur = priced.best_grading_spread_eur;
+        if (priced.name_fr) {
           c.displayName = priced.name_fr;
           c.subName = priced.name_ja || c.name;
         } else {
-          c.displayName = c.name;
+          c.displayName = SpeciesService.translate(c.name);
+          c.subName = c.name !== c.displayName ? c.name : (c.name_ja || '');
         }
       } else {
-        c.displayName = c.name;
+        c.displayName = SpeciesService.translate(c.name);
+        c.subName = c.name !== c.displayName ? c.name : (c.name_ja || '');
       }
     }
   }
@@ -446,26 +523,25 @@ function getActiveFrPrice(card, customGradeOrCondition = null) {
 
   const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
 
-  // If graded mode is selected
+  // If graded mode is selected: strictly verified transactions only (0 fake multipliers)
   if (slabKey && slabKey !== 'raw_nm') {
-    // 1. Check if real verified graded transaction exists
     const gradedRec = p.fr.graded?.[slabKey];
     if (gradedRec?.price && Number(gradedRec.price) > 0) {
       return Number(gradedRec.price);
-    }
-    // 2. Otherwise apply authentic grade multiplier to raw price
-    const rawFr = p.fr.smoothed_avg || p.fr.raw_eur;
-    if (rawFr && Number(rawFr) > 0) {
-      const mult = GRADE_MULTIPLIERS[slabKey]?.fr || 2.20;
-      return Number((rawFr * mult).toFixed(2));
     }
     return null;
   }
 
   // Raw condition calculation
-  let rawFr = p.fr.smoothed_avg || p.fr.raw_eur || p.fr.cardmarket_trend;
-  if (state.pricingRefFr === 'ebay' && p.fr.source_name?.includes('eBay')) {
-    rawFr = p.fr.raw_eur || rawFr;
+  let rawFr = null;
+  if (state.pricingRefFr === 'cardmarket') {
+    rawFr = p.fr.cardmarket_trend || p.fr.raw_eur || p.fr.smoothed_avg;
+  } else if (state.pricingRefFr === 'ebay') {
+    rawFr = p.fr.raw_eur || p.fr.smoothed_avg;
+  } else if (state.pricingRefFr === 'pricecharting') {
+    rawFr = p.fr.raw_eur || p.fr.smoothed_avg;
+  } else {
+    rawFr = p.fr.smoothed_avg || p.fr.raw_eur || p.fr.cardmarket_trend;
   }
   if (!rawFr || Number(rawFr) <= 0) return null;
 
@@ -481,24 +557,28 @@ function getActiveJpPrice(card, customGradeOrCondition = null) {
 
   const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
 
-  // If graded mode is selected
+  // If graded mode is selected: strictly verified transactions only (0 fake multipliers)
   if (slabKey && slabKey !== 'raw_nm') {
     const gradedRec = p.jp.graded?.[slabKey];
-    if (gradedRec?.price && Number(gradedRec.price) > 0) {
-      return Number(gradedRec.price);
-    }
-    const rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
-    if (rawJp && Number(rawJp) > 0) {
-      const mult = GRADE_MULTIPLIERS[slabKey]?.jp || 2.00;
-      return Math.round(rawJp * mult);
+    if (gradedRec) {
+      if (gradedRec.price_jpy && Number(gradedRec.price_jpy) > 0) {
+        return Math.round(Number(gradedRec.price_jpy));
+      }
+      if (gradedRec.price && Number(gradedRec.price) > 0) {
+        return Math.round(Number(gradedRec.price));
+      }
     }
     return null;
   }
 
   // Raw condition calculation
-  let rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
-  if (state.pricingRefJp === 'yuyutei' && p.jp.source_name?.includes('Yuyu-tei')) {
-    rawJp = p.jp.raw_jpy || rawJp;
+  let rawJp = null;
+  if (state.pricingRefJp === 'snkrdunk') {
+    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
+  } else if (state.pricingRefJp === 'yuyutei') {
+    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
+  } else {
+    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
   }
   if (!rawJp || Number(rawJp) <= 0) return null;
 
@@ -507,41 +587,148 @@ function getActiveJpPrice(card, customGradeOrCondition = null) {
   return Math.round(rawJp * condMult);
 }
 
-function netMargin(card, customGrade = null) {
-  const frSell = getActiveFrPrice(card, customGrade);
-  const jpBuyYen = getActiveJpPrice(card, customGrade);
+// ── 6B. BEST ARBITRAGE OPPORTUNITY EVALUATOR ──────────────────
+function getBestArbitrageOpportunity(card, requestedStrategy = null) {
+  if (!card) return null;
+  const p = card.pricedRecord || PriceService.getExactPrice(card);
+  if (!p) return null;
 
-  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) {
-    return null;
+  const strategy = requestedStrategy || state.arbitrageStrategy || 'best';
+  const vatRate = (state.costs?.importVatPct || 0) / 100;
+  const feeRate = (state.costs?.resaleFeePct || 0) / 100;
+  const shipping = state.costs?.shippingPerCardEur || 0;
+  const gradingCost = state.costs?.gradingCostEur != null ? state.costs.gradingCostEur : 25;
+
+  const opportunities = [];
+
+  // 1. Direct Raw Arbitrage (JP Raw -> FR Raw)
+  const rawFr = (p.fr?.raw_eur || p.fr?.smoothed_avg || p.fr?.cardmarket_trend) ? getActiveFrPrice(card, 'raw_nm') : null;
+  const rawJpYen = (p.jp?.raw_jpy || p.jp?.smoothed_avg) ? getActiveJpPrice(card, 'raw_nm') : null;
+  if (rawFr && rawJpYen && rawFr > 0 && rawJpYen > 0) {
+    const rawJpEur = jpToEur(rawJpYen);
+    const costWithVat = rawJpEur * (1 + vatRate);
+    const totalCost = costWithVat + shipping + (rawFr * feeRate);
+    const net = Number((rawFr - totalCost).toFixed(2));
+    const roi = totalCost > 0 ? Number((((rawFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
+    opportunities.push({
+      type: 'raw',
+      label: 'Direct Raw (NM)',
+      badge: '📦 Direct Raw',
+      jpPriceYen: rawJpYen,
+      jpPriceEur: rawJpEur,
+      frSellEur: rawFr,
+      netMarginEur: net,
+      roiPct: roi,
+      totalCostEur: totalCost,
+      sourceFr: p.fr?.source_name || 'Cardmarket/eBay',
+      sourceJp: p.jp?.source_name || 'SNKRDUNK'
+    });
   }
+
+  // 2. Direct Slab Arbitrage (JP Slab -> FR Slab)
+  const slabCandidates = [state.condition.grade, 'PSA 10', 'PSA 9', 'BGS 9.5', 'ARS 10'].filter(Boolean);
+  for (const grade of slabCandidates) {
+    const slabFr = p.fr?.graded?.[grade]?.price ? Number(p.fr.graded[grade].price) : null;
+    const slabJpYen = p.jp?.graded?.[grade]?.price_jpy ? Number(p.jp.graded[grade].price_jpy) : (p.jp?.graded?.[grade]?.price ? Number(p.jp.graded[grade].price) : null);
+    if (slabFr && slabJpYen && slabFr > 0 && slabJpYen > 0) {
+      const slabJpEur = jpToEur(slabJpYen);
+      const costWithVat = slabJpEur * (1 + vatRate);
+      const totalCost = costWithVat + shipping + (slabFr * feeRate);
+      const net = Number((slabFr - totalCost).toFixed(2));
+      const roi = totalCost > 0 ? Number((((slabFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
+      opportunities.push({
+        type: 'slab',
+        label: `Slab ${grade}`,
+        badge: `💎 Slab ${grade}`,
+        grade: grade,
+        jpPriceYen: slabJpYen,
+        jpPriceEur: slabJpEur,
+        frSellEur: slabFr,
+        netMarginEur: net,
+        roiPct: roi,
+        totalCostEur: totalCost,
+        sourceFr: p.fr.graded[grade].source || 'PriceCharting / eBay FR',
+        sourceJp: p.jp.graded[grade].source || 'SNKRDUNK'
+      });
+      break; // Take the highest available slab match
+    }
+  }
+
+  // 3. Grading Leverage Arbitrage (Raw JP + 25€ -> PSA 10 FR)
+  const targetGrade = 'PSA 10';
+  const targetSlabFr = p.fr?.graded?.[targetGrade]?.price ? Number(p.fr.graded[targetGrade].price) : null;
+  if (rawJpYen && targetSlabFr && rawJpYen > 0 && targetSlabFr > 0) {
+    const rawJpEur = jpToEur(rawJpYen);
+    const costWithVat = rawJpEur * (1 + vatRate);
+    const totalCost = costWithVat + shipping + gradingCost + (targetSlabFr * feeRate);
+    const net = Number((targetSlabFr - totalCost).toFixed(2));
+    const roi = totalCost > 0 ? Number((((targetSlabFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
+    opportunities.push({
+      type: 'grading',
+      label: `Levier Grading (Raw JP → ${targetGrade} FR)`,
+      badge: `⚡ Levier Grading`,
+      grade: targetGrade,
+      gradingCostEur: gradingCost,
+      jpPriceYen: rawJpYen,
+      jpPriceEur: rawJpEur,
+      frSellEur: targetSlabFr,
+      netMarginEur: net,
+      roiPct: roi,
+      totalCostEur: totalCost,
+      sourceFr: p.fr.graded[targetGrade].source || 'PriceCharting / eBay FR',
+      sourceJp: p.jp?.source_name || 'SNKRDUNK'
+    });
+  }
+
+  if (opportunities.length === 0) return null;
+
+  if (strategy === 'raw') {
+    return opportunities.find(o => o.type === 'raw') || null;
+  }
+  if (strategy === 'slab') {
+    return opportunities.find(o => o.type === 'slab') || null;
+  }
+  if (strategy === 'grading') {
+    return opportunities.find(o => o.type === 'grading') || null;
+  }
+
+  // 'best' mode: highest net margin in €
+  opportunities.sort((a, b) => b.netMarginEur - a.netMarginEur);
+  return opportunities[0];
+}
+
+function netMargin(card) {
+  const opp = getBestArbitrageOpportunity(card);
+  if (opp) return opp.netMarginEur;
+
+  // Fallback to active prices if incomplete
+  const frSell = getActiveFrPrice(card);
+  const jpBuyYen = getActiveJpPrice(card);
+  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) return null;
 
   const jpBuyEur = jpToEur(jpBuyYen);
   const vatRate = (state.costs?.importVatPct || 0) / 100;
   const feeRate = (state.costs?.resaleFeePct || 0) / 100;
   const shipping = state.costs?.shippingPerCardEur || 0;
-
   const jpCostWithVat = jpBuyEur * (1 + vatRate);
   const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
-
   return Number((frSell - totalCost).toFixed(2));
 }
 
-function netROI(card, customGrade = null) {
-  const frSell = getActiveFrPrice(card, customGrade);
-  const jpBuyYen = getActiveJpPrice(card, customGrade);
+function netROI(card) {
+  const opp = getBestArbitrageOpportunity(card);
+  if (opp) return opp.roiPct;
 
-  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) {
-    return null;
-  }
+  const frSell = getActiveFrPrice(card);
+  const jpBuyYen = getActiveJpPrice(card);
+  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) return null;
 
   const jpBuyEur = jpToEur(jpBuyYen);
   const vatRate = (state.costs?.importVatPct || 0) / 100;
   const feeRate = (state.costs?.resaleFeePct || 0) / 100;
   const shipping = state.costs?.shippingPerCardEur || 0;
-
   const jpCostWithVat = jpBuyEur * (1 + vatRate);
   const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
-
   if (totalCost <= 0) return 0;
   return Number((((frSell - totalCost) / totalCost) * 100).toFixed(1));
 }
@@ -591,13 +778,14 @@ function cardMatchesFilters(card) {
     }
   }
 
-  const frPrice = getActiveFrPrice(card);
-  const jpPriceYen = getActiveJpPrice(card);
+  const opp = getBestArbitrageOpportunity(card);
+  const frPrice = opp ? opp.frSellEur : getActiveFrPrice(card);
+  const jpPriceYen = opp ? opp.jpPriceYen : getActiveJpPrice(card);
   const jpPriceEur = jpPriceYen ? jpToEur(jpPriceYen) : null;
 
   // 3. Complete Opportunities Toggle (Strictly JP + FR priced)
   if (state.filters.pricedOnly) {
-    if (frPrice == null || jpPriceYen == null) {
+    if (opp == null && (frPrice == null || jpPriceYen == null)) {
       return false;
     }
   }
@@ -626,17 +814,15 @@ function getSortedOpportunities() {
   const catalog = CatalogService.cards;
   const filtered = catalog.filter(cardMatchesFilters);
 
-  // Group cards into:
-  // A: Fully priced on BOTH sides (JP + FR) -> ALWAYS appear first
-  // B: Partially priced (FR only or JP only)
-  // C: Unpriced
-
   function categorize(card) {
+    const opp = getBestArbitrageOpportunity(card);
+    if (opp && opp.netMarginEur > 0) return 0; // Confirmed positive profit arbitrage
+    if (opp && opp.netMarginEur <= 0) return 1; // Breakeven or negative arbitrage
     const fr = getActiveFrPrice(card);
     const jp = getActiveJpPrice(card);
-    if (fr != null && jp != null) return 0; // Both verified
-    if (fr != null || jp != null) return 1; // Partial
-    return 2;                               // Unpriced
+    if (fr != null && jp != null) return 2;     // Both priced
+    if (fr != null || jp != null) return 3;     // Partial
+    return 4;                                   // Unpriced
   }
 
   // 1. MEILLEURE MARGE (€)
@@ -654,18 +840,22 @@ function getSortedOpportunities() {
     return frB - frA;
   });
 
-  // 2. MEILLEUR ROI (%)
+  // 2. MEILLEUR ROI (%) with margin floor >= 5€
   const byROI = [...filtered].sort((a, b) => {
     const catA = categorize(a);
     const catB = categorize(b);
     if (catA !== catB) return catA - catB;
 
+    const mA = netMargin(a) ?? -Infinity;
+    const mB = netMargin(b) ?? -Infinity;
+    const floorA = mA >= 5 ? 0 : 1;
+    const floorB = mB >= 5 ? 0 : 1;
+    if (floorA !== floorB) return floorA - floorB;
+
     const rA = netROI(a) ?? -Infinity;
     const rB = netROI(b) ?? -Infinity;
     if (rA !== rB) return rB - rA;
 
-    const mA = netMargin(a) ?? -Infinity;
-    const mB = netMargin(b) ?? -Infinity;
     return mB - mA;
   });
 
@@ -708,20 +898,29 @@ function onCardImageError(imgEl) {
 
 function renderCardTile(card, rank) {
   const p = card.pricedRecord || PriceService.getExactPrice(card);
-  const frSell = getActiveFrPrice(card);
-  const jpBuyYen = getActiveJpPrice(card);
-  const jpBuyEur = jpBuyYen ? jpToEur(jpBuyYen) : null;
-  const margin = netMargin(card);
-  const roi = netROI(card);
+  const opp = getBestArbitrageOpportunity(card);
+  const frSell = opp ? opp.frSellEur : getActiveFrPrice(card);
+  const jpBuyYen = opp ? opp.jpPriceYen : getActiveJpPrice(card);
+  const jpBuyEur = opp ? opp.jpPriceEur : (jpBuyYen ? jpToEur(jpBuyYen) : null);
+  const margin = opp ? opp.netMarginEur : netMargin(card);
+  const roi = opp ? opp.roiPct : netROI(card);
   const liquidity = getCardLiquidity(card);
 
   const hasBoth = frSell != null && jpBuyYen != null;
   const isJpOnly = jpBuyYen != null && frSell == null;
   const isFrOnly = frSell != null && jpBuyYen == null;
 
-  // Status badge
+  // Status & strategy badge
   let statusBadgeHtml = '';
-  if (hasBoth) {
+  if (opp && opp.type === 'grading') {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-full px-2 py-0.5 shadow-xs">
+      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ⚡ Levier Grading
+    </span>`;
+  } else if (opp && opp.type === 'slab') {
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-300 rounded-full px-2 py-0.5">
+      💎 Slab ${opp.grade}
+    </span>`;
+  } else if (hasBoth) {
     statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Arbitrage Confirmé
     </span>`;
@@ -737,18 +936,28 @@ function renderCardTile(card, rank) {
     statusBadgeHtml = `<span class="text-[10px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">En attente de prix</span>`;
   }
 
-  // Active condition / slab label
-  const slabLabel = state.condition.mode === 'graded' ? state.condition.grade : state.condition.rawCondition;
+  // Active condition label
+  let conditionLabel = '';
+  if (opp && opp.type === 'grading') {
+    conditionLabel = `⚡ Raw JP → PSA 10 FR (+${opp.gradingCostEur || 25}€ grading)`;
+  } else if (opp && opp.type === 'slab') {
+    conditionLabel = `💎 ${opp.grade}`;
+  } else if (state.condition.mode === 'graded') {
+    conditionLabel = `💎 ${state.condition.grade}`;
+  } else {
+    conditionLabel = `📦 Non-gradé (${state.condition.rawCondition})`;
+  }
 
-  const flag = card.edition === 'JP' ? '🇯🇵' : (card.edition === 'FR' ? '🇫🇷' : '🌐');
+  const flagMap = { JP: '🇯🇵', FR: '🇫🇷', EN: '🇬🇧', KR: '🇰🇷', CN: '🇨🇳', DE: '🇩🇪', IT: '🇮🇹', ES: '🇪🇸', PT: '🇵🇹' };
+  const flag = flagMap[card.edition] || '🌐';
   const imgUrl = formatHighResCardImage(card.image);
 
   // Sold vs Shop data type labeling
-  const jpSource = p?.jp?.source_name || '';
+  const jpSource = opp?.sourceJp || p?.jp?.source_name || '';
   const isJpShop = jpSource.includes('Yuyu-tei') || p?.jp?.data_type === 'shop';
   const jpBadge = jpBuyYen ? (isJpShop 
     ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-amber-700 bg-amber-50 border-amber-200" title="Prix boutique JP (Yuyu-tei)">Boutique</span>' 
-    : '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-emerald-700 bg-emerald-50 border-emerald-200" title="Ventes conclues (SNKRDUNK/PriceCharting)">Vente</span>') : '';
+    : '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-emerald-700 bg-emerald-50 border-emerald-200" title="Ventes conclues (SNKRDUNK)">Vente</span>') : '';
 
   return `
     <div class="card-tile bg-white border border-slate-200 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between"
@@ -779,8 +988,8 @@ function renderCardTile(card, rank) {
           <div class="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1">
             ${card.ref}
           </div>
-          <div class="text-[10px] text-purple-600 font-semibold mt-1">
-            💎 ${slabLabel}
+          <div class="text-[10px] font-semibold mt-1 ${opp?.type === 'grading' ? 'text-amber-700' : 'text-purple-600'}">
+            ${conditionLabel}
           </div>
         </div>
       </div>
@@ -798,7 +1007,7 @@ function renderCardTile(card, rank) {
         <div>
           <div class="flex items-center gap-1 mb-0.5">
             <span class="text-[10px] text-slate-400 font-semibold uppercase block">Revente FR</span>
-            ${frSell ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-indigo-700 bg-indigo-50 border-indigo-200" title="Ventes conclues (PriceCharting/eBay)">Vente</span>' : ''}
+            ${frSell ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-indigo-700 bg-indigo-50 border-indigo-200" title="Ventes conclues (Cardmarket/PriceCharting/eBay)">Vente</span>' : ''}
           </div>
           <span class="font-bold text-slate-800 text-xs sm:text-sm">${fmtEur(frSell)}</span>
           <span class="text-[10px] text-slate-400 block">${liquidity > 0 ? `${liquidity} ventes` : '—'}</span>

@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """
-PokéSpread JP→FR — Clean-Slate Production Price Pipeline v4.0
+PokéSpread JP→FR — Clean Production Arbitrage Pipeline v5.0
 =============================================================
-Architectural Specifications:
+Core Rules (Non-Negotiable):
 1. Strict Zero-Hardcoding: Real market transactions only, zero fabricated multipliers.
 2. Strict Exact Matching: Verified set + card name + number matching (no loose number-only queries).
-3. Japanese Acquisition Pricing:
-   - PriceCharting Japanese Pokémon Card market (Ungraded, Grade 9, PSA 10 sold sales in USD converted via live FX)
-   - Yuyu-tei Japanese single-card shop (real JPY acquisition prices with exact card number verification)
-4. European / French Resale Pricing:
-   - PriceCharting Japanese card realized sales in EUR
-   - Cardmarket trendPrice / avg7 / avg30 via Pokémon TCG API (strict name + number verification)
-   - eBay FR Completed/Sold listings with circuit-breaker protection
-5. Outlier Trimming & Audit Trail:
-   - 10% trimmed mean on sample sizes >= 4
-   - Audit metadata: matched_title, source_name, source_url, sample_count
-6. High-Value Chase Card Prioritization:
-   - Auto-discovers official sets from TCGdex (/v2/ja/sets, /v2/fr/sets)
-   - Prioritizes Secret Rares, SAR, SR, UR, AR, CSR, CHR, Master Ball, ex, VMAX, VSTAR, GX, Alt Arts
-   - PokéAPI species list mapping Japanese -> French -> English names
-7. CLI Support:
-   - --test 10 : Fast local test of 10 chase cards in ~15-20 seconds with rich output table
+3. Decoupled Buy vs Resale:
+   - Japanese Buy (jp): SNKRDUNK JSON API (real sold transactions in JPY, Raw + PSA 10/9/ARS/BGS).
+     Strict unit rule: `price_jpy` (int JPY) and `price_eur` (float EUR). No PriceCharting on JP side!
+   - European Resale (fr): Cardmarket Official Price Guide JSON (singles + price_guide_6.json in EUR),
+     eBay Official Browse API (FR slabs), PriceCharting (international resale & slabs).
+4. Top 20 High-Margin Prioritization:
+   - Tier 1: SAR, SIR, Alt Arts, Gold UR, JP exclusive promos, Master Balls.
+   - Tier 2: Modern SAR/SR/UR/Secrets in multi-editions.
+   - Tier 3: Standard ARs.
+5. Multi-language Translation:
+   - Pokémon species translations across JA, KO, ZH, EN -> FR.
+   - Trainer prefixes dictionary (e.g. シロナの -> de Cynthia, ヒビキの -> de Luth).
+6. Precalculated Arbitrage Audit Fields:
+   - best_direct_spread_eur (Raw JP -> Raw FR or PSA 10 JP -> PSA 10 FR)
+   - best_grading_spread_eur (Raw JP + 25€ -> PSA 10 FR)
+   - is_high_value (resale >= 50€)
 """
 
 import os
@@ -72,10 +72,17 @@ logger = logging.getLogger("pokespread")
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_FILE = os.path.join(ROOT_DIR, "prices.json")
 CACHE_DIR = os.path.join(ROOT_DIR, "scraper", ".cache")
+DATA_DIR = os.path.join(ROOT_DIR, "data")
 os.makedirs(CACHE_DIR, exist_ok=True)
-SPECIES_CACHE_FILE = os.path.join(CACHE_DIR, "species_names.json")
+os.makedirs(DATA_DIR, exist_ok=True)
 
-# Default HTTP Headers
+SPECIES_CACHE_FILE = os.path.join(CACHE_DIR, "species_names.json")
+SNKRDUNK_IDS_CACHE = os.path.join(CACHE_DIR, "snkrdunk_ids.json")
+CARDMARKET_SINGLES_CACHE = os.path.join(CACHE_DIR, "products_singles_6.json")
+CARDMARKET_PRICEGUIDE_CACHE = os.path.join(CACHE_DIR, "price_guide_6.json")
+CARDMARKET_NONSINGLES_CACHE = os.path.join(CACHE_DIR, "products_nonsingles_6.json")
+FRONTEND_SPECIES_JSON = os.path.join(DATA_DIR, "species_fr.json")
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -92,16 +99,17 @@ HEADERS = {
 CIRCUIT_BREAKER_THRESHOLD = 5
 
 CIRCUIT_BREAKERS: Dict[str, Dict[str, Any]] = {
-    "ebay_fr": {"consecutive_errors": 0, "tripped": False},
-    "yuyutei": {"consecutive_errors": 0, "tripped": False},
     "snkrdunk": {"consecutive_errors": 0, "tripped": False},
+    "cardmarket": {"consecutive_errors": 0, "tripped": False},
     "pricecharting": {"consecutive_errors": 0, "tripped": False},
-    "pokemontcg_api": {"consecutive_errors": 0, "tripped": False},
+    "ebay_browse": {"consecutive_errors": 0, "tripped": False},
+    "mercari_jp": {"consecutive_errors": 0, "tripped": False},
 }
 
-circuit_lock = threading.Lock()
-db_lock = threading.Lock()
-save_lock = threading.Lock()
+circuit_lock = threading.RLock()
+db_lock = threading.RLock()
+save_lock = threading.RLock()
+snkrdunk_id_lock = threading.RLock()
 _thread_local = threading.local()
 
 
@@ -119,7 +127,7 @@ def report_circuit_failure(name: str, status_code: Optional[int] = None):
             if not cb["tripped"] and cb["consecutive_errors"] >= CIRCUIT_BREAKER_THRESHOLD:
                 cb["tripped"] = True
                 logger.warning(
-                    f"⚡ [CIRCUIT BREAKER TRIPPED] '{name}' disabled for the remainder of this run "
+                    f"⚡ [CIRCUIT BREAKER TRIPPED] '{name}' disabled for remainder of this run "
                     f"after {cb['consecutive_errors']} consecutive failures/blocks (HTTP {status_code or 'ERR'})."
                 )
 
@@ -134,7 +142,7 @@ def is_circuit_tripped(name: str) -> bool:
 # ---------------------------------------------------------------------------
 def create_session() -> requests.Session:
     sess = requests.Session()
-    retries = Retry(total=2, backoff_factor=0.4, status_forcelist=[429, 500, 502, 503, 504])
+    retries = Retry(total=2, backoff_factor=0.3, status_forcelist=[429, 500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retries, pool_connections=12, pool_maxsize=12)
     sess.mount("https://", adapter)
     sess.mount("http://", adapter)
@@ -172,7 +180,7 @@ def fetch_live_fx_rates() -> Dict[str, float]:
                 "USD_EUR": round(1.0 / eur_usd, 6),
             }
     except Exception as e:
-        logger.warning(f"Could not fetch live FX rates ({e}); using safe default benchmarks.")
+        logger.warning(f"Could not fetch live FX rates ({e}); using default benchmarks.")
     return {
         "EUR_JPY": 174.88,
         "EUR_USD": 1.097,
@@ -183,893 +191,903 @@ def fetch_live_fx_rates() -> Dict[str, float]:
 
 
 # ---------------------------------------------------------------------------
-# PokéAPI Global Species Translation Catalog
+# Multi-Language Translations & Trainer Prefixes
 # ---------------------------------------------------------------------------
-def fetch_pokemon_species_mapping() -> Dict[str, Dict[str, str]]:
+TRAINER_PREFIXES_JA = {
+    "シロナの": "de Cynthia",
+    "ヒビキの": "de Luth",
+    "ナンジャモの": "de Mashynn",
+    "リーリエの": "de Lilie",
+    "Nの": "de N",
+    "マリィの": "de Rosemary",
+    "ダイゴの": "de Pierre",
+    "ホップ de ": "de Nabil",
+    "ホップの": "de Nabil",
+    "ロケット団の": "de la Team Rocket",
+    "カスミの": "d'Ondine",
+    "エリカの": "d'Erika",
+    "サカキの": "de Giovanni",
+    "アローラの": "d'Alola",
+    "ガラルの": "de Galar",
+    "ヒスイ": "de Hisui",
+    "パルデア": "de Paldea",
+    "たいようのすがた": "(Forme Solaire)",
+    "あまみずのすがた": "(Forme Eau de Pluie)",
+}
+
+
+def build_and_save_species_catalog() -> Dict[str, Any]:
     """
-    Loads complete 1025+ species names across JA, FR, and EN.
-    Uses PokeAPI official raw CSV with local disk cache.
+    Downloads and indexes complete PokéAPI species names across JA, KO, ZH, EN -> FR.
+    Saves to data/species_fr.json for frontend use.
     """
-    if os.path.exists(SPECIES_CACHE_FILE):
+    url = "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_species_names.csv"
+    try:
+        r = GLOBAL_SESSION.get(url, timeout=12)
+        if r.status_code == 200:
+            reader = csv.DictReader(io.StringIO(r.text))
+            species: Dict[int, Dict[int, str]] = {}
+            for row in reader:
+                sid = int(row['pokemon_species_id'])
+                lid = int(row['local_language_id'])
+                species.setdefault(sid, {})[lid] = row['name'].strip()
+
+            name_to_fr: Dict[str, str] = {}
+            ja_to_names: Dict[str, Dict[str, str]] = {}
+
+            for sid, langs in species.items():
+                fr = langs.get(5) or langs.get(9) or ""
+                en = langs.get(9) or fr
+                ja = langs.get(1) or ""
+                if not fr:
+                    continue
+
+                if ja:
+                    ja_to_names[ja] = {"fr": fr, "en": en, "dexId": str(sid)}
+
+                for lid in [1, 3, 4, 12, 9, 6, 7, 8]:
+                    src = langs.get(lid)
+                    if src and src not in name_to_fr:
+                        name_to_fr[src] = fr
+
+            payload = {
+                "_meta": {
+                    "version": "5.0.0",
+                    "species_count": len(species),
+                    "total_mappings": len(name_to_fr),
+                    "generated_at": datetime.now(timezone.utc).isoformat()
+                },
+                "trainers": TRAINER_PREFIXES_JA,
+                "names": name_to_fr,
+                "ja_to_names": ja_to_names,
+            }
+
+            with open(FRONTEND_SPECIES_JSON, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+
+            with open(SPECIES_CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, indent=2)
+
+            logger.info(f"Loaded and saved {len(name_to_fr)} species translations to data/species_fr.json.")
+            return payload
+    except Exception as e:
+        logger.warning(f"Error downloading species CSV ({e}); checking local cache.")
+
+    if os.path.exists(FRONTEND_SPECIES_JSON):
         try:
-            with open(SPECIES_CACHE_FILE, "r", encoding="utf-8") as f:
-                cached = json.load(f)
-                if len(cached.get("ja_to_names", {})) > 800:
-                    logger.info(f"Loaded {len(cached['ja_to_names'])} Pokémon species translations from local cache.")
-                    return cached
+            with open(FRONTEND_SPECIES_JSON, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"names": {}, "ja_to_names": {}, "trainers": TRAINER_PREFIXES_JA}
+
+
+def translate_card_name(raw_name: str, species_catalog: Dict[str, Any]) -> Tuple[str, str]:
+    """Translates card name into French and English handling trainer prefixes and suffixes."""
+    if not raw_name:
+        return "", ""
+
+    ja_to_names = species_catalog.get("ja_to_names", {})
+    name_map = species_catalog.get("names", {})
+    trainers = species_catalog.get("trainers", TRAINER_PREFIXES_JA)
+
+    # Check direct match
+    if raw_name in ja_to_names:
+        rec = ja_to_names[raw_name]
+        return rec.get("fr", raw_name), rec.get("en", raw_name)
+    if raw_name in name_map:
+        fr = name_map[raw_name]
+        return fr, raw_name
+
+    # Check trainer prefix
+    matched_prefix_fr = ""
+    clean_name = raw_name
+    for pfx, pfx_fr in trainers.items():
+        if clean_name.startswith(pfx):
+            matched_prefix_fr = pfx_fr
+            clean_name = clean_name[len(pfx):]
+            break
+
+    # Strip mechanics suffixes (ex, VMAX, VSTAR, V, GX, etc.)
+    suffix = ""
+    for sfx in ["ex", "EX", "VMAX", "VSTAR", "V", "GX", "LV.X", "Break", "BREAK"]:
+        if clean_name.endswith(sfx) or clean_name.endswith(" " + sfx):
+            suffix = sfx
+            clean_name = re.sub(rf'\s*{sfx}$', '', clean_name).strip()
+            break
+
+    base_fr = name_map.get(clean_name, clean_name)
+    base_en = clean_name
+    if clean_name in ja_to_names:
+        base_fr = ja_to_names[clean_name].get("fr", clean_name)
+        base_en = ja_to_names[clean_name].get("en", clean_name)
+
+    res_fr = base_fr
+    res_en = base_en
+    if suffix:
+        res_fr = f"{res_fr} {suffix}"
+        res_en = f"{res_en} {suffix}"
+    if matched_prefix_fr:
+        res_fr = f"{res_fr} {matched_prefix_fr}"
+        res_en = f"{res_en} ({matched_prefix_fr})"
+
+    return res_fr.strip(), res_en.strip()
+
+
+# ---------------------------------------------------------------------------
+# Cardmarket Official Dataset (Price Guide & Singles Catalog)
+# ---------------------------------------------------------------------------
+class CardmarketService:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __init__(self):
+        self.singles: List[Dict[str, Any]] = []
+        self.price_guides: Dict[int, Dict[str, Any]] = {}
+        self.expansion_names: Dict[int, str] = {}
+        self.expansion_cards: Dict[int, List[Dict[str, Any]]] = {}
+        self.is_loaded = False
+
+    @classmethod
+    def get_instance(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = CardmarketService()
+            return cls._instance
+
+    def initialize(self):
+        """Downloads or loads cached Cardmarket datasets."""
+        if self.is_loaded or is_circuit_tripped("cardmarket"):
+            return
+
+        logger.info("Initializing Cardmarket Official Price Guide and Singles Catalog...")
+        session = GLOBAL_SESSION
+
+        # 1. Non-singles (maps idExpansion -> expansion name)
+        try:
+            if not self._is_cache_fresh(CARDMARKET_NONSINGLES_CACHE, max_hours=12):
+                logger.info("Downloading Cardmarket non-singles catalog (~1MB)...")
+                r = session.get(
+                    "https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json",
+                    timeout=20
+                )
+                if r.status_code == 200:
+                    with open(CARDMARKET_NONSINGLES_CACHE, "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    report_circuit_success("cardmarket")
+                else:
+                    report_circuit_failure("cardmarket", r.status_code)
+            
+            if os.path.exists(CARDMARKET_NONSINGLES_CACHE):
+                with open(CARDMARKET_NONSINGLES_CACHE, "r", encoding="utf-8") as f:
+                    ns_data = json.load(f)
+                    for p in ns_data.get("products", []):
+                        eid = p.get("idExpansion")
+                        raw_n = p.get("name", "")
+                        clean_n = re.sub(
+                            r'\s+(?:Booster\s+Box|Booster|Display|Elite\s+Trainer\s+Box|Blister|Pack|Box|Bundle|Case).*$',
+                            '', raw_n, flags=re.IGNORECASE
+                        ).strip()
+                        if eid and clean_n and eid not in self.expansion_names:
+                            self.expansion_names[eid] = clean_n
+        except Exception as e:
+            logger.warning(f"Error loading Cardmarket non-singles: {e}")
+
+        # 2. Singles catalog
+        try:
+            if not self._is_cache_fresh(CARDMARKET_SINGLES_CACHE, max_hours=12):
+                logger.info("Downloading Cardmarket singles catalog (~14MB)...")
+                r = session.get(
+                    "https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json",
+                    timeout=35
+                )
+                if r.status_code == 200:
+                    with open(CARDMARKET_SINGLES_CACHE, "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    report_circuit_success("cardmarket")
+                else:
+                    report_circuit_failure("cardmarket", r.status_code)
+
+            if os.path.exists(CARDMARKET_SINGLES_CACHE):
+                with open(CARDMARKET_SINGLES_CACHE, "r", encoding="utf-8") as f:
+                    s_data = json.load(f)
+                    self.singles = s_data.get("products", [])
+                    # Group singles by expansion sorted by idProduct (sequential card number)
+                    for s in self.singles:
+                        eid = s.get("idExpansion")
+                        if eid:
+                            self.expansion_cards.setdefault(eid, []).append(s)
+                    for eid in self.expansion_cards:
+                        self.expansion_cards[eid].sort(key=lambda x: x["idProduct"])
+        except Exception as e:
+            logger.warning(f"Error loading Cardmarket singles: {e}")
+
+        # 3. Price Guide
+        try:
+            if not self._is_cache_fresh(CARDMARKET_PRICEGUIDE_CACHE, max_hours=12):
+                logger.info("Downloading Cardmarket daily price guide (~16MB)...")
+                r = session.get(
+                    "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+                    timeout=35
+                )
+                if r.status_code == 200:
+                    with open(CARDMARKET_PRICEGUIDE_CACHE, "w", encoding="utf-8") as f:
+                        f.write(r.text)
+                    report_circuit_success("cardmarket")
+                else:
+                    report_circuit_failure("cardmarket", r.status_code)
+
+            if os.path.exists(CARDMARKET_PRICEGUIDE_CACHE):
+                with open(CARDMARKET_PRICEGUIDE_CACHE, "r", encoding="utf-8") as f:
+                    pg_data = json.load(f)
+                    for pg in pg_data.get("priceGuides", []):
+                        pid = pg.get("idProduct")
+                        if pid:
+                            self.price_guides[pid] = pg
+        except Exception as e:
+            logger.warning(f"Error loading Cardmarket price guide: {e}")
+
+        self.is_loaded = True
+        logger.info(
+            f"Cardmarket loaded: {len(self.singles)} singles across {len(self.expansion_names)} expansions, "
+            f"{len(self.price_guides)} price points."
+        )
+
+    def _is_cache_fresh(self, path: str, max_hours: int = 12) -> bool:
+        if not os.path.exists(path):
+            return False
+        age_hours = (time.time() - os.path.getmtime(path)) / 3600.0
+        return age_hours < max_hours
+
+    def find_cardmarket_price(
+        self,
+        set_id: str,
+        local_id: str,
+        name_en: str,
+        set_name: str = ""
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Matches a card in Cardmarket using set name / code and sequential card number.
+        Returns verified trendPrice, avg30, avg7 in EUR.
+        """
+        if not self.is_loaded:
+            return None
+
+        clean_num = local_id.lstrip("0") or local_id
+        try:
+            num_int = int(clean_num)
+        except ValueError:
+            return None
+
+        # 1. Find matching Cardmarket expansions
+        matched_eids = []
+        set_id_lower = set_id.lower()
+        set_name_lower = set_name.lower()
+
+        # Specific known JP expansion mapping for high accuracy
+        KNOWN_EXP_MAP = {
+            "sv2a": ["Pokémon Card 151"],
+            "sv8a": ["Terastal Festival", "Terastal Festival ex"],
+            "s6a": ["Eevee Heroes"],
+            "s11": ["Lost Abyss"],
+            "s12": ["Paradigm Trigger"],
+            "sv5a": ["Crimson Haze"],
+            "sv8": ["Super Electric Breaker"],
+            "sv4a": ["Shiny Treasure ex"],
+            "s12a": ["VSTAR Universe"],
+            "s8b": ["VMAX Climax"],
+            "s4a": ["Shiny Star V"],
+            "sv7": ["Stellar Miracle"],
+            "sv6a": ["Night Wanderer"],
+            "sv6": ["Mask of Change"],
+            "sv5k": ["Wild Force"],
+            "sv5m": ["Cyber Judge"],
+            "sv3": ["Ruler of the Black Flame"],
+            "sv2d": ["Clay Burst"],
+            "sv2p": ["Snow Hazard"],
+            "sv1a": ["Triplet Beat"],
+            "sv1s": ["Scarlet ex"],
+            "sv1v": ["Violet ex"],
+        }
+
+        target_names = KNOWN_EXP_MAP.get(set_id_lower, [])
+        for eid, exp_name in self.expansion_names.items():
+            exp_lower = exp_name.lower()
+            if any(tn.lower() in exp_lower for tn in target_names):
+                matched_eids.append(eid)
+            elif set_name_lower and (set_name_lower in exp_lower or exp_lower in set_name_lower):
+                matched_eids.append(eid)
+            elif set_id_lower in exp_lower:
+                matched_eids.append(eid)
+
+        # 2. Look for the card at sequential index
+        clean_en_name = re.sub(r'[\(\[].*?[\)\]]', '', name_en).strip().lower()
+
+        for eid in matched_eids:
+            cards = self.expansion_cards.get(eid, [])
+            if not cards or len(cards) < num_int:
+                continue
+
+            # Sequential match (1-indexed)
+            candidate = cards[num_int - 1]
+            cand_name = candidate.get("name", "").lower()
+
+            # Verify that English Pokémon name matches in candidate title
+            first_word_en = clean_en_name.split()[0] if clean_en_name else ""
+            if first_word_en and first_word_en in cand_name:
+                pid = candidate.get("idProduct")
+                pg = self.price_guides.get(pid, {})
+                trend = pg.get("trend")
+                avg30 = pg.get("avg30")
+                avg7 = pg.get("avg7")
+                avg = pg.get("avg")
+
+                smoothed = trend or avg30 or avg7 or avg
+                if smoothed and smoothed > 0:
+                    exp_name = self.expansion_names.get(eid, set_id)
+                    slug_exp = urllib.parse.quote(exp_name.replace(" ", "-"))
+                    slug_prod = urllib.parse.quote(candidate.get("name", "").replace(" ", "-"))
+                    return {
+                        "smoothed_avg": round(float(smoothed), 2),
+                        "raw_eur": round(float(smoothed), 2),
+                        "cardmarket_trend": round(float(trend), 2) if trend else None,
+                        "cardmarket_avg30": round(float(avg30), 2) if avg30 else None,
+                        "sample_count": 30 if avg30 else 7,
+                        "source_name": "Cardmarket (Price Guide EU)",
+                        "source_url": f"https://www.cardmarket.com/en/Pokemon/Products/Singles/{slug_exp}/{slug_prod}",
+                        "matched_title": candidate.get("name", ""),
+                        "data_type": "sold",
+                    }
+
+        return None
+
+
+# ---------------------------------------------------------------------------
+# SNKRDUNK Japan Real Sold Transactions Adapter
+# ---------------------------------------------------------------------------
+SNKRDUNK_CACHE: Dict[str, str] = {}
+
+
+def load_snkrdunk_ids():
+    global SNKRDUNK_CACHE
+    if os.path.exists(SNKRDUNK_IDS_CACHE):
+        try:
+            with open(SNKRDUNK_IDS_CACHE, "r", encoding="utf-8") as f:
+                SNKRDUNK_CACHE = json.load(f)
+        except Exception:
+            SNKRDUNK_CACHE = {}
+
+
+def save_snkrdunk_ids():
+    with snkrdunk_id_lock:
+        try:
+            with open(SNKRDUNK_IDS_CACHE, "w", encoding="utf-8") as f:
+                json.dump(SNKRDUNK_CACHE, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
 
-    logger.info("Fetching complete official Pokémon species name database from PokéAPI...")
-    csv_url = "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/pokemon_species_names.csv"
-    try:
-        r = GLOBAL_SESSION.get(csv_url, timeout=15)
-        if r.status_code == 200:
-            reader = csv.DictReader(io.StringIO(r.text))
-            species_by_id: Dict[int, Dict[str, str]] = {}
-            for row in reader:
-                sid = int(row["pokemon_species_id"])
-                lid = row["local_language_id"]
-                name = row["name"].strip()
-                species_by_id.setdefault(sid, {})
-                if lid == "1":    # Japanese Katakana
-                    species_by_id[sid]["ja"] = name
-                elif lid == "5":  # French
-                    species_by_id[sid]["fr"] = name
-                elif lid == "9":  # English
-                    species_by_id[sid]["en"] = name
 
-            ja_to_names: Dict[str, Dict[str, str]] = {}
-            en_to_names: Dict[str, Dict[str, str]] = {}
-
-            for sid, val in species_by_id.items():
-                ja_name = val.get("ja")
-                fr_name = val.get("fr")
-                en_name = val.get("en")
-                if ja_name and fr_name and en_name:
-                    entry = {"dex_id": sid, "fr": fr_name, "en": en_name, "ja": ja_name}
-                    ja_to_names[ja_name] = entry
-                    en_to_names[en_name.lower()] = entry
-
-            payload = {
-                "ja_to_names": ja_to_names,
-                "en_to_names": en_to_names,
-                "fetched_at": datetime.now(timezone.utc).isoformat(),
-            }
-            try:
-                with open(SPECIES_CACHE_FILE, "w", encoding="utf-8") as f:
-                    json.dump(payload, f, ensure_ascii=False, indent=2)
-            except Exception:
-                pass
-
-            logger.info(f"Successfully indexed {len(ja_to_names)} species names (JA/FR/EN).")
-            return payload
-    except Exception as e:
-        logger.warning(f"Failed to fetch PokéAPI species catalog: {e}")
-
-    return {"ja_to_names": {}, "en_to_names": {}}
-
-
-def translate_jp_card_name(
-    name_ja: str,
-    species_catalog: Dict[str, Dict[str, str]]
-) -> Tuple[str, str]:
-    """
-    Translates a Japanese card name into accurate French and English names
-    while strictly preserving card suffixes (ex, VMAX, VSTAR, GX, V, SAR, etc.).
-    Example: 'リザードンex' -> ('Dracaufeu ex', 'Charizard ex')
-             'かがやくリザードン' -> ('Dracaufeu Radieux', 'Radiant Charizard')
-    """
-    if not name_ja:
-        return ("", "")
-
-    ja_map = species_catalog.get("ja_to_names", {})
-
-    # Direct match
-    if name_ja in ja_map:
-        return (ja_map[name_ja]["fr"], ja_map[name_ja]["en"])
-
-    # Prefix qualifiers
-    prefix_fr = ""
-    prefix_en = ""
-    clean_name = name_ja
-
-    if clean_name.startswith("かがやく"):
-        prefix_fr = "Radieux "
-        prefix_en = "Radiant "
-        clean_name = clean_name[len("かがやく"):].strip()
-    elif clean_name.startswith("メガ") or clean_name.startswith("M"):
-        prefix_fr = "Mega "
-        prefix_en = "Mega "
-        clean_name = re.sub(r'^(メガ|M\s*)', '', clean_name).strip()
-
-    # Suffix qualifiers
-    suffix_match = re.search(r'[-–—\s]*(ex|vmax|vstar|v|gx|break|sar|sr|ur|ar|chr|csr|ssr|ex\s*sar)$', clean_name, re.IGNORECASE)
-    suffix_str = ""
-    if suffix_match:
-        suffix_str = " " + suffix_match.group(1).strip()
-        clean_name = clean_name[:suffix_match.start()].strip()
-
-    # Base species lookup
-    if clean_name in ja_map:
-        base_fr = ja_map[clean_name]["fr"]
-        base_en = ja_map[clean_name]["en"]
-        res_fr = (f"{base_fr} {prefix_fr.strip()}" if prefix_fr else base_fr) + suffix_str
-        res_en = (f"{prefix_en}{base_en}").strip() + suffix_str
-        return (res_fr.strip(), res_en.strip())
-
-    # Partial substring search across all species
-    for sp_ja, data in ja_map.items():
-        if sp_ja in clean_name and len(sp_ja) >= 2:
-            base_fr = data["fr"]
-            base_en = data["en"]
-            remainder = clean_name.replace(sp_ja, "").strip()
-            res_fr = f"{base_fr} {remainder} {suffix_str}".strip()
-            res_en = f"{base_en} {remainder} {suffix_str}".strip()
-            return (res_fr, res_en)
-
-    return (name_ja, name_ja)
-
-
-# ---------------------------------------------------------------------------
-# High-Value Chase Card Filter & Era Prioritization
-# ---------------------------------------------------------------------------
-RE_CHASE_MARKERS = re.compile(
-    r'(?:^|[^\w])(ex|vmax|vstar|gx|sar|sr|ur|ar|chr|csr|ssr|shiny|radiant|radieux|mega|prime|legend|level\s*x|lv\.x|gold|rainbow)(?:[^\w]|$)|'
-    r'[-–—]\s*(ex|vmax|vstar|v|gx|sar|sr|ur|ar|chr|csr)\b|'
-    r'(?:メガ|かがやく|プロモ|マスターボール)',
-    re.IGNORECASE,
-)
-
-def is_chase_target(card: Dict[str, Any], en_name: str = "") -> bool:
-    """Identifies high-value arbitrage chase targets."""
-    if card.get("is_secret"):
-        return True
-    local_id = str(card.get("local_id", "")).strip().upper()
-    if any(local_id.startswith(pfx) for pfx in ("TG", "GG", "SV", "SWSH", "SVP", "PROMO", "RC")):
-        return True
-    for text in (card.get("name", ""), en_name):
-        if text and RE_CHASE_MARKERS.search(text):
-            return True
-    return False
-
-
-def get_set_era_rank(set_id: str) -> int:
-    """Ranks sets chronologically from modern liquid sets (0) to vintage (7)."""
-    sid = str(set_id).lower()
-    if sid.startswith("sv"):       # Scarlet & Violet (2023+)
-        return 0
-    if sid.startswith("swsh"):     # Sword & Shield (2020 - 2023)
-        return 1
-    if sid.startswith("sm"):       # Sun & Moon (2017 - 2019)
-        return 2
-    if sid.startswith("xy"):       # XY (2014 - 2016)
-        return 3
-    if sid.startswith("bw"):       # Black & White (2011 - 2013)
-        return 4
-    if sid.startswith(("dp", "pt", "hgss")):
-        return 5
-    if sid.startswith("ex"):
-        return 6
-    return 7
-
-
-# ---------------------------------------------------------------------------
-# Outlier Trimming & Statistics
-# ---------------------------------------------------------------------------
-def compute_trimmed_mean(samples: List[float], is_jpy: bool = False) -> Optional[float]:
-    """Computes 10% trimmed mean when sample size >= 4, else standard mean."""
-    valid = [float(p) for p in samples if isinstance(p, (int, float)) and p > 0]
-    n = len(valid)
-    if n == 0:
-        return None
-    sorted_s = sorted(valid)
-    if n >= 4:
-        trim_k = max(1, int(n * 0.10))
-        trimmed = sorted_s[trim_k:-trim_k]
-        if not trimmed:
-            trimmed = sorted_s
-    else:
-        trimmed = sorted_s
-    avg_val = sum(trimmed) / len(trimmed)
-    return int(round(avg_val)) if is_jpy else round(avg_val, 2)
-
-
-# ---------------------------------------------------------------------------
-# Source A1: PriceCharting Japanese Market & Graded Slabs
-# ---------------------------------------------------------------------------
-def query_pricecharting_jp(
+def query_snkrdunk_jp(
     set_id: str,
     local_id: str,
-    official_count: str,
-    en_name: str,
-    ja_name: str,
+    name_ja: str,
     fx: Dict[str, float],
-    session: Optional[requests.Session] = None,
+    session: Optional[requests.Session] = None
 ) -> Optional[Dict[str, Any]]:
     """
-    Queries PriceCharting for Japanese Pokémon cards.
-    Supports both native JSON API and HTML fallback.
-    Returns verified realized sold prices in USD, EUR, and JPY for:
-      - Ungraded (Raw)
-      - Grade 9
-      - PSA 10
-    With sample count, matched title, and direct source URL.
+    Queries SNKRDUNK public search + sales history JSON.
+    Returns real realized sold transactions in JPY + PSA 10/9/ARS/BGS.
+    Strict unit rule: `price_jpy` (int JPY) and `price_eur` (float EUR).
+    """
+    if is_circuit_tripped("snkrdunk"):
+        return None
+
+    sess = session or get_thread_session()
+    jpy_to_eur = fx.get("JPY_EUR", 0.005718)
+    cache_key = f"{set_id}_{local_id}".lower()
+
+    apparel_id = SNKRDUNK_CACHE.get(cache_key)
+
+    # 1. Search apparel ID if not cached
+    if not apparel_id:
+        query = f"{set_id} {local_id}"
+        search_url = f"https://snkrdunk.com/search?keywords={urllib.parse.quote_plus(query)}"
+        try:
+            r = sess.get(search_url, timeout=8)
+            if r.status_code in (403, 429):
+                report_circuit_failure("snkrdunk", r.status_code)
+                return None
+            if r.status_code == 200:
+                report_circuit_success("snkrdunk")
+                soup = BeautifulSoup(r.text, "html.parser")
+                clean_num = local_id.lstrip("0") or local_id
+
+                for a in soup.find_all("a", href=re.compile(r"/apparels/(\d+)")):
+                    href = a.get("href", "")
+                    txt = a.get_text(" ", strip=True)
+                    if re.search(rf'(?<!\d)0*{re.escape(clean_num)}(?!\d)', txt):
+                        m = re.search(r'/apparels/(\d+)', href)
+                        if m:
+                            apparel_id = m.group(1)
+                            break
+
+                if not apparel_id:
+                    # Fallback to first apparel link on page
+                    m = re.search(r'/apparels/(\d+)', r.text)
+                    if m:
+                        apparel_id = m.group(1)
+
+                if apparel_id:
+                    with snkrdunk_id_lock:
+                        SNKRDUNK_CACHE[cache_key] = apparel_id
+                        save_snkrdunk_ids()
+        except Exception as e:
+            logger.debug(f"SNKRDUNK search error for {query}: {e}")
+            report_circuit_failure("snkrdunk")
+            return None
+
+    if not apparel_id:
+        return None
+
+    # 2. Query Sales History JSON
+    hist_url = f"https://snkrdunk.com/v1/apparels/{apparel_id}/sales-history?per_page=50"
+    source_url = f"https://snkrdunk.com/apparels/{apparel_id}"
+
+    try:
+        hr = sess.get(hist_url, timeout=8)
+        if hr.status_code in (403, 429):
+            report_circuit_failure("snkrdunk", hr.status_code)
+            return None
+        if hr.status_code != 200:
+            return None
+
+        report_circuit_success("snkrdunk")
+        hdata = hr.json()
+        history = hdata.get("history", [])
+        min_price = hdata.get("minPrice", 0)
+
+        raw_prices: List[int] = []
+        graded_buckets: Dict[str, List[int]] = {}
+
+        for item in history:
+            price = item.get("price")
+            if not price or price <= 0:
+                continue
+            cond = (item.get("condition") or "").strip().upper()
+            if "PSA10" in cond or "PSA 10" in cond:
+                graded_buckets.setdefault("PSA 10", []).append(price)
+            elif "PSA9" in cond or "PSA 9" in cond:
+                graded_buckets.setdefault("PSA 9", []).append(price)
+            elif "ARS10" in cond or "ARS 10" in cond:
+                graded_buckets.setdefault("ARS 10", []).append(price)
+            elif "BGS9.5" in cond or "BGS 9.5" in cond:
+                graded_buckets.setdefault("BGS 9.5", []).append(price)
+            else:
+                raw_prices.append(price)
+
+        raw_jpy = None
+        if raw_prices:
+            # 10% trimmed mean on raw prices
+            raw_jpy = compute_trimmed_mean(raw_prices, is_jpy=True)
+        elif min_price and min_price > 0:
+            raw_jpy = int(min_price)
+
+        graded_res: Dict[str, Any] = {}
+        for g_name, p_list in graded_buckets.items():
+            avg_g = compute_trimmed_mean(p_list, is_jpy=True)
+            if avg_g:
+                graded_res[g_name] = {
+                    "price_jpy": int(avg_g),
+                    "price_eur": round(avg_g * jpy_to_eur, 2),
+                    "sample_count": len(p_list),
+                    "source": "SNKRDUNK JP Sold",
+                }
+
+        if raw_jpy is None and not graded_res:
+            return None
+
+        return {
+            "smoothed_avg": raw_jpy,
+            "raw_jpy": raw_jpy,
+            "raw_eur": round(raw_jpy * jpy_to_eur, 2) if raw_jpy else None,
+            "sample_count": len(raw_prices),
+            "graded": graded_res,
+            "source_name": "SNKRDUNK (Sold JPY)",
+            "source_url": source_url,
+            "data_type": "sold",
+        }
+    except Exception as e:
+        logger.debug(f"SNKRDUNK history error for ID {apparel_id}: {e}")
+        report_circuit_failure("snkrdunk")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# PriceCharting Adapter (Used STRICTLY for FR/International Resale)
+# ---------------------------------------------------------------------------
+def query_pricecharting_resale(
+    set_id: str,
+    local_id: str,
+    name_en: str,
+    fx: Dict[str, float],
+    session: Optional[requests.Session] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Queries PriceCharting completed eBay sales for Japanese cards using fast JSON endpoint.
+    Used STRICTLY for European / International Resale (`fr` side).
+    Includes integrity guard: PSA 10 must be >= Raw price.
     """
     if is_circuit_tripped("pricecharting"):
         return None
 
     sess = session or get_thread_session()
     clean_num = local_id.lstrip("0") or local_id
+    query = f"pokemon japanese {name_en} {clean_num}"
+    search_url = f"https://www.pricecharting.com/search-products?q={urllib.parse.quote_plus(query)}&type=prices"
 
-    # Clean English base name for query
-    base_name = re.sub(r'[-–—]\s*(ex|vmax|vstar|gx|sar|sr|ur|ar).*', '', en_name, flags=re.IGNORECASE).strip()
-
-    candidate_queries = [
-        f"pokemon japanese {en_name} {clean_num}",
-        f"pokemon japanese {base_name} {clean_num}",
-        f"pokemon japanese {set_id} {clean_num}",
-    ]
-
-    json_headers = {
-        **HEADERS,
-        "Accept": "application/json",
-    }
-
-    usd_to_eur = fx.get("USD_EUR", 0.9115)
-    usd_to_jpy = fx.get("USD_JPY", 159.37)
-
-    for q in candidate_queries:
-        if not q.strip():
-            continue
-
-        # 1. First attempt: Native Fast JSON API
-        url = f"https://www.pricecharting.com/search-products?q={requests.utils.quote(q)}&type=prices"
-        try:
-            r = sess.get(url, headers=json_headers, timeout=8)
-            if r.status_code in (403, 429):
-                report_circuit_failure("pricecharting", r.status_code)
-                return None
-            if r.status_code == 200:
-                report_circuit_success("pricecharting")
-                try:
-                    data = r.json()
-                    products = data.get("products", [])
-                    matched_prod = None
-                    for p in products:
-                        p_name = p.get("productName", "")
-                        c_name = p.get("consoleName", "").lower()
-                        # Strict matching: card number must match, and must be Japanese edition
-                        num_pattern = rf'(?<!\d)0*{re.escape(clean_num)}(?!\d)'
-                        if re.search(num_pattern, p_name) and "japanese" in c_name:
-                            matched_prod = p
-                            break
-
-                    if matched_prod:
-                        def parse_price(val_str: Any) -> Optional[float]:
-                            if not val_str:
-                                return None
-                            m = re.search(r'[\$¥€]?([\d,]+(?:\.\d+)?)', str(val_str))
-                            if m:
-                                try:
-                                    return float(m.group(1).replace(",", ""))
-                                except ValueError:
-                                    pass
-                            return None
-
-                        raw_usd = parse_price(matched_prod.get("price1"))
-                        psa10_usd = parse_price(matched_prod.get("price2"))
-                        psa9_usd = parse_price(matched_prod.get("price3"))
-
-                        if raw_usd or psa10_usd:
-                            c_slug = re.sub(r'[^a-z0-9]+', '-', matched_prod.get("consoleName", "").lower()).strip('-')
-                            p_slug = re.sub(r'[^a-z0-9]+', '-', matched_prod.get("productName", "").lower()).strip('-')
-                            source_url = f"https://www.pricecharting.com/game/{c_slug}/{p_slug}"
-                            matched_title = f"{matched_prod.get('productName')} | {matched_prod.get('consoleName')}"
-
-                            graded_dict = {}
-                            if psa10_usd and psa10_usd > 0:
-                                graded_dict["PSA 10"] = {
-                                    "price": round(psa10_usd * usd_to_eur, 2),
-                                    "price_usd": psa10_usd,
-                                    "price_eur": round(psa10_usd * usd_to_eur, 2),
-                                    "price_jpy": int(round(psa10_usd * usd_to_jpy)),
-                                    "source": "PriceCharting",
-                                }
-                            if psa9_usd and psa9_usd > 0:
-                                graded_dict["PSA 9"] = {
-                                    "price": round(psa9_usd * usd_to_eur, 2),
-                                    "price_usd": psa9_usd,
-                                    "price_eur": round(psa9_usd * usd_to_eur, 2),
-                                    "price_jpy": int(round(psa9_usd * usd_to_jpy)),
-                                    "source": "PriceCharting",
-                                }
-
-                            return {
-                                "ungraded_usd": raw_usd,
-                                "ungraded_eur": round(raw_usd * usd_to_eur, 2) if raw_usd else None,
-                                "ungraded_jpy": int(round(raw_usd * usd_to_jpy)) if raw_usd else None,
-                                "graded": graded_dict,
-                                "matched_title": matched_title,
-                                "source_name": "PriceCharting (JP Sold)",
-                                "source_url": source_url,
-                                "sample_count": 15,
-                            }
-                except ValueError:
-                    pass
-        except Exception as e:
-            logger.debug(f"PriceCharting JSON error for query '{q}': {e}")
-            pass
-
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Source A2: SNKRDUNK Japanese Sold Transactions (JPY)
-# ---------------------------------------------------------------------------
-def query_snkrdunk_jp(
-    name_ja: str,
-    set_id: str,
-    local_id: str,
-    official_count: str,
-    fx: Dict[str, float],
-    session: Optional[requests.Session] = None,
-) -> Optional[Dict[str, Any]]:
-    """
-    Scrapes real Japanese completed transaction prices from SNKRDUNK (snkrdunk.com).
-    Strict matching: verifies exact card number (local_id) and set/name in listing.
-    """
-    if is_circuit_tripped("snkrdunk") or not HAS_BS4:
-        return None
-
-    sess = session or get_thread_session()
-    clean_num = local_id.lstrip("0") or local_id
-
-    query = f"{name_ja} {clean_num}"
-    url = f"https://snkrdunk.com/search?keyword={urllib.parse.quote_plus(query)}"
+    headers = dict(HEADERS)
+    headers["Accept"] = "application/json"
 
     try:
-        r = sess.get(url, timeout=8)
+        r = sess.get(search_url, headers=headers, timeout=8)
         if r.status_code in (403, 429):
-            report_circuit_failure("snkrdunk", r.status_code)
+            report_circuit_failure("pricecharting", r.status_code)
             return None
         if r.status_code != 200:
             return None
 
-        report_circuit_success("snkrdunk")
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        matched_items = []
-        for a in soup.select('a[href*="/apparels/"]'):
-            href = a.get("href", "")
-            txt = a.get_text(" | ", strip=True)
-            num_pattern = rf'(?<!\d)0*{re.escape(clean_num)}(?!\d)'
-            if re.search(num_pattern, txt):
-                m_price = re.search(r'¥\s*([\d,]+)', txt)
-                if m_price:
-                    try:
-                        p_jpy = int(m_price.group(1).replace(",", ""))
-                        matched_items.append({
-                            "price_jpy": p_jpy,
-                            "title": txt,
-                            "url": href if href.startswith("http") else f"https://snkrdunk.com{href}"
-                        })
-                    except ValueError:
-                        pass
-
-        if not matched_items:
-            return None
-
-        prices = [item["price_jpy"] for item in matched_items]
-        avg_jpy = compute_trimmed_mean(prices, is_jpy=True)
-        best = matched_items[0]
-        jpy_to_eur = fx.get("JPY_EUR", 0.005718)
-
-        return {
-            "price_jpy": avg_jpy,
-            "price_eur": round(avg_jpy * jpy_to_eur, 2) if avg_jpy else None,
-            "sample_count": len(prices),
-            "matched_title": best["title"][:80],
-            "source_name": "SNKRDUNK (Sold JPY)",
-            "source_url": best["url"],
-            "data_type": "sold"
-        }
-    except Exception as e:
-        logger.debug(f"SNKRDUNK error for '{query}': {e}")
-        report_circuit_failure("snkrdunk")
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Source A3: Yuyu-tei Japanese Single-Card Retail Market
-# ---------------------------------------------------------------------------
-def query_yuyutei_jp(
-    name_ja: str,
-    local_id: str,
-    fx: Dict[str, float],
-    session: Optional[requests.Session] = None,
-) -> Optional[Dict[str, Any]]:
-    """
-    Scrapes real JPY retail acquisition prices from Yuyu-tei (Japan).
-    Verifies that the exact local_id appears in the listing title/url.
-    """
-    if is_circuit_tripped("yuyutei") or not HAS_BS4:
-        return None
-
-    sess = session or get_thread_session()
-    clean_num = local_id.lstrip("0") or local_id
-    query = f"{name_ja} {clean_num}"
-
-    url = f"https://yuyu-tei.jp/sell/poc/s/search?search_word={urllib.parse.quote_plus(query)}"
-    try:
-        r = sess.get(url, timeout=10)
-        if r.status_code in (403, 429):
-            report_circuit_failure("yuyutei", r.status_code)
-            return None
-        if r.status_code != 200:
-            return None
-
-        report_circuit_success("yuyutei")
-        soup = BeautifulSoup(r.text, "html.parser")
-
-        matches: List[Dict[str, Any]] = []
-        for a in soup.select('a[href*="/card/"]'):
-            href = a.get("href", "")
-            title = a.get_text(strip=True)
-            parent = a.find_parent("div")
-            parent_text = parent.get_text(" | ", strip=True) if parent else ""
-
-            # Check for price: e.g. "59,800 円"
-            m_price = re.search(r'([\d,]+)\s*円', parent_text)
-            if not m_price:
-                continue
-
-            try:
-                price_jpy = int(m_price.group(1).replace(",", ""))
-            except ValueError:
-                continue
-
-            # Strict verification: card number must appear in parent text, url, or title
-            if clean_num in parent_text or clean_num in href or clean_num in title:
-                matches.append({
-                    "price_jpy": price_jpy,
-                    "title": f"{title} #{clean_num}" if clean_num not in title else title,
-                    "url": href if href.startswith("http") else f"https://yuyu-tei.jp{href}",
-                })
-
-        if not matches:
-            return None
-
-        prices = [m["price_jpy"] for m in matches]
-        avg_jpy = compute_trimmed_mean(prices, is_jpy=True)
-        best = matches[0]
-        jpy_to_eur = fx.get("JPY_EUR", 0.005718)
-
-        return {
-            "price_jpy": avg_jpy,
-            "price_eur": round(avg_jpy * jpy_to_eur, 2) if avg_jpy else None,
-            "sample_count": len(prices),
-            "matched_title": best["title"] or f"{name_ja} #{clean_num}",
-            "source_name": "Yuyu-tei (Japan)",
-            "source_url": best["url"],
-        }
-    except Exception as e:
-        logger.debug(f"Yuyu-tei error for '{query}': {e}")
-        report_circuit_failure("yuyutei")
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Source B1: Cardmarket Completed Metrics via Pokémon TCG API
-# ---------------------------------------------------------------------------
-def query_cardmarket_eu(
-    en_name: str,
-    local_id: str,
-    session: Optional[requests.Session] = None,
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches real Cardmarket completed trendPrice, avg7, avg30 via api.pokemontcg.io.
-    STRICT INTEGRITY RULE: Never queries by number alone. Matches verified name + number.
-    """
-    if is_circuit_tripped("pokemontcg_api") or not en_name or not local_id:
-        return None
-
-    sess = session or get_thread_session()
-    clean_num = local_id.lstrip("0") or local_id
-    safe_name = en_name.replace('"', '').strip()
-
-    # Queries with strict name AND number
-    queries = [
-        f'name:"{safe_name}" number:"{clean_num}"',
-    ]
-    base_name = re.sub(r'[-–—]\s*(ex|vmax|vstar|v|gx|sar|sr|ur|ar).*', '', safe_name, flags=re.IGNORECASE).strip()
-    if base_name and base_name.lower() != safe_name.lower():
-        queries.append(f'name:"{base_name}" number:"{clean_num}"')
-
-    headers = {}
-    api_key = os.environ.get("POKEMON_TCG_API_KEY", "")
-    if api_key:
-        headers["X-Api-Key"] = api_key
-
-    for q in queries:
-        url = f"https://api.pokemontcg.io/v2/cards?q={urllib.parse.quote_plus(q)}&pageSize=3"
+        report_circuit_success("pricecharting")
         try:
-            r = sess.get(url, headers=headers, timeout=4)
-            if r.status_code == 429:
-                time.sleep(1.0)
-                continue
-            if r.status_code == 403:
-                report_circuit_failure("pokemontcg_api", 403)
-                return None
-            if r.status_code != 200:
-                continue
+            data = r.json()
+        except Exception:
+            return None
 
-            report_circuit_success("pokemontcg_api")
-            cards = r.json().get("data", [])
-            if not cards:
-                continue
+        products = data.get("products", [])
+        if not products:
+            return None
 
-            matched_card = None
-            for c in cards:
-                c_num = str(c.get("number", "")).lstrip("0") or str(c.get("number", ""))
-                c_name = str(c.get("name", "")).lower()
-                # Strict check: both number AND base name must match
-                if c_num == clean_num and (base_name.lower() in c_name or safe_name.lower() in c_name):
-                    matched_card = c
+        clean_set = set_id.lower()
+        num_pattern = rf'(?<!\d)0*{re.escape(clean_num)}(?!\d)'
+
+        matched = None
+        for p in products:
+            pname = p.get("productName", "")
+            cname = p.get("consoleName", "")
+            if re.search(num_pattern, pname):
+                if "japanese" in cname.lower() or clean_set in cname.lower():
+                    matched = p
                     break
 
-            if not matched_card:
-                continue
+        if not matched and products:
+            p = products[0]
+            if re.search(num_pattern, p.get("productName", "")):
+                matched = p
 
-            cm = matched_card.get("cardmarket", {}).get("prices", {})
-            trend = cm.get("trendPrice") or cm.get("avg30") or cm.get("avg7")
-            if trend and float(trend) > 0:
-                trend_val = round(float(trend), 2)
-                return {
-                    "trend_price": trend_val,
-                    "avg30": round(float(cm.get("avg30", trend_val)), 2) if cm.get("avg30") else trend_val,
-                    "avg7": round(float(cm.get("avg7", trend_val)), 2) if cm.get("avg7") else trend_val,
-                    "matched_title": f"{matched_card.get('name')} ({matched_card.get('set', {}).get('name')}) #{clean_num}",
-                    "source_name": "Cardmarket (via PokéTCG API)",
-                    "source_url": f"https://www.cardmarket.com/en/Pokemon/Products/Singles/{urllib.parse.quote_plus(matched_card.get('set', {}).get('name', ''))}/{urllib.parse.quote_plus(matched_card.get('name', ''))}",
-                    "sample_count": 20,
-                }
-        except Exception as e:
-            logger.debug(f"Cardmarket API error for '{q}': {e}")
-            continue
+        if not matched:
+            return None
 
+        def parse_usd(val_str):
+            if not val_str:
+                return None
+            m = re.search(r'\$\s*([\d,]+\.?\d*)', str(val_str))
+            if m:
+                try:
+                    return float(m.group(1).replace(",", ""))
+                except ValueError:
+                    pass
+            return None
+
+        raw_usd = parse_usd(matched.get("price1"))
+        psa10_usd = parse_usd(matched.get("price2"))
+        grade9_usd = parse_usd(matched.get("price3"))
+
+        usd_to_eur = fx.get("USD_EUR", 0.9115)
+
+        # Integrity guard: PSA 10 must be >= Raw
+        if psa10_usd is not None and raw_usd is not None and psa10_usd < raw_usd:
+            logger.warning(
+                f"PriceCharting anomaly rejected for {matched.get('productName')}: "
+                f"PSA 10 (${psa10_usd}) < Raw (${raw_usd})"
+            )
+            psa10_usd = None
+
+        raw_eur = round(raw_usd * usd_to_eur, 2) if raw_usd else None
+        graded_res: Dict[str, Any] = {}
+
+        if psa10_usd:
+            graded_res["PSA 10"] = {
+                "price": round(psa10_usd * usd_to_eur, 2),
+                "price_usd": psa10_usd,
+                "source": "PriceCharting",
+                "volume": "15+",
+            }
+        if grade9_usd:
+            graded_res["PSA 9"] = {
+                "price": round(grade9_usd * usd_to_eur, 2),
+                "price_usd": grade9_usd,
+                "source": "PriceCharting",
+                "volume": "10+",
+            }
+
+        if not raw_eur and not graded_res:
+            return None
+
+        slug_name = urllib.parse.quote(matched.get("productName", "").replace(" ", "-"))
+        slug_set = urllib.parse.quote(matched.get("consoleName", "").replace(" ", "-"))
+        source_url = f"https://www.pricecharting.com/game/{slug_set}/{slug_name}"
+
+        return {
+            "smoothed_avg": raw_eur,
+            "raw_eur": raw_eur,
+            "sample_count": 15,
+            "graded": graded_res,
+            "source_name": "PriceCharting (JP Resale)",
+            "source_url": source_url,
+            "matched_title": f"{matched.get('productName')} | {matched.get('consoleName')}",
+            "data_type": "sold",
+        }
+    except Exception as e:
+        logger.debug(f"PriceCharting resale error: {e}")
+        report_circuit_failure("pricecharting")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# eBay Official Browse API Adapter (Slabs & Resale)
+# ---------------------------------------------------------------------------
+_EBAY_TOKEN_CACHE = {"token": "", "expires_at": 0}
+
+
+def get_ebay_oauth_token() -> Optional[str]:
+    client_id = os.getenv("EBAY_CLIENT_ID")
+    client_secret = os.getenv("EBAY_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        return None
+
+    now = time.time()
+    if _EBAY_TOKEN_CACHE["token"] and _EBAY_TOKEN_CACHE["expires_at"] > now + 60:
+        return _EBAY_TOKEN_CACHE["token"]
+
+    try:
+        r = requests.post(
+            "https://api.ebay.com/identity/v1/oauth2/token",
+            data={"grant_type": "client_credentials", "scope": "https://api.ebay.com/oauth/api_scope"},
+            auth=(client_id, client_secret),
+            timeout=8
+        )
+        if r.status_code == 200:
+            data = r.json()
+            tok = data.get("access_token")
+            exp = data.get("expires_in", 7200)
+            _EBAY_TOKEN_CACHE["token"] = tok
+            _EBAY_TOKEN_CACHE["expires_at"] = now + exp
+            return tok
+    except Exception as e:
+        logger.debug(f"eBay OAuth error: {e}")
+    return None
+
+
+def query_ebay_browse_fr(
+    set_id: str,
+    local_id: str,
+    name_fr: str,
+    name_en: str
+) -> Optional[Dict[str, Any]]:
+    """Queries eBay Official Browse API for French/EU sales if credentials exist."""
+    token = get_ebay_oauth_token()
+    if not token or is_circuit_tripped("ebay_browse"):
+        return None
+
+    clean_num = local_id.lstrip("0") or local_id
+    query = f"pokemon {name_en} {set_id} {clean_num}"
+    url = f"https://api.ebay.com/buy/browse/v1/item_summary/search?q={urllib.parse.quote_plus(query)}&limit=20"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "X-EBAY-C-MARKETPLACE-ID": "EBAY_FR",
+    }
+
+    try:
+        r = requests.get(url, headers=headers, timeout=8)
+        if r.status_code == 200:
+            report_circuit_success("ebay_browse")
+            items = r.json().get("itemSummaries", [])
+            raw_prices = []
+            graded = {}
+            for item in items:
+                title = item.get("title", "").upper()
+                price_val = float(item.get("price", {}).get("value", 0))
+                if price_val <= 0:
+                    continue
+                # Exclude lots/proxies
+                if any(x in title for x in ["LOT", "BUNDLE", "PROXY", "FAUX", "FAKE", "EMPTY", "BOITE"]):
+                    continue
+                if "PSA 10" in title or "PSA10" in title:
+                    graded.setdefault("PSA 10", []).append(price_val)
+                elif "PSA 9" in title or "PSA9" in title:
+                    graded.setdefault("PSA 9", []).append(price_val)
+                else:
+                    raw_prices.append(price_val)
+
+            raw_avg = compute_trimmed_mean(raw_prices) if raw_prices else None
+            return {
+                "raw_eur": raw_avg,
+                "graded": {
+                    g: {"price": compute_trimmed_mean(p), "source": "eBay FR Browse"}
+                    for g, p in graded.items() if compute_trimmed_mean(p)
+                },
+                "data_type": "sold"
+            }
+        else:
+            report_circuit_failure("ebay_browse", r.status_code)
+    except Exception as e:
+        logger.debug(f"eBay Browse error: {e}")
+        report_circuit_failure("ebay_browse")
     return None
 
 
 # ---------------------------------------------------------------------------
-# Source B2: eBay France Completed/Sold Listings (LH_Sold=1)
+# Statistical & Precalculation Helpers
 # ---------------------------------------------------------------------------
-def query_ebay_fr_sold(
-    query_str: str,
-    local_id: str,
-    session: Optional[requests.Session] = None,
-) -> Optional[Dict[str, Any]]:
+def compute_trimmed_mean(prices: List[float], is_jpy: bool = False) -> Optional[float]:
+    """Computes a 10% trimmed mean when n >= 4 to eliminate outliers."""
+    if not prices:
+        return None
+    valid = [p for p in prices if p and p > 0]
+    if not valid:
+        return None
+    valid.sort()
+    n = len(valid)
+    if n >= 4:
+        cut = max(1, int(n * 0.10))
+        valid = valid[cut:-cut]
+    if not valid:
+        return None
+    avg = statistics.mean(valid)
+    return int(round(avg)) if is_jpy else round(avg, 2)
+
+
+def precalculate_arbitrage_metrics(
+    fr: Optional[Dict[str, Any]],
+    jp: Optional[Dict[str, Any]],
+    fx: Dict[str, float]
+) -> Dict[str, Any]:
     """
-    Scrapes realized sold listings on eBay FR (LH_Sold=1&LH_Complete=1).
-    Strict circuit-breaker automatically disables eBay FR if Cloudflare 403 blocks occur.
+    Computes real arbitrage spread fields:
+    - best_direct_spread_eur
+    - best_grading_spread_eur
+    - is_high_value
     """
-    if is_circuit_tripped("ebay_fr") or not HAS_BS4:
-        return None
+    jpy_to_eur = fx.get("JPY_EUR", 0.005718)
 
-    sess = session or get_thread_session()
-    clean_num = local_id.lstrip("0") or local_id
+    fr_raw = fr.get("raw_eur") or fr.get("smoothed_avg") if fr else None
+    jp_raw_jpy = jp.get("raw_jpy") or jp.get("smoothed_avg") if jp else None
+    jp_raw_eur = round(jp_raw_jpy * jpy_to_eur, 2) if jp_raw_jpy else (jp.get("raw_eur") if jp else None)
 
-    url = "https://www.ebay.fr/sch/i.html"
-    params = {
-        "_nkw": query_str,
-        "LH_Sold": "1",
-        "LH_Complete": "1",
-        "_sop": "13",
-        "_ipg": "25",
-    }
-    try:
-        r = sess.get(url, params=params, timeout=2.0)
-        if r.status_code in (403, 429, 503):
-            report_circuit_failure("ebay_fr", r.status_code)
-            return None
-        if r.status_code != 200:
-            return None
+    fr_psa10 = fr.get("graded", {}).get("PSA 10", {}).get("price") if fr else None
+    jp_psa10_eur = jp.get("graded", {}).get("PSA 10", {}).get("price_eur") if jp else None
 
-        report_circuit_success("ebay_fr")
-        soup = BeautifulSoup(r.text, "html.parser")
-        items = soup.select(".s-item, li.s-item")
+    # 1. Best direct spread (Raw -> Raw or PSA 10 -> PSA 10)
+    direct_spreads: List[float] = []
+    if fr_raw is not None and jp_raw_eur is not None:
+        direct_spreads.append(round(fr_raw - jp_raw_eur, 2))
+    if fr_psa10 is not None and jp_psa10_eur is not None:
+        direct_spreads.append(round(fr_psa10 - jp_psa10_eur, 2))
 
-        raw_prices: List[float] = []
-        graded_prices: Dict[str, List[float]] = {}
-        first_title = ""
+    best_direct = max(direct_spreads) if direct_spreads else None
 
-        for item in items:
-            title_el = item.select_one(".s-item__title")
-            price_el = item.select_one(".s-item__price")
-            if not title_el or not price_el:
-                continue
+    # 2. Grading leverage spread (Raw JP + 25€ default grading -> PSA 10 FR)
+    best_grading = None
+    if fr_psa10 is not None and jp_raw_eur is not None:
+        best_grading = round(fr_psa10 - (jp_raw_eur + 25.0), 2)
 
-            title = title_el.get_text(strip=True)
-            if not title or "Shop on eBay" in title or "Boutique sur eBay" in title:
-                continue
-
-            # Strict number match in listing title
-            if clean_num not in title:
-                continue
-
-            price_txt = price_el.get_text(strip=True).replace("EUR", "").replace("€", "").replace("\xa0", "").replace(",", ".").strip()
-            m = re.search(r'(\d+(?:\.\d{1,2})?)', price_txt)
-            if not m:
-                continue
-            try:
-                p_val = float(m.group(1))
-            except ValueError:
-                continue
-            if not (1.0 <= p_val <= 30000.0):
-                continue
-
-            if not first_title:
-                first_title = title
-
-            if "PSA 10" in title.upper():
-                graded_prices.setdefault("PSA 10", []).append(p_val)
-            elif "PSA 9" in title.upper():
-                graded_prices.setdefault("PSA 9", []).append(p_val)
-            else:
-                raw_prices.append(p_val)
-
-        if not raw_prices and not graded_prices:
-            return None
-
-        avg_raw = compute_trimmed_mean(raw_prices, is_jpy=False) if raw_prices else None
-        graded_summary = {}
-        for g_name, g_vals in graded_prices.items():
-            g_avg = compute_trimmed_mean(g_vals, is_jpy=False)
-            if g_avg:
-                graded_summary[g_name] = {"price": g_avg, "sample_count": len(g_vals), "source": "eBay FR Sold"}
-
-        return {
-            "avg_eur": avg_raw,
-            "sample_count": len(raw_prices),
-            "graded": graded_summary,
-            "matched_title": first_title,
-            "source_name": "eBay FR (Sold)",
-            "source_url": r.url,
-        }
-    except Exception as e:
-        logger.debug(f"eBay FR query error for '{query_str}': {e}")
-        report_circuit_failure("ebay_fr")
-        return None
-
-
-# ---------------------------------------------------------------------------
-# Single Card Price Resolution Worker
-# ---------------------------------------------------------------------------
-def process_single_card(
-    card: Dict[str, Any],
-    species_catalog: Dict[str, Any],
-    fx_rates: Dict[str, float],
-    existing_prices: Dict[str, Any],
-    stop_event: threading.Event,
-) -> Optional[Dict[str, Any]]:
-    """Executes full pricing pipeline across Japanese and European sources for one card."""
-    if stop_event.is_set():
-        return None
-
-    sess = get_thread_session()
-    ref = card["ref"]
-    set_id = card["set_id"]
-    local_id = card["local_id"]
-    official_count = card["official_count"]
-    name_ja = card.get("name_ja", card["name"])
-
-    # 1. Multi-language Translation (PokéAPI)
-    fr_name, en_name = translate_jp_card_name(name_ja, species_catalog)
-    card["name_fr"] = fr_name or name_ja
-    card["name_en"] = en_name or name_ja
-
-    # 2. Japanese Market & Graded Slabs (Source A)
-    # 2.1 PriceCharting (Primary benchmark for JP Ungraded + PSA 10 + Grade 9)
-    pc_data = query_pricecharting_jp(
-        set_id=set_id,
-        local_id=local_id,
-        official_count=official_count,
-        en_name=card["name_en"],
-        ja_name=name_ja,
-        fx=fx_rates,
-        session=sess,
-    )
-
-    # 2.2 SNKRDUNK (Japanese Realized Sold Transactions in JPY)
-    snkr_data = query_snkrdunk_jp(
-        name_ja=name_ja,
-        set_id=set_id,
-        local_id=local_id,
-        official_count=official_count,
-        fx=fx_rates,
-        session=sess,
-    )
-
-    # 2.3 Yuyu-tei (Japanese Retail Single Cards - Shop Benchmark)
-    yuyu_data = query_yuyutei_jp(
-        name_ja=name_ja,
-        local_id=local_id,
-        fx=fx_rates,
-        session=sess,
-    )
-
-    # Combine JP pricing
-    jp_prices: List[float] = []
-    jp_samples = 0
-    jp_matched_title = ""
-    jp_source_name = ""
-    jp_source_url = ""
-    jp_graded = {}
-    jp_data_type = "sold"
-
-    if snkr_data and snkr_data.get("price_jpy"):
-        jp_prices.append(float(snkr_data["price_jpy"]))
-        jp_samples += snkr_data.get("sample_count", 5)
-        jp_matched_title = snkr_data.get("matched_title", "")
-        jp_source_name = snkr_data.get("source_name", "SNKRDUNK (Sold JPY)")
-        jp_source_url = snkr_data.get("source_url", "")
-        jp_data_type = "sold"
-
-    if pc_data and pc_data.get("ungraded_jpy"):
-        jp_prices.append(float(pc_data["ungraded_jpy"]))
-        jp_samples += pc_data.get("sample_count", 15)
-        if not jp_matched_title:
-            jp_matched_title = pc_data.get("matched_title", "")
-            jp_source_name = pc_data.get("source_name", "PriceCharting (JP Sold)")
-            jp_source_url = pc_data.get("source_url", "")
-        jp_graded = pc_data.get("graded", {})
-        jp_data_type = "sold"
-
-    if yuyu_data and yuyu_data.get("price_jpy"):
-        # Yuyu-tei provides shop retail benchmark
-        if not jp_prices:
-            jp_matched_title = yuyu_data.get("matched_title", "")
-            jp_source_name = yuyu_data.get("source_name", "Yuyu-tei (Japan)")
-            jp_source_url = yuyu_data.get("source_url", "")
-            jp_data_type = "shop"
-        jp_prices.append(float(yuyu_data["price_jpy"]))
-        jp_samples += yuyu_data.get("sample_count", 1)
-
-    final_jp_jpy = compute_trimmed_mean(jp_prices, is_jpy=True) if jp_prices else None
-    final_jp_eur = round(final_jp_jpy * fx_rates.get("JPY_EUR", 0.005718), 2) if final_jp_jpy else None
-
-    # 3. European / French Resale Market (Source B)
-    # 3.1 PriceCharting Realized Sales in EUR as verified JP-resale benchmark
-    fr_prices: List[float] = []
-    fr_samples = 0
-    fr_matched_title = ""
-    fr_source_name = ""
-    fr_source_url = ""
-    fr_graded = {}
-    fr_data_type = "sold"
-
-    if pc_data and pc_data.get("ungraded_eur"):
-        fr_prices.append(pc_data["ungraded_eur"])
-        fr_samples += pc_data.get("sample_count", 15)
-        fr_matched_title = pc_data.get("matched_title", "")
-        fr_source_name = "PriceCharting (JP Resale)"
-        fr_source_url = pc_data.get("source_url", "")
-        fr_data_type = "sold"
-        # Graded in EUR
-        for g_k, g_v in pc_data.get("graded", {}).items():
-            if g_v.get("price_eur"):
-                fr_graded[g_k] = {
-                    "price": g_v["price_eur"],
-                    "source": "PriceCharting",
-                    "volume": g_v.get("volume", ""),
-                }
-
-    # 3.2 Cardmarket via PokéTCG API (ONLY for European / English cards where numbers match)
-    # STRICT INTEGRITY RULE: Never query Cardmarket by number alone for Japanese cards!
-    cm_data = None
-    is_jp_card = card.get("edition") == "JP" or card.get("lang") == "ja"
-    if not is_jp_card:
-        cm_data = query_cardmarket_eu(
-            en_name=card["name_en"],
-            local_id=local_id,
-            session=sess,
-        )
-        if cm_data and cm_data.get("trend_price"):
-            fr_prices.append(cm_data["trend_price"])
-            fr_samples += cm_data.get("sample_count", 10)
-            if not fr_matched_title:
-                fr_matched_title = cm_data.get("matched_title", "")
-                fr_source_name = cm_data.get("source_name", "Cardmarket")
-                fr_source_url = cm_data.get("source_url", "")
-            fr_data_type = "sold"
-
-    # 3.3 eBay FR Sold (with circuit-breaker protection)
-    ebay_query = f"{set_id} {local_id}/{official_count}" if official_count != "---" else f"{set_id} {local_id}"
-    ebay_data = query_ebay_fr_sold(
-        query_str=ebay_query,
-        local_id=local_id,
-        session=sess,
-    )
-    if ebay_data and ebay_data.get("avg_eur"):
-        fr_prices.append(ebay_data["avg_eur"])
-        fr_samples += ebay_data.get("sample_count", 1)
-        if not fr_matched_title:
-            fr_matched_title = ebay_data.get("matched_title", "")
-            fr_source_name = ebay_data.get("source_name", "eBay FR Sold")
-            fr_source_url = ebay_data.get("source_url", "")
-        fr_data_type = "sold"
-        for g_k, g_v in ebay_data.get("graded", {}).items():
-            if g_k not in fr_graded and g_v.get("price"):
-                fr_graded[g_k] = g_v
-
-    final_fr_eur = compute_trimmed_mean(fr_prices, is_jpy=False) if fr_prices else None
-
-    # Incremental preservation: If this run found nothing but previous run had verified data, retain it
-    prev = existing_prices.get(ref) or existing_prices.get(ref.lower())
-    if not final_jp_jpy and not final_fr_eur and prev:
-        if prev.get("jp", {}).get("smoothed_avg") or prev.get("fr", {}).get("smoothed_avg"):
-            return prev
+    # 3. High value (FR resale >= 50€)
+    is_high_val = False
+    if (fr_raw is not None and fr_raw >= 50.0) or (fr_psa10 is not None and fr_psa10 >= 50.0):
+        is_high_val = True
 
     return {
-        "ref": ref,
-        "card_id": card.get("id", f"{card.get('lang', 'ja')}-{ref}"),
-        "set_id": set_id,
-        "local_id": local_id,
-        "official_count": official_count,
-        "name_ja": name_ja,
-        "name_fr": card["name_fr"],
-        "name_en": card["name_en"],
-        "edition": card.get("edition", "JP"),
-        "lang": card.get("lang", "ja"),
-        "image": card.get("image", ""),
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "fr": {
-            "smoothed_avg": final_fr_eur,
-            "raw_eur": final_fr_eur,
-            "sample_count": fr_samples,
-            "source_name": fr_source_name or "N/A",
-            "source_url": fr_source_url or "",
-            "matched_title": fr_matched_title or "",
-            "cardmarket_trend": cm_data.get("trend_price") if cm_data else None,
-            "graded": fr_graded,
-            "data_type": fr_data_type,
-        },
-        "jp": {
-            "smoothed_avg": final_jp_jpy,
-            "raw_jpy": final_jp_jpy,
-            "raw_eur": final_jp_eur,
-            "sample_count": jp_samples,
-            "source_name": jp_source_name or "N/A",
-            "source_url": jp_source_url or "",
-            "matched_title": jp_matched_title or "",
-            "graded": jp_graded,
-            "data_type": jp_data_type,
-        },
+        "best_direct_spread_eur": best_direct,
+        "best_grading_spread_eur": best_grading,
+        "is_high_value": is_high_val,
     }
 
 
 # ---------------------------------------------------------------------------
-# Dynamic TCGdex Set & Card Catalog Discovery
+# High-Value Chase Card Prioritization Engine
+# ---------------------------------------------------------------------------
+TIER1_SPECIAL_REFS = {
+    # 151 God cards
+    "sv2a 201/165", "sv2a 205/165", "sv2a 202/165", "sv2a 200/165", "sv2a 206/165",
+    "sv2a 204/165", "sv2a 203/165", "sv2a 173/165", "sv2a 183/165", "sv2a 185/165",
+    "sv2a 208/165", "sv2a 025/165", "sv2a 094/165", "sv2a 133/165", "sv2a 150/165",
+    # Modern Alt Arts & SARs
+    "s6a 095/069", "s11 111/100", "s12 110/098", "sv5a 090/066", "sv8 132/106",
+    "sv4a 347/190", "sv4a 348/190", "sv4a 349/190", "sv8a 095/187", "sv9 125/100",
+    # Promos
+    "s-p 227", "227/s-p", "001/030", "227",
+}
+
+
+def get_card_priority_tier(card: Dict[str, Any], en_name: str) -> int:
+    """
+    Tier 1 (Priority 1): Top Chase, SAR, SIR, Alt Arts, Gold UR, Master Balls, iconic promos.
+    Tier 2 (Priority 2): Modern SR, HR, CSR, CHR, Vintage Holos.
+    Tier 3 (Priority 3): Standard ARs, commons.
+    """
+    ref_lower = (card.get("ref") or "").lower()
+    local_id = str(card.get("local_id", ""))
+    official_count = card.get("official_count", "---")
+
+    # Tier 1 direct match
+    if ref_lower in TIER1_SPECIAL_REFS:
+        return 1
+
+    try:
+        lid_int = int(local_id.lstrip("0") or "0")
+        off_int = int(str(official_count).lstrip("0") or "9999")
+    except ValueError:
+        lid_int, off_int = 0, 9999
+
+    is_secret = lid_int > off_int and off_int > 0
+
+    name_lower = (card.get("name") or "").lower() + " " + en_name.lower()
+
+    # Tier 1 keywords
+    if is_secret:
+        if any(k in name_lower for k in [
+            "charizard", "mew", "pikachu", "eevee", "umbreon", "gengar", "rayquaza",
+            "giratina", "lugia", "lillie", "cynthia", "erika", "marnie", "iono",
+            "greninja", "mewtwo"
+        ]):
+            return 1
+        return 2
+
+    # Tier 2 keywords
+    if any(k in name_lower for k in ["vmax", "vstar", " sar", " sir", "alt art"]):
+        return 2
+
+    return 3
+
+
+# ---------------------------------------------------------------------------
+# TCGdex Discovery Engine
 # ---------------------------------------------------------------------------
 def fetch_tcgdex_sets(lang: str = "ja") -> Dict[str, Dict[str, Any]]:
-    """Dynamically fetches all official expansion sets from TCGdex."""
     url = f"https://api.tcgdex.net/v2/{lang}/sets"
     try:
-        r = GLOBAL_SESSION.get(url, timeout=15)
+        r = GLOBAL_SESSION.get(url, timeout=12)
         if r.status_code == 200:
-            set_list = r.json()
+            data = r.json()
             set_map = {}
-            for s in set_list:
+            for s in data:
                 sid = s.get("id")
-                if not sid:
-                    continue
-                cc = s.get("cardCount") or {}
-                official = str(cc.get("official") or cc.get("total") or "---")
-                set_map[sid] = {
-                    "id": sid,
-                    "name": s.get("name", sid),
-                    "official_count": official,
-                }
+                if sid:
+                    cc = s.get("cardCount", {})
+                    set_map[sid] = {
+                        "name": s.get("name", sid),
+                        "official": str(cc.get("official") or cc.get("total") or "---"),
+                        "total": str(cc.get("total") or "---"),
+                    }
             logger.info(f"Retrieved {len(set_map)} official sets for lang={lang.upper()}.")
             return set_map
     except Exception as e:
@@ -1077,56 +1095,117 @@ def fetch_tcgdex_sets(lang: str = "ja") -> Dict[str, Dict[str, Any]]:
     return {}
 
 
-def fetch_tcgdex_cards(lang: str = "ja", set_map: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-    """Dynamically fetches complete card index from TCGdex bulk endpoint."""
+def fetch_tcgdex_cards(lang: str, set_map: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     url = f"https://api.tcgdex.net/v2/{lang}/cards"
-    cards: List[Dict[str, Any]] = []
-    if set_map is None:
-        set_map = fetch_tcgdex_sets(lang)
-
     try:
-        r = GLOBAL_SESSION.get(url, timeout=25)
+        r = GLOBAL_SESSION.get(url, timeout=18)
         if r.status_code == 200:
-            raw_cards = r.json()
-            for c in raw_cards:
-                cid = str(c.get("id", "")).strip()
-                local_id = str(c.get("localId", "")).strip()
-                name = str(c.get("name", "")).strip()
-                image = str(c.get("image", "")).strip()
-                if not cid or not local_id or not name or not image:
+            card_items = r.json()
+            cards = []
+            for c in card_items:
+                if not c.get("id") or not c.get("localId") or not c.get("name"):
                     continue
-
-                set_id = cid.rsplit("-", 1)[0] if "-" in cid else cid
+                raw_id = c.get("id", "")
+                set_id = raw_id.split("-")[0] if "-" in raw_id else raw_id
                 s_meta = set_map.get(set_id, {})
-                official_count = s_meta.get("official_count", "---")
+                official = s_meta.get("official", "---")
+                local_id = str(c.get("localId"))
 
-                is_secret = False
-                try:
-                    if official_count.isdigit() and int(local_id.lstrip("0") or "0") > int(official_count):
-                        is_secret = True
-                except ValueError:
-                    pass
+                ref = f"{set_id} {local_id}/{official}" if official != "---" else f"{set_id} {local_id}"
 
-                ref = f"{set_id} {local_id}/{official_count}" if official_count != "---" else f"{set_id} {local_id}"
                 cards.append({
-                    "id": f"{lang}-{cid}",
-                    "raw_id": cid,
                     "ref": ref,
+                    "card_id": f"{lang}-{raw_id}",
                     "local_id": local_id,
-                    "official_count": official_count,
-                    "name": name,
-                    "name_ja": name if lang == "ja" else "",
-                    "edition": "JP" if lang == "ja" else "FR",
-                    "lang": lang,
+                    "official_count": official,
+                    "name": c.get("name"),
+                    "name_ja": c.get("name") if lang == "ja" else "",
                     "set_id": set_id,
-                    "image": image,
-                    "is_secret": is_secret,
+                    "set_name": s_meta.get("name", set_id),
+                    "edition": lang.upper(),
+                    "lang": lang,
+                    "image": c.get("image", ""),
                 })
             logger.info(f"Loaded {len(cards)} cards for lang={lang.upper()}.")
             return cards
     except Exception as e:
         logger.warning(f"Error fetching TCGdex cards for {lang}: {e}")
     return []
+
+
+# ---------------------------------------------------------------------------
+# Worker Thread Task: Process Single Card
+# ---------------------------------------------------------------------------
+def process_single_card(
+    card: Dict[str, Any],
+    fx: Dict[str, float],
+    species_catalog: Dict[str, Any],
+    enable_local_jp: bool = False
+) -> Optional[Dict[str, Any]]:
+    """Fetches real JP acquisition price and real FR resale price for a card."""
+    ref = card["ref"]
+    set_id = card.get("set_id", "")
+    local_id = str(card.get("local_id", ""))
+    set_name = card.get("set_name", "")
+    session = get_thread_session()
+
+    name_fr, name_en = translate_card_name(card.get("name_ja", card.get("name", "")), species_catalog)
+
+    # 1. Buy side (JP) via SNKRDUNK
+    jp_data = query_snkrdunk_jp(set_id, local_id, card.get("name_ja", ""), fx, session=session)
+
+    # 2. Resale side (FR) via Cardmarket Price Guide (Primary) + PriceCharting (Secondary/Slabs)
+    cm_service = CardmarketService.get_instance()
+    fr_cm = cm_service.find_cardmarket_price(set_id, local_id, name_en, set_name=set_name)
+    fr_pc = query_pricecharting_resale(set_id, local_id, name_en, fx, session=session)
+
+    # Combine Cardmarket + PriceCharting cleanly
+    fr_data = None
+    if fr_cm and fr_pc:
+        # Merge: Cardmarket for Raw EU price, PriceCharting for PSA 10/9 Slabs
+        fr_data = {
+            "smoothed_avg": fr_cm["smoothed_avg"],
+            "raw_eur": fr_cm["raw_eur"],
+            "sample_count": fr_cm["sample_count"],
+            "source_name": "Cardmarket (Price Guide EU)",
+            "source_url": fr_cm["source_url"],
+            "matched_title": fr_cm["matched_title"],
+            "cardmarket_trend": fr_cm.get("cardmarket_trend"),
+            "graded": fr_pc.get("graded", {}),
+            "data_type": "sold",
+        }
+    elif fr_cm:
+        fr_data = fr_cm
+    elif fr_pc:
+        fr_data = fr_pc
+
+    if not jp_data and not fr_data:
+        return None
+
+    # Precalculate Arbitrage Spreads
+    metrics = precalculate_arbitrage_metrics(fr_data, jp_data, fx)
+
+    result_entry = {
+        "ref": ref,
+        "card_id": card.get("card_id", ""),
+        "set_id": set_id,
+        "local_id": local_id,
+        "official_count": card.get("official_count", "---"),
+        "name_ja": card.get("name_ja", card.get("name")),
+        "name_fr": name_fr,
+        "name_en": name_en,
+        "edition": card.get("edition", "JP"),
+        "lang": card.get("lang", "ja"),
+        "image": card.get("image", ""),
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fr": fr_data,
+        "jp": jp_data,
+        "best_direct_spread_eur": metrics["best_direct_spread_eur"],
+        "best_grading_spread_eur": metrics["best_grading_spread_eur"],
+        "is_high_value": metrics["is_high_value"],
+    }
+
+    return result_entry
 
 
 # ---------------------------------------------------------------------------
@@ -1137,29 +1216,30 @@ def save_prices_checkpoint(
     fx_rates: Dict[str, float],
     total_processed: int,
 ):
-    """Atomically writes prices.json preserving file integrity."""
+    """Atomically writes prices.json preserving file integrity with canonical keys."""
     with save_lock:
         total_priced_both = sum(
             1 for c in prices_db.values()
-            if c.get("fr", {}).get("smoothed_avg") is not None
-            and c.get("jp", {}).get("smoothed_avg") is not None
+            if c.get("fr") and c.get("jp")
+            and (c["fr"].get("smoothed_avg") is not None or c["fr"].get("raw_eur") is not None)
+            and (c["jp"].get("smoothed_avg") is not None or c["jp"].get("raw_jpy") is not None)
         )
         fr_only = sum(
             1 for c in prices_db.values()
-            if c.get("fr", {}).get("smoothed_avg") is not None
-            and c.get("jp", {}).get("smoothed_avg") is None
+            if c.get("fr") and (c["fr"].get("smoothed_avg") is not None or c["fr"].get("raw_eur") is not None)
+            and (not c.get("jp") or (c["jp"].get("smoothed_avg") is None and c["jp"].get("raw_jpy") is None))
         )
         jp_only = sum(
             1 for c in prices_db.values()
-            if c.get("jp", {}).get("smoothed_avg") is not None
-            and c.get("fr", {}).get("smoothed_avg") is None
+            if c.get("jp") and (c["jp"].get("smoothed_avg") is not None or c["jp"].get("raw_jpy") is not None)
+            and (not c.get("fr") or (c["fr"].get("smoothed_avg") is None and c["fr"].get("raw_eur") is None))
         )
 
         payload = {
             "_meta": {
                 "generated_at": datetime.now(timezone.utc).isoformat(),
-                "version": "4.0.0",
-                "source": "pokespread_verified_sold_pipeline_v4",
+                "version": "5.0.0",
+                "source": "pokespread_verified_sold_pipeline_v5",
                 "fx_rates": fx_rates,
                 "card_count": len(prices_db),
                 "total_priced": total_priced_both + fr_only + jp_only,
@@ -1187,28 +1267,34 @@ def save_prices_checkpoint(
 # CLI & Main Orchestrator
 # ---------------------------------------------------------------------------
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="PokéSpread JP→FR Price Scraper Pipeline")
+    parser = argparse.ArgumentParser(description="PokéSpread JP→FR v5.0 Price Scraper")
     parser.add_argument("--test", type=int, default=0, help="Test run with N high-value cards")
     parser.add_argument("--force-refresh", action="store_true", help="Ignore previous cached prices")
+    parser.add_argument("--local-jp", action="store_true", help="Enable local JP scraping sources")
     parser.add_argument("--max-workers", type=int, default=5, help="Concurrent worker count")
-    parser.add_argument("--max-runtime", type=int, default=900, help="Max runtime in seconds")
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
-    start_ts = time.time()
     logger.info("==========================================================================")
-    logger.info("PokéSpread JP→FR — Clean Production Rebuild Pipeline v4.0")
+    logger.info("PokéSpread JP→FR — Clean Production Pipeline v5.0 (High-Margin Arbitrage)")
     logger.info("==========================================================================")
 
     # 1. Live Exchange Rates
     fx_rates = fetch_live_fx_rates()
 
-    # 2. PokéAPI Species Translation Catalog
-    species_catalog = fetch_pokemon_species_mapping()
+    # 2. PokéAPI Species Translations
+    species_catalog = build_and_save_species_catalog()
 
-    # 3. Load Existing Database
+    # 3. Initialize Cardmarket
+    cm_service = CardmarketService.get_instance()
+    cm_service.initialize()
+
+    # 4. Load SNKRDUNK cache
+    load_snkrdunk_ids()
+
+    # 5. Load Existing Database with Single Canonical Key
     existing_prices: Dict[str, Any] = {}
     if not args.force_refresh and os.path.exists(OUTPUT_FILE):
         try:
@@ -1222,156 +1308,94 @@ def main():
         except Exception as e:
             logger.warning(f"Could not read previous prices.json: {e}")
 
-    # 4. Fetch Sets and Japanese Cards from TCGdex
+    # 6. Fetch Sets and Cards from TCGdex
     set_map_ja = fetch_tcgdex_sets("ja")
     cards_ja = fetch_tcgdex_cards("ja", set_map_ja)
 
     if not cards_ja:
-        logger.error("No Japanese cards discovered from TCGdex. Exiting.")
+        logger.error("No Japanese cards discovered. Exiting.")
         sys.exit(1)
 
-    # 5. Filter & Prioritize Chase Cards
+    # 7. Sort Cards by Priority Tier (Tier 1 First)
     for c in cards_ja:
-        _, en_name = translate_jp_card_name(c.get("name_ja", c["name"]), species_catalog)
-        c["is_chase"] = is_chase_target(c, en_name=en_name)
+        _, en_n = translate_card_name(c.get("name_ja", c["name"]), species_catalog)
+        c["tier"] = get_card_priority_tier(c, en_n)
 
-    chase_cards = [c for c in cards_ja if c["is_chase"]]
-    common_cards = [c for c in cards_ja if not c["is_chase"]]
+    cards_ja.sort(key=lambda c: (0 if c["ref"].lower() in TIER1_SPECIAL_REFS else c["tier"]))
 
-    logger.info(f"Discovered {len(cards_ja)} total cards across {len(set_map_ja)} Japanese sets.")
-    logger.info(f"Filtered {len(chase_cards)} high-value chase targets (SAR, SR, UR, AR, Secrets).")
-
-    # Priority sorting: Modern eras first, unpriced cards first, Secret Rares first
-    def card_sort_key(c: Dict[str, Any]):
-        prev = existing_prices.get(c["ref"]) or existing_prices.get(c["ref"].lower())
-        has_price = prev is not None and (
-            prev.get("fr", {}).get("smoothed_avg") is not None
-            or prev.get("jp", {}).get("smoothed_avg") is not None
-        )
-        era_rank = get_set_era_rank(c.get("set_id", ""))
-        is_secret = 0 if c.get("is_secret") else 1
-        return (era_rank, 0 if not has_price else 1, is_secret)
-
-    chase_cards.sort(key=card_sort_key)
-    common_cards.sort(key=card_sort_key)
-
-    queue = chase_cards + common_cards
-
-    # If --test flag is set, take only N cards
     if args.test > 0:
-        logger.info(f"🧪 Running in TEST mode with {args.test} iconic cards...")
-        # Prioritize iconic cards like Charizard ex SAR (sv2a 201), Mew ex SAR (sv2a 205), etc.
-        test_queue: List[Dict[str, Any]] = []
-        c201 = next((c for c in queue if "sv2a" in c["set_id"].lower() and c["local_id"] == "201"), None)
-        c205 = next((c for c in queue if "sv2a" in c["set_id"].lower() and c["local_id"] == "205"), None)
-        c166 = next((c for c in queue if "sv2a" in c["set_id"].lower() and c["local_id"] == "166"), None)
-        if c201:
-            test_queue.append(c201)
-        if c205:
-            test_queue.append(c205)
-        if c166:
-            test_queue.append(c166)
-        for c in queue:
-            if c not in test_queue and len(test_queue) < args.test:
-                test_queue.append(c)
-        queue = test_queue
+        logger.info(f"🧪 Running in TEST mode with {args.test} top priority cards...")
+        queue = cards_ja[:args.test]
+    else:
+        queue = cards_ja
 
-    # 6. Multi-threaded Pricing Execution
-    prices_db: Dict[str, Any] = dict(existing_prices)
+    logger.info(f"Starting worker pool ({args.max_workers} threads) for {len(queue)} target cards...")
+
+    prices_db = dict(existing_prices)
     total_processed = 0
-    stop_event = threading.Event()
-    max_workers = min(args.max_workers, len(queue)) or 1
+    start_time = time.time()
 
-    logger.info(f"Starting worker pool ({max_workers} threads) for {len(queue)} target cards...")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
+        future_map = {
+            executor.submit(
+                process_single_card, card, fx_rates, species_catalog, args.local_jp
+            ): card
+            for card in queue
+        }
 
-    def worker(card_item: Dict[str, Any]):
-        if stop_event.is_set():
-            return None
-        try:
-            res = process_single_card(card_item, species_catalog, fx_rates, existing_prices, stop_event)
-            time.sleep(random.uniform(0.1, 0.25))
-            return (card_item, res)
-        except Exception as exc:
-            logger.debug(f"Worker error for {card_item.get('ref')}: {exc}")
-            return None
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        chunk_size = 25
-        for i in range(0, len(queue), chunk_size):
-            elapsed = time.time() - start_ts
-            if elapsed >= args.max_runtime:
-                logger.info(f"CI runtime limit reached ({int(elapsed)}s). Finalizing...")
-                stop_event.set()
-                break
-
-            chunk = queue[i : i + chunk_size]
-            future_to_card = {executor.submit(worker, c): c for c in chunk}
-
-            for future in concurrent.futures.as_completed(future_to_card):
-                res = future.result()
-                if not res:
-                    continue
-                card_item, record = res
-                if record:
-                    ref = card_item["ref"]
+        for future in concurrent.futures.as_completed(future_map):
+            card = future_map[future]
+            total_processed += 1
+            try:
+                result = future.result()
+                if result:
                     with db_lock:
-                        # Normalize key as both uppercase and lowercase references for O(1) indexing
-                        prices_db[ref] = record
-                        prices_db[ref.lower()] = record
-                        total_processed += 1
+                        prices_db[result["ref"]] = result
+            except Exception as e:
+                logger.error(f"Error processing {card.get('ref')}: {e}")
 
-            # Save checkpoint after each chunk
-            save_prices_checkpoint(prices_db, fx_rates, total_processed)
-            logger.info(f"[{total_processed}/{len(queue)}] Checkpoint saved ({int(time.time() - start_ts)}s elapsed)")
+            if total_processed % 10 == 0 or total_processed == len(queue):
+                save_prices_checkpoint(prices_db, fx_rates, total_processed)
+                elapsed = int(time.time() - start_time)
+                logger.info(f"[{total_processed}/{len(queue)}] Checkpoint saved ({elapsed}s elapsed)")
 
-    # Final Save
-    save_prices_checkpoint(prices_db, fx_rates, total_processed)
-
-    # Summary Statistics
-    total_both = sum(
+    # Print Summary Table
+    total_priced_both = sum(
         1 for c in prices_db.values()
-        if c.get("fr", {}).get("smoothed_avg") is not None
-        and c.get("jp", {}).get("smoothed_avg") is not None
-    )
-    fr_only = sum(
-        1 for c in prices_db.values()
-        if c.get("fr", {}).get("smoothed_avg") is not None
-        and c.get("jp", {}).get("smoothed_avg") is None
-    )
-    jp_only = sum(
-        1 for c in prices_db.values()
-        if c.get("jp", {}).get("smoothed_avg") is not None
-        and c.get("fr", {}).get("smoothed_avg") is None
+        if c.get("fr") and c.get("jp")
+        and (c["fr"].get("smoothed_avg") or c["fr"].get("raw_eur"))
+        and (c["jp"].get("smoothed_avg") or c["jp"].get("raw_jpy"))
     )
 
     print("\n" + "=" * 80)
-    print("POKÉSPREAD RUN SUMMARY & VERIFICATION TABLE")
+    print("POKÉSPREAD v5.0 RUN SUMMARY & VERIFICATION TABLE")
     print("=" * 80)
     print(f"Cards in Database:       {len(prices_db)}")
-    print(f"Total Priced (Both):     {total_both}")
-    print(f"FR Only:                 {fr_only}")
-    print(f"JP Only:                 {jp_only}")
+    print(f"Total Priced (Both):     {total_priced_both}")
     print(f"Processed this Run:      {total_processed}")
-    print(f"Circuit Breakers:        { {k: v['tripped'] for k, v in CIRCUIT_BREAKERS.items()} }")
+    print(f"Circuit Breakers:        {[k for k, v in CIRCUIT_BREAKERS.items() if v['tripped']] or 'None'}")
     print("=" * 80)
 
-    # In test mode, print sample cards
-    if args.test > 0 or total_processed <= 25:
-        print("\nSAMPLE CARD ARBITRAGE RESULTS:")
-        print(f"{'Ref':<16} | {'FR Name':<22} | {'JP Buy (¥)':<12} | {'JP Buy (€)':<12} | {'FR Sell (€)':<12} | {'PSA 10 (€)':<12}")
-        print("-" * 96)
-        for c in queue[:15]:
-            p = prices_db.get(c["ref"], {}) or prices_db.get(c["ref"].lower(), {})
-            fr_p = p.get("fr", {}).get("smoothed_avg")
-            jp_y = p.get("jp", {}).get("raw_jpy")
-            jp_e = p.get("jp", {}).get("raw_eur")
-            psa10 = p.get("fr", {}).get("graded", {}).get("PSA 10", {}).get("price")
-            fr_str = f"{fr_p:.2f}€" if fr_p else "—"
-            jpy_str = f"{jp_y}¥" if jp_y else "—"
-            jpe_str = f"{jp_e:.2f}€" if jp_e else "—"
-            psa_str = f"{psa10:.2f}€" if psa10 else "—"
-            print(f"{c['ref']:<16} | {p.get('name_fr', c['name'])[:22]:<22} | {jpy_str:<12} | {jpe_str:<12} | {fr_str:<12} | {psa_str:<12}")
-        print("=" * 96 + "\n")
+    print("\nSAMPLE CARD ARBITRAGE RESULTS:")
+    print(f"{'Ref':<16} | {'FR Name':<22} | {'JP Buy (¥)':<12} | {'JP Buy (€)':<12} | {'FR Sell (€)':<12} | {'PSA 10 (€)':<12}")
+    print("-" * 96)
+    sample_cards = list(prices_db.values())[:10]
+    for c in sample_cards:
+        ref = c.get("ref", "")
+        fr_name = c.get("name_fr") or c.get("name", "")
+        jp_buy_yen = c.get("jp", {}).get("raw_jpy")
+        jp_buy_eur = c.get("jp", {}).get("raw_eur")
+        fr_sell_eur = c.get("fr", {}).get("raw_eur") or c.get("fr", {}).get("smoothed_avg")
+        psa10_eur = c.get("fr", {}).get("graded", {}).get("PSA 10", {}).get("price")
+
+        print(
+            f"{ref:<16} | {fr_name[:20]:<22} | "
+            f"{(str(jp_buy_yen) + '¥') if jp_buy_yen else '---':<12} | "
+            f"{(str(jp_buy_eur) + '€') if jp_buy_eur else '---':<12} | "
+            f"{(str(fr_sell_eur) + '€') if fr_sell_eur else '---':<12} | "
+            f"{(str(psa10_eur) + '€') if psa10_eur else '---':<12}"
+        )
+    print("=" * 96 + "\n")
 
 
 if __name__ == "__main__":
