@@ -89,9 +89,10 @@ jobs:
             echo "No changes to prices.json — skipping commit"
           else
             CARD_COUNT=$(python -c "import json; d=json.load(open('prices.json', encoding='utf-8')); print(len(d.get('prices', {})))")
-            git pull --rebase -X theirs origin main || true
             git commit -m "chore(prices): auto-update ${CARD_COUNT} cards [$(date -u +'%Y-%m-%d %H:%M UTC')]"
-            git push origin main
+            git fetch origin main
+            git pull --rebase -X theirs origin main || true
+            git push origin HEAD:main
             echo "✅ prices.json committed and pushed"
           fi
 

@@ -7,15 +7,16 @@
 const state = {
   rate: 174.49,                                        // EUR/JPY live exchange rate
   usdRate: 1.096,                                      // EUR/USD live rate
-  fee: 0,                                              // Platform fee % (0% default)
-  shippingCostEur: 0,                                  // Shipping / import fee per card (€)
   costs: {
     resaleFeePct: 0,                                   // Commission revente % (0% default for Vinted/LBC, 13% for eBay)
     importVatPct: 0,                                    // TVA Import % (0% for hand-carry, 20% for shipped)
     shippingPerCardEur: 0,                             // Frais de port / proxy par carte (€)
     gradingCostEur: 25                                 // Coût Grading standard par carte (€)
   },
-  arbitrageStrategy: 'best',                           // 'best' (Auto) | 'raw' | 'slab' | 'grading'
+  productTab: 'raw',                                   // 'raw' (Onglet 1: Non-Gradées) | 'graded' (Onglet 2: Gradées Slabs)
+  slabMode: 'slab',                                    // 'slab' (Slab JP -> Slab FR) | 'grading' (Raw JP + frais -> Slab FR)
+  slabFilter: 'ALL',                                   // 'ALL' | 'PSA 10' | 'PSA 9' | 'BGS' | 'CGC' | 'PCA' | 'ARS'
+  minValue20: true,                                    // Strict >= 20 € resale filter on 3 recommendation columns
   purchasedCards: [],
   visibleCount: { margin: 25, roi: 25, velocity: 25 }, // Pagination steps: 25 -> 100 -> 250 -> 500
   searchQuery: '',
@@ -23,7 +24,7 @@ const state = {
   activeMobileTab: 'margin',                           // 'margin' | 'roi' | 'velocity'
   isLoadingCatalog: false,
   pricingRefFr: 'avg',                                 // 'avg' | 'cardmarket' | 'pricecharting' | 'ebay'
-  pricingRefJp: 'min',                                 // 'min' | 'snkrdunk' | 'yuyutei'
+  pricingRefJp: 'avg',                                 // 'avg' | 'snkrdunk'
   condition: {
     mode: 'raw',                                       // 'raw' | 'graded'
     rawCondition: 'NM',                                // 'NM' | 'EX' | 'LP' | 'PL'
@@ -35,7 +36,7 @@ const state = {
     priceMin: null,
     priceMax: null,
     priceUnit: 'EUR',                                  // 'EUR' | 'JPY'
-    pricedOnly: false,                                 // Show strictly verified complete opportunities
+    pricedOnly: true,                                  // Show strictly verified complete opportunities
     slabGrade: null                                    // null or specific grade override
   }
 };
@@ -337,17 +338,22 @@ const CatalogService = {
 
         getMeta.onsuccess = () => {
           const meta = getMeta.result;
-          const now = Date.now();
-          // 24 hours TTL
-          if (!meta || (now - meta.value) > 24 * 60 * 60 * 1000) {
-            resolve(null);
-            return;
-          }
+          const schemaGet = metaStore.get('catalog_schema_version');
+          schemaGet.onsuccess = () => {
+            const schema = schemaGet.result;
+            const now = Date.now();
+            // 24 hours TTL + v5.0 multi-universe schema check
+            if (!meta || (now - meta.value) > 24 * 60 * 60 * 1000 || !schema || schema.value !== 'v5.0') {
+              resolve(null);
+              return;
+            }
 
-          const cardStore = tx.objectStore('catalog');
-          const getAll = cardStore.getAll();
-          getAll.onsuccess = () => resolve(getAll.result);
-          getAll.onerror = () => resolve(null);
+            const cardStore = tx.objectStore('catalog');
+            const getAll = cardStore.getAll();
+            getAll.onsuccess = () => resolve(getAll.result);
+            getAll.onerror = () => resolve(null);
+          };
+          schemaGet.onerror = () => resolve(null);
         };
         getMeta.onerror = () => resolve(null);
       } catch (e) {
@@ -368,6 +374,7 @@ const CatalogService = {
         cardStore.put(c);
       }
       metaStore.put({ key: 'catalog_timestamp', value: Date.now() });
+      metaStore.put({ key: 'catalog_schema_version', value: 'v5.0' });
     } catch (e) {
       console.warn('IndexedDB write error:', e);
     }
@@ -407,19 +414,27 @@ const CatalogService = {
   async hydrateBackgroundLanguages() {
     const backgroundLangs = [
       { lang: 'ko', edition: 'KR' },
+      { lang: 'zh-tw', edition: 'CN' },
+      { lang: 'zh-cn', edition: 'CN' },
       { lang: 'de', edition: 'DE' },
       { lang: 'it', edition: 'IT' },
       { lang: 'es', edition: 'ES' },
       { lang: 'pt', edition: 'PT' }
     ];
 
+    const existingIds = new Set(this.cards.map(c => c.id));
     let hasNewCards = false;
     for (const { lang, edition } of backgroundLangs) {
       try {
         const cards = await this.fetchLanguageCards(lang, edition);
         if (cards && cards.length > 0) {
-          this.cards.push(...cards);
-          hasNewCards = true;
+          for (const c of cards) {
+            if (!existingIds.has(c.id)) {
+              existingIds.add(c.id);
+              this.cards.push(c);
+              hasNewCards = true;
+            }
+          }
         }
       } catch (e) {
         console.warn(`Background hydration skipped for ${lang}:`, e);
@@ -516,36 +531,55 @@ const CatalogService = {
 };
 
 // ── 6. PRICING & ARBITRAGE FINANCIAL LOGIC ────────────────────
+function extractFrSourcePrice(frObj, refKey) {
+  if (!frObj) return null;
+  const sources = Array.isArray(frObj.sources) ? frObj.sources : [];
+  if (refKey && refKey !== 'avg' && sources.length > 0) {
+    const match = sources.find(s => (s.name || '').toLowerCase().includes(refKey.toLowerCase()));
+    if (match && Number(match.price_eur) > 0) return Number(match.price_eur);
+    return null;
+  }
+  const val = frObj.raw_eur ?? frObj.smoothed_avg ?? frObj.cardmarket_trend;
+  return val != null && Number(val) > 0 ? Number(val) : null;
+}
+
+function extractJpSourcePrice(jpObj, refKey) {
+  if (!jpObj) return null;
+  const sources = Array.isArray(jpObj.sources) ? jpObj.sources : [];
+  if (refKey && refKey !== 'avg' && refKey !== 'min' && sources.length > 0) {
+    const match = sources.find(s => (s.name || '').toLowerCase().includes(refKey.toLowerCase()));
+    if (match && Number(match.price_jpy) > 0) return Math.round(Number(match.price_jpy));
+    return null;
+  }
+  const val = jpObj.raw_jpy ?? jpObj.smoothed_avg;
+  return val != null && Number(val) > 0 ? Math.round(Number(val)) : null;
+}
+
 function getActiveFrPrice(card, customGradeOrCondition = null) {
   if (!card) return null;
   const p = card.pricedRecord || PriceService.getExactPrice(card);
   if (!p || !p.fr) return null;
 
-  const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
+  const slabKey = customGradeOrCondition || (state.productTab === 'graded' ? (state.slabFilter !== 'ALL' ? state.slabFilter : null) : state.filters.slabGrade);
 
   // If graded mode is selected: strictly verified transactions only (0 fake multipliers)
-  if (slabKey && slabKey !== 'raw_nm') {
+  if (slabKey && !String(slabKey).toLowerCase().startsWith('raw')) {
     const gradedRec = p.fr.graded?.[slabKey];
-    if (gradedRec?.price && Number(gradedRec.price) > 0) {
-      return Number(gradedRec.price);
+    if (gradedRec) {
+      if (state.pricingRefFr !== 'avg' && Array.isArray(gradedRec.sources)) {
+        const src = gradedRec.sources.find(s => (s.name || '').toLowerCase().includes(state.pricingRefFr.toLowerCase()));
+        if (src && Number(src.price_eur) > 0) return Number(src.price_eur);
+      } else if (gradedRec.price && Number(gradedRec.price) > 0) {
+        return Number(gradedRec.price);
+      }
     }
     return null;
   }
 
-  // Raw condition calculation
-  let rawFr = null;
-  if (state.pricingRefFr === 'cardmarket') {
-    rawFr = p.fr.cardmarket_trend || p.fr.raw_eur || p.fr.smoothed_avg;
-  } else if (state.pricingRefFr === 'ebay') {
-    rawFr = p.fr.raw_eur || p.fr.smoothed_avg;
-  } else if (state.pricingRefFr === 'pricecharting') {
-    rawFr = p.fr.raw_eur || p.fr.smoothed_avg;
-  } else {
-    rawFr = p.fr.smoothed_avg || p.fr.raw_eur || p.fr.cardmarket_trend;
-  }
-  if (!rawFr || Number(rawFr) <= 0) return null;
+  const rawFr = extractFrSourcePrice(p.fr, state.pricingRefFr);
+  if (!rawFr) return null;
 
-  const cond = state.condition.mode === 'raw' ? state.condition.rawCondition : 'NM';
+  const cond = state.condition.rawCondition || 'NM';
   const condMult = RAW_CONDITION_MULTIPLIERS[cond] || 1.0;
   return Number((rawFr * condMult).toFixed(2));
 }
@@ -555,190 +589,196 @@ function getActiveJpPrice(card, customGradeOrCondition = null) {
   const p = card.pricedRecord || PriceService.getExactPrice(card);
   if (!p || !p.jp) return null;
 
-  const slabKey = customGradeOrCondition || state.filters.slabGrade || (state.condition.mode === 'graded' ? state.condition.grade : null);
+  const slabKey = customGradeOrCondition || (state.productTab === 'graded' ? (state.slabFilter !== 'ALL' ? state.slabFilter : null) : state.filters.slabGrade);
 
-  // If graded mode is selected: strictly verified transactions only (0 fake multipliers)
-  if (slabKey && slabKey !== 'raw_nm') {
+  if (slabKey && !String(slabKey).toLowerCase().startsWith('raw')) {
     const gradedRec = p.jp.graded?.[slabKey];
     if (gradedRec) {
       if (gradedRec.price_jpy && Number(gradedRec.price_jpy) > 0) {
         return Math.round(Number(gradedRec.price_jpy));
       }
-      if (gradedRec.price && Number(gradedRec.price) > 0) {
-        return Math.round(Number(gradedRec.price));
+      if (gradedRec.price_eur && Number(gradedRec.price_eur) > 0) {
+        return Math.round(eurToJpy(Number(gradedRec.price_eur)));
       }
     }
     return null;
   }
 
-  // Raw condition calculation
-  let rawJp = null;
-  if (state.pricingRefJp === 'snkrdunk') {
-    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
-  } else if (state.pricingRefJp === 'yuyutei') {
-    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
-  } else {
-    rawJp = p.jp.raw_jpy || p.jp.smoothed_avg;
-  }
-  if (!rawJp || Number(rawJp) <= 0) return null;
+  const rawJp = extractJpSourcePrice(p.jp, state.pricingRefJp);
+  if (!rawJp) return null;
 
-  const cond = state.condition.mode === 'raw' ? state.condition.rawCondition : 'NM';
+  const cond = state.condition.rawCondition || 'NM';
   const condMult = RAW_CONDITION_MULTIPLIERS[cond] || 1.0;
   return Math.round(rawJp * condMult);
 }
 
-// ── 6B. BEST ARBITRAGE OPPORTUNITY EVALUATOR ──────────────────
-function getBestArbitrageOpportunity(card, requestedStrategy = null) {
-  if (!card) return null;
-  const p = card.pricedRecord || PriceService.getExactPrice(card);
-  if (!p) return null;
-
-  const strategy = requestedStrategy || state.arbitrageStrategy || 'best';
+// ── 6B. TAB-SEPARATED ARBITRAGE EVALUATOR (RAW vs GRADED) ─────
+function computeNetFinancials(jpPriceYen, frSellEur, extraCostEur = 0) {
+  const jpPriceEur = jpToEur(jpPriceYen);
   const vatRate = (state.costs?.importVatPct || 0) / 100;
   const feeRate = (state.costs?.resaleFeePct || 0) / 100;
   const shipping = state.costs?.shippingPerCardEur || 0;
-  const gradingCost = state.costs?.gradingCostEur != null ? state.costs.gradingCostEur : 25;
+  const costWithVat = jpPriceEur * (1 + vatRate);
+  const totalCost = costWithVat + shipping + extraCostEur + (frSellEur * feeRate);
+  const net = Number((frSellEur - totalCost).toFixed(2));
+  const roi = totalCost > 0 ? Number((((frSellEur - totalCost) / totalCost) * 100).toFixed(1)) : 0;
+  return { jpPriceEur: Number(jpPriceEur.toFixed(2)), totalCostEur: Number(totalCost.toFixed(2)), netMarginEur: net, roiPct: roi };
+}
+
+function getRawOpportunity(card) {
+  const p = card?.pricedRecord || PriceService.getExactPrice(card);
+  if (!p || !p.fr || !p.jp) return null;
+
+  const frSellEur = getActiveFrPrice(card, 'raw_nm');
+  const jpPriceYen = getActiveJpPrice(card, 'raw_nm');
+  if (!frSellEur || !jpPriceYen || frSellEur <= 0 || jpPriceYen <= 0) return null;
+
+  const fin = computeNetFinancials(jpPriceYen, frSellEur, 0);
+  const frSamples = p.fr?.sample_count || (p.fr?.sources || []).reduce((a, s) => a + (s.sample_count || 1), 0);
+  const jpSamples = p.jp?.sample_count || (p.jp?.sources || []).reduce((a, s) => a + (s.sample_count || 1), 0);
+
+  return {
+    type: 'raw',
+    grade: null,
+    label: `Raw ${state.condition.rawCondition || 'NM'}`,
+    badge: `📦 Raw ${state.condition.rawCondition || 'NM'}`,
+    jpPriceYen,
+    jpPriceEur: fin.jpPriceEur,
+    frSellEur,
+    netMarginEur: fin.netMarginEur,
+    roiPct: fin.roiPct,
+    totalCostEur: fin.totalCostEur,
+    liquidity: frSamples + jpSamples,
+    sourceFr: p.fr?.source_name || 'Cardmarket / PriceCharting',
+    sourceJp: p.jp?.source_name || 'SNKRDUNK (Sold JPY)',
+    jpSources: p.jp?.sources || [],
+    frSources: p.fr?.sources || [],
+    jpHistory: p.jp?.history || [],
+    frHistory: p.fr?.history || []
+  };
+}
+
+function gradeMatchesFilter(gradeKey, filterVal) {
+  if (!filterVal || filterVal === 'ALL') return true;
+  if (gradeKey === filterVal) return true;
+  if (['BGS', 'CGC', 'PCA', 'ARS', 'PSA'].includes(filterVal)) {
+    return gradeKey.toUpperCase().startsWith(filterVal.toUpperCase());
+  }
+  return false;
+}
+
+function getGradedOpportunity(card, specificGrade = null) {
+  const p = card?.pricedRecord || PriceService.getExactPrice(card);
+  if (!p || !p.fr || !p.jp) return null;
+
+  const frGraded = p.fr.graded || {};
+  const jpGraded = p.jp.graded || {};
+  const filterVal = specificGrade || state.slabFilter || 'ALL';
+  const mode = state.slabMode || 'slab';
+  const gradingCost = state.costs?.gradingCostEur != null ? Number(state.costs.gradingCostEur) : 25;
+
+  const candidateGrades = Object.keys(frGraded).filter(g => gradeMatchesFilter(g, filterVal));
+  if (candidateGrades.length === 0) return null;
 
   const opportunities = [];
+  for (const grade of candidateGrades) {
+    const frRec = frGraded[grade];
+    if (!frRec) continue;
 
-  // 1. Direct Raw Arbitrage (JP Raw -> FR Raw)
-  const rawFr = (p.fr?.raw_eur || p.fr?.smoothed_avg || p.fr?.cardmarket_trend) ? getActiveFrPrice(card, 'raw_nm') : null;
-  const rawJpYen = (p.jp?.raw_jpy || p.jp?.smoothed_avg) ? getActiveJpPrice(card, 'raw_nm') : null;
-  if (rawFr && rawJpYen && rawFr > 0 && rawJpYen > 0) {
-    const rawJpEur = jpToEur(rawJpYen);
-    const costWithVat = rawJpEur * (1 + vatRate);
-    const totalCost = costWithVat + shipping + (rawFr * feeRate);
-    const net = Number((rawFr - totalCost).toFixed(2));
-    const roi = totalCost > 0 ? Number((((rawFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
-    opportunities.push({
-      type: 'raw',
-      label: 'Direct Raw (NM)',
-      badge: '📦 Direct Raw',
-      jpPriceYen: rawJpYen,
-      jpPriceEur: rawJpEur,
-      frSellEur: rawFr,
-      netMarginEur: net,
-      roiPct: roi,
-      totalCostEur: totalCost,
-      sourceFr: p.fr?.source_name || 'Cardmarket/eBay',
-      sourceJp: p.jp?.source_name || 'SNKRDUNK'
-    });
-  }
+    let frSellEur = Number(frRec.price || 0);
+    if (state.pricingRefFr !== 'avg' && Array.isArray(frRec.sources)) {
+      const match = frRec.sources.find(s => (s.name || '').toLowerCase().includes(state.pricingRefFr.toLowerCase()));
+      frSellEur = match ? Number(match.price_eur || 0) : 0;
+    }
+    if (!frSellEur || frSellEur <= 0) continue;
 
-  // 2. Direct Slab Arbitrage (JP Slab -> FR Slab)
-  const slabCandidates = [state.condition.grade, 'PSA 10', 'PSA 9', 'BGS 9.5', 'ARS 10'].filter(Boolean);
-  for (const grade of slabCandidates) {
-    const slabFr = p.fr?.graded?.[grade]?.price ? Number(p.fr.graded[grade].price) : null;
-    const slabJpYen = p.jp?.graded?.[grade]?.price_jpy ? Number(p.jp.graded[grade].price_jpy) : (p.jp?.graded?.[grade]?.price ? Number(p.jp.graded[grade].price) : null);
-    if (slabFr && slabJpYen && slabFr > 0 && slabJpYen > 0) {
-      const slabJpEur = jpToEur(slabJpYen);
-      const costWithVat = slabJpEur * (1 + vatRate);
-      const totalCost = costWithVat + shipping + (slabFr * feeRate);
-      const net = Number((slabFr - totalCost).toFixed(2));
-      const roi = totalCost > 0 ? Number((((slabFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
+    if (mode === 'slab') {
+      const jpRec = jpGraded[grade];
+      if (!jpRec) continue;
+      const jpPriceYen = jpRec.price_jpy ? Math.round(Number(jpRec.price_jpy)) : (jpRec.price_eur ? Math.round(eurToJpy(Number(jpRec.price_eur))) : 0);
+      if (!jpPriceYen || jpPriceYen <= 0) continue;
+
+      const fin = computeNetFinancials(jpPriceYen, frSellEur, 0);
+      const liquidity = (frRec.sample_count || 1) + (jpRec.sample_count || 1);
       opportunities.push({
         type: 'slab',
+        grade,
         label: `Slab ${grade}`,
-        badge: `💎 Slab ${grade}`,
-        grade: grade,
-        jpPriceYen: slabJpYen,
-        jpPriceEur: slabJpEur,
-        frSellEur: slabFr,
-        netMarginEur: net,
-        roiPct: roi,
-        totalCostEur: totalCost,
-        sourceFr: p.fr.graded[grade].source || 'PriceCharting / eBay FR',
-        sourceJp: p.jp.graded[grade].source || 'SNKRDUNK'
+        badge: `💎 ${grade}`,
+        jpPriceYen,
+        jpPriceEur: fin.jpPriceEur,
+        frSellEur,
+        netMarginEur: fin.netMarginEur,
+        roiPct: fin.roiPct,
+        totalCostEur: fin.totalCostEur,
+        liquidity,
+        sourceFr: frRec.source || p.fr?.source_name || 'PriceCharting / eBay FR',
+        sourceJp: jpRec.source || p.jp?.source_name || 'SNKRDUNK',
+        jpSources: jpRec.sources || p.jp?.sources || [],
+        frSources: frRec.sources || [],
+        jpHistory: jpRec.history || p.jp?.history || [],
+        frHistory: frRec.history || []
       });
-      break; // Take the highest available slab match
+    } else {
+      // Grading leverage mode: Raw JP + gradingCost -> Graded FR
+      const rawJpYen = extractJpSourcePrice(p.jp, state.pricingRefJp);
+      if (!rawJpYen || rawJpYen <= 0) continue;
+
+      const fin = computeNetFinancials(rawJpYen, frSellEur, gradingCost);
+      const jpSamples = p.jp?.sample_count || 1;
+      const liquidity = (frRec.sample_count || 1) + jpSamples;
+      opportunities.push({
+        type: 'grading',
+        grade,
+        gradingCostEur: gradingCost,
+        label: `Levier Grading (Raw JP → ${grade} FR)`,
+        badge: `⚡ Raw → ${grade}`,
+        jpPriceYen: rawJpYen,
+        jpPriceEur: fin.jpPriceEur,
+        frSellEur,
+        netMarginEur: fin.netMarginEur,
+        roiPct: fin.roiPct,
+        totalCostEur: fin.totalCostEur,
+        liquidity,
+        sourceFr: frRec.source || 'PriceCharting / eBay FR',
+        sourceJp: p.jp?.source_name || 'SNKRDUNK (Raw)',
+        jpSources: p.jp?.sources || [],
+        frSources: frRec.sources || [],
+        jpHistory: p.jp?.history || [],
+        frHistory: frRec.history || []
+      });
     }
   }
 
-  // 3. Grading Leverage Arbitrage (Raw JP + 25€ -> PSA 10 FR)
-  const targetGrade = 'PSA 10';
-  const targetSlabFr = p.fr?.graded?.[targetGrade]?.price ? Number(p.fr.graded[targetGrade].price) : null;
-  if (rawJpYen && targetSlabFr && rawJpYen > 0 && targetSlabFr > 0) {
-    const rawJpEur = jpToEur(rawJpYen);
-    const costWithVat = rawJpEur * (1 + vatRate);
-    const totalCost = costWithVat + shipping + gradingCost + (targetSlabFr * feeRate);
-    const net = Number((targetSlabFr - totalCost).toFixed(2));
-    const roi = totalCost > 0 ? Number((((targetSlabFr - totalCost) / totalCost) * 100).toFixed(1)) : 0;
-    opportunities.push({
-      type: 'grading',
-      label: `Levier Grading (Raw JP → ${targetGrade} FR)`,
-      badge: `⚡ Levier Grading`,
-      grade: targetGrade,
-      gradingCostEur: gradingCost,
-      jpPriceYen: rawJpYen,
-      jpPriceEur: rawJpEur,
-      frSellEur: targetSlabFr,
-      netMarginEur: net,
-      roiPct: roi,
-      totalCostEur: totalCost,
-      sourceFr: p.fr.graded[targetGrade].source || 'PriceCharting / eBay FR',
-      sourceJp: p.jp?.source_name || 'SNKRDUNK'
-    });
-  }
-
   if (opportunities.length === 0) return null;
-
-  if (strategy === 'raw') {
-    return opportunities.find(o => o.type === 'raw') || null;
-  }
-  if (strategy === 'slab') {
-    return opportunities.find(o => o.type === 'slab') || null;
-  }
-  if (strategy === 'grading') {
-    return opportunities.find(o => o.type === 'grading') || null;
-  }
-
-  // 'best' mode: highest net margin in €
   opportunities.sort((a, b) => b.netMarginEur - a.netMarginEur);
   return opportunities[0];
 }
 
+function getTabOpportunity(card, tabOverride = null, gradeOverride = null) {
+  const tab = tabOverride || state.productTab || 'raw';
+  if (tab === 'graded') {
+    return getGradedOpportunity(card, gradeOverride);
+  }
+  return getRawOpportunity(card);
+}
+
 function netMargin(card) {
-  const opp = getBestArbitrageOpportunity(card);
-  if (opp) return opp.netMarginEur;
-
-  // Fallback to active prices if incomplete
-  const frSell = getActiveFrPrice(card);
-  const jpBuyYen = getActiveJpPrice(card);
-  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) return null;
-
-  const jpBuyEur = jpToEur(jpBuyYen);
-  const vatRate = (state.costs?.importVatPct || 0) / 100;
-  const feeRate = (state.costs?.resaleFeePct || 0) / 100;
-  const shipping = state.costs?.shippingPerCardEur || 0;
-  const jpCostWithVat = jpBuyEur * (1 + vatRate);
-  const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
-  return Number((frSell - totalCost).toFixed(2));
+  const opp = getTabOpportunity(card);
+  return opp ? opp.netMarginEur : null;
 }
 
 function netROI(card) {
-  const opp = getBestArbitrageOpportunity(card);
-  if (opp) return opp.roiPct;
-
-  const frSell = getActiveFrPrice(card);
-  const jpBuyYen = getActiveJpPrice(card);
-  if (frSell == null || jpBuyYen == null || frSell <= 0 || jpBuyYen <= 0) return null;
-
-  const jpBuyEur = jpToEur(jpBuyYen);
-  const vatRate = (state.costs?.importVatPct || 0) / 100;
-  const feeRate = (state.costs?.resaleFeePct || 0) / 100;
-  const shipping = state.costs?.shippingPerCardEur || 0;
-  const jpCostWithVat = jpBuyEur * (1 + vatRate);
-  const totalCost = jpCostWithVat + shipping + (frSell * feeRate);
-  if (totalCost <= 0) return 0;
-  return Number((((frSell - totalCost) / totalCost) * 100).toFixed(1));
+  const opp = getTabOpportunity(card);
+  return opp ? opp.roiPct : null;
 }
 
 function getCardLiquidity(card) {
+  const opp = getTabOpportunity(card);
+  if (opp) return opp.liquidity;
   const p = card.pricedRecord || PriceService.getExactPrice(card);
   if (!p) return 0;
-  const samplesFr = p.fr?.sample_count || 0;
-  const samplesJp = p.jp?.sample_count || 0;
-  return samplesFr + samplesJp;
+  return (p.fr?.sample_count || 0) + (p.jp?.sample_count || 0);
 }
 
 // ── 7. FILTER ENGINE ──────────────────────────────────────────
@@ -747,16 +787,14 @@ function isFilterModeActive() {
     (state.filters.countries && state.filters.countries.length > 0) ||
     state.filters.priceMin !== null ||
     state.filters.priceMax !== null ||
-    state.filters.pricedOnly === true ||
-    state.filters.slabGrade !== null ||
+    state.minValue20 === true ||
     (state.searchQuery && state.searchQuery.trim().length > 0)
   );
 }
 
-function cardMatchesFilters(card) {
+function cardMatchesCommonFilters(card) {
   if (!card) return false;
 
-  // 1. Text Search Filter
   if (state.searchQuery && state.searchQuery.trim().length > 0) {
     const q = state.searchQuery.toLowerCase().trim();
     const nameMatch = (card.name || '').toLowerCase().includes(q) ||
@@ -765,116 +803,81 @@ function cardMatchesFilters(card) {
     const refMatch = (card.ref || '').toLowerCase().includes(q);
     const setMatch = (card.set_id || '').toLowerCase().includes(q);
     const numMatch = (card.local_id || '').toLowerCase() === q;
-
-    if (!nameMatch && !refMatch && !setMatch && !numMatch) {
-      return false;
-    }
+    if (!nameMatch && !refMatch && !setMatch && !numMatch) return false;
   }
 
-  // 2. Edition / Country Filter
   if (state.filters.countries && state.filters.countries.length > 0) {
-    if (!state.filters.countries.includes(card.edition)) {
-      return false;
-    }
-  }
-
-  const opp = getBestArbitrageOpportunity(card);
-  const frPrice = opp ? opp.frSellEur : getActiveFrPrice(card);
-  const jpPriceYen = opp ? opp.jpPriceYen : getActiveJpPrice(card);
-  const jpPriceEur = jpPriceYen ? jpToEur(jpPriceYen) : null;
-
-  // 3. Complete Opportunities Toggle (Strictly JP + FR priced)
-  if (state.filters.pricedOnly) {
-    if (opp == null && (frPrice == null || jpPriceYen == null)) {
-      return false;
-    }
-  }
-
-  // 4. Price Min / Max Filter
-  const priceToCheck = state.filters.priceUnit === 'JPY'
-    ? (jpPriceYen != null ? jpPriceYen : (frPrice != null ? eurToJpy(frPrice) : null))
-    : (frPrice != null ? frPrice : (jpPriceEur != null ? jpPriceEur : null));
-
-  if (priceToCheck == null && (state.filters.priceMin !== null || state.filters.priceMax !== null)) {
-    return false;
-  }
-
-  if (state.filters.priceMin !== null && priceToCheck < state.filters.priceMin) {
-    return false;
-  }
-  if (state.filters.priceMax !== null && priceToCheck > state.filters.priceMax) {
-    return false;
+    if (!state.filters.countries.includes(card.edition)) return false;
   }
 
   return true;
 }
 
+function cardMatchesTabRecommendation(card, tabOverride = null) {
+  if (!cardMatchesCommonFilters(card)) return null;
+
+  const opp = getTabOpportunity(card, tabOverride);
+  if (!opp) return null;
+
+  // Strict recommendation threshold: net margin > 0€ and (when >=20€ active) resale >= 20€
+  if (opp.netMarginEur <= 0) return null;
+  if (state.minValue20 && opp.frSellEur < 20) return null;
+
+  const priceToCheck = state.filters.priceUnit === 'JPY' ? opp.jpPriceYen : opp.frSellEur;
+  if (state.filters.priceMin !== null && priceToCheck < state.filters.priceMin) return null;
+  if (state.filters.priceMax !== null && priceToCheck > state.filters.priceMax) return null;
+
+  return opp;
+}
+
 // ── 8. THREE-COLUMN ARBITRAGE RANKING ENGINE ─────────────────
 function getSortedOpportunities() {
   const catalog = CatalogService.cards;
-  const filtered = catalog.filter(cardMatchesFilters);
 
-  function categorize(card) {
-    const opp = getBestArbitrageOpportunity(card);
-    if (opp && opp.netMarginEur > 0) return 0; // Confirmed positive profit arbitrage
-    if (opp && opp.netMarginEur <= 0) return 1; // Breakeven or negative arbitrage
-    const fr = getActiveFrPrice(card);
-    const jp = getActiveJpPrice(card);
-    if (fr != null && jp != null) return 2;     // Both priced
-    if (fr != null || jp != null) return 3;     // Partial
-    return 4;                                   // Unpriced
+  // Compute qualifying opportunities for active tab AND count other tab
+  const activeItems = [];
+  let rawTabCount = 0;
+  let gradedTabCount = 0;
+
+  for (const card of catalog) {
+    if (!card.pricedRecord) continue;
+    const rawOpp = cardMatchesTabRecommendation(card, 'raw');
+    if (rawOpp) rawTabCount++;
+    const gradedOpp = cardMatchesTabRecommendation(card, 'graded');
+    if (gradedOpp) gradedTabCount++;
+
+    const activeOpp = state.productTab === 'graded' ? gradedOpp : rawOpp;
+    if (activeOpp) {
+      activeItems.push({ card, opp: activeOpp });
+    }
   }
 
+  const rawBadge = document.getElementById('tab-count-raw');
+  const gradedBadge = document.getElementById('tab-count-graded');
+  if (rawBadge) rawBadge.textContent = String(rawTabCount);
+  if (gradedBadge) gradedBadge.textContent = String(gradedTabCount);
+
   // 1. MEILLEURE MARGE (€)
-  const byMargin = [...filtered].sort((a, b) => {
-    const catA = categorize(a);
-    const catB = categorize(b);
-    if (catA !== catB) return catA - catB;
-
-    const mA = netMargin(a) ?? -Infinity;
-    const mB = netMargin(b) ?? -Infinity;
-    if (mA !== mB) return mB - mA;
-
-    const frA = getActiveFrPrice(a) ?? 0;
-    const frB = getActiveFrPrice(b) ?? 0;
-    return frB - frA;
+  const byMargin = [...activeItems].sort((a, b) => {
+    if (b.opp.netMarginEur !== a.opp.netMarginEur) return b.opp.netMarginEur - a.opp.netMarginEur;
+    return b.opp.frSellEur - a.opp.frSellEur;
   });
 
-  // 2. MEILLEUR ROI (%) with margin floor >= 5€
-  const byROI = [...filtered].sort((a, b) => {
-    const catA = categorize(a);
-    const catB = categorize(b);
-    if (catA !== catB) return catA - catB;
-
-    const mA = netMargin(a) ?? -Infinity;
-    const mB = netMargin(b) ?? -Infinity;
-    const floorA = mA >= 5 ? 0 : 1;
-    const floorB = mB >= 5 ? 0 : 1;
-    if (floorA !== floorB) return floorA - floorB;
-
-    const rA = netROI(a) ?? -Infinity;
-    const rB = netROI(b) ?? -Infinity;
-    if (rA !== rB) return rB - rA;
-
-    return mB - mA;
+  // 2. MEILLEUR ROI (%) among >= 20€ & margin > 0€
+  const byROI = [...activeItems].sort((a, b) => {
+    if (b.opp.roiPct !== a.opp.roiPct) return b.opp.roiPct - a.opp.roiPct;
+    return b.opp.netMarginEur - a.opp.netMarginEur;
   });
 
-  // 3. QUICK TURNOVER (Verified sales liquidity + positive margin)
-  const byVelocity = [...filtered].sort((a, b) => {
-    const catA = categorize(a);
-    const catB = categorize(b);
-    if (catA !== catB) return catA - catB;
-
-    const vA = getCardLiquidity(a);
-    const vB = getCardLiquidity(b);
-    if (vA !== vB) return vB - vA;
-
-    const mA = netMargin(a) ?? -Infinity;
-    const mB = netMargin(b) ?? -Infinity;
-    return mB - mA;
+  // 3. QUICK TURNOVER (real sample_count weighted by net margin)
+  const byVelocity = [...activeItems].sort((a, b) => {
+    const scoreA = a.opp.liquidity * (1 + Math.min(a.opp.netMarginEur, 500) / 100);
+    const scoreB = b.opp.liquidity * (1 + Math.min(b.opp.netMarginEur, 500) / 100);
+    if (scoreB !== scoreA) return scoreB - scoreA;
+    return b.opp.netMarginEur - a.opp.netMarginEur;
   });
 
-  return { byMargin, byROI, byVelocity, totalMatches: filtered.length };
+  return { byMargin, byROI, byVelocity, totalMatches: activeItems.length };
 }
 
 // ── 9. CARD TILE RENDERING ────────────────────────────────────
@@ -896,33 +899,32 @@ function onCardImageError(imgEl) {
   }
 }
 
-function renderCardTile(card, rank) {
+function renderCardTile(card, rank, oppOverride = null) {
   const p = card.pricedRecord || PriceService.getExactPrice(card);
-  const opp = getBestArbitrageOpportunity(card);
+  const opp = oppOverride || getTabOpportunity(card);
   const frSell = opp ? opp.frSellEur : getActiveFrPrice(card);
   const jpBuyYen = opp ? opp.jpPriceYen : getActiveJpPrice(card);
   const jpBuyEur = opp ? opp.jpPriceEur : (jpBuyYen ? jpToEur(jpBuyYen) : null);
   const margin = opp ? opp.netMarginEur : netMargin(card);
   const roi = opp ? opp.roiPct : netROI(card);
-  const liquidity = getCardLiquidity(card);
+  const liquidity = opp ? opp.liquidity : getCardLiquidity(card);
 
   const hasBoth = frSell != null && jpBuyYen != null;
   const isJpOnly = jpBuyYen != null && frSell == null;
   const isFrOnly = frSell != null && jpBuyYen == null;
 
-  // Status & strategy badge
   let statusBadgeHtml = '';
   if (opp && opp.type === 'grading') {
-    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-full px-2 py-0.5 shadow-xs">
-      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> ⚡ Levier Grading
+    statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-300 rounded-full px-2 py-0.5">
+      ⚡ Raw → ${opp.grade}
     </span>`;
   } else if (opp && opp.type === 'slab') {
     statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-300 rounded-full px-2 py-0.5">
-      💎 Slab ${opp.grade}
+      💎 ${opp.grade}
     </span>`;
   } else if (hasBoth) {
     statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Arbitrage Confirmé
+      📦 Raw ${state.condition.rawCondition || 'NM'}
     </span>`;
   } else if (isJpOnly) {
     statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
@@ -930,40 +932,30 @@ function renderCardTile(card, rank) {
     </span>`;
   } else if (isFrOnly) {
     statusBadgeHtml = `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
-      🇫🇷 Revente FR confirmée
+      🇫🇷 Revente FR vérifiée
     </span>`;
   } else {
     statusBadgeHtml = `<span class="text-[10px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">En attente de prix</span>`;
   }
 
-  // Active condition label
   let conditionLabel = '';
   if (opp && opp.type === 'grading') {
-    conditionLabel = `⚡ Raw JP → PSA 10 FR (+${opp.gradingCostEur || 25}€ grading)`;
+    conditionLabel = `⚡ Raw JP + ${opp.gradingCostEur ?? 25}€ grading → ${opp.grade} FR`;
   } else if (opp && opp.type === 'slab') {
-    conditionLabel = `💎 ${opp.grade}`;
-  } else if (state.condition.mode === 'graded') {
-    conditionLabel = `💎 ${state.condition.grade}`;
+    conditionLabel = `💎 Slab ${opp.grade} (JP → FR)`;
   } else {
-    conditionLabel = `📦 Non-gradé (${state.condition.rawCondition})`;
+    conditionLabel = `📦 Non-gradé (${state.condition.rawCondition || 'NM'})`;
   }
 
   const flagMap = { JP: '🇯🇵', FR: '🇫🇷', EN: '🇬🇧', KR: '🇰🇷', CN: '🇨🇳', DE: '🇩🇪', IT: '🇮🇹', ES: '🇪🇸', PT: '🇵🇹' };
   const flag = flagMap[card.edition] || '🌐';
   const imgUrl = formatHighResCardImage(card.image);
 
-  // Sold vs Shop data type labeling
-  const jpSource = opp?.sourceJp || p?.jp?.source_name || '';
-  const isJpShop = jpSource.includes('Yuyu-tei') || p?.jp?.data_type === 'shop';
-  const jpBadge = jpBuyYen ? (isJpShop 
-    ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-amber-700 bg-amber-50 border-amber-200" title="Prix boutique JP (Yuyu-tei)">Boutique</span>' 
-    : '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-emerald-700 bg-emerald-50 border-emerald-200" title="Ventes conclues (SNKRDUNK)">Vente</span>') : '';
-
   return `
     <div class="card-tile bg-white border border-slate-200 rounded-2xl p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer flex flex-col justify-between"
          onclick="openCardDetail('${card.id}')">
-      
-      <!-- Top header: Rank + Flag + Status -->
+
+      <!-- Top header: Rank + Flag + Product Badge -->
       <div class="flex items-center justify-between gap-1 mb-2">
         <span class="text-xs font-black text-slate-400">#${rank}</span>
         <div class="flex items-center gap-1.5">
@@ -988,7 +980,7 @@ function renderCardTile(card, rank) {
           <div class="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-1">
             ${card.ref}
           </div>
-          <div class="text-[10px] font-semibold mt-1 ${opp?.type === 'grading' ? 'text-amber-700' : 'text-purple-600'}">
+          <div class="text-[10px] font-semibold mt-1 ${opp?.type === 'grading' ? 'text-amber-700' : (opp?.type === 'slab' ? 'text-purple-700' : 'text-slate-600')}">
             ${conditionLabel}
           </div>
         </div>
@@ -998,16 +990,16 @@ function renderCardTile(card, rank) {
       <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 grid grid-cols-2 gap-2 text-xs">
         <div>
           <div class="flex items-center gap-1 mb-0.5">
-            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Achat JP</span>
-            ${jpBadge}
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Moy. Achat JP</span>
+            ${jpBuyYen ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-emerald-700 bg-emerald-50 border-emerald-200">Sold</span>' : ''}
           </div>
           <span class="font-bold text-slate-800 text-xs sm:text-sm">${fmtJpy(jpBuyYen)}</span>
           <span class="text-[10px] text-slate-500 block">(${fmtEur(jpBuyEur)})</span>
         </div>
         <div>
           <div class="flex items-center gap-1 mb-0.5">
-            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Revente FR</span>
-            ${frSell ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-indigo-700 bg-indigo-50 border-indigo-200" title="Ventes conclues (Cardmarket/PriceCharting/eBay)">Vente</span>' : ''}
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Moy. Vente FR</span>
+            ${frSell ? '<span class="text-[9px] px-1 py-0.2 rounded border font-semibold text-indigo-700 bg-indigo-50 border-indigo-200">Sold</span>' : ''}
           </div>
           <span class="font-bold text-slate-800 text-xs sm:text-sm">${fmtEur(frSell)}</span>
           <span class="text-[10px] text-slate-400 block">${liquidity > 0 ? `${liquidity} ventes` : '—'}</span>
@@ -1044,7 +1036,7 @@ function updateColumnCounters(totalMatches, marginCount, roiCount, velCount) {
   if (cMargin) cMargin.textContent = String(marginCount);
   if (cRoi) cRoi.textContent = String(roiCount);
   if (cVel) cVel.textContent = String(velCount);
-  if (matchCountEl) matchCountEl.textContent = `${totalMatches} carte${totalMatches > 1 ? 's' : ''} trouvée${totalMatches > 1 ? 's' : ''}`;
+  if (matchCountEl) matchCountEl.textContent = `${totalMatches} opportunité${totalMatches > 1 ? 's' : ''}`;
 }
 
 function renderAllColumns() {
@@ -1052,31 +1044,27 @@ function renderAllColumns() {
 
   updateColumnCounters(totalMatches, byMargin.length, byROI.length, byVelocity.length);
 
-  // 1. Column: Meilleure marge
   const colMargin = document.getElementById('col-margin');
   if (colMargin) {
     const sliceMargin = byMargin.slice(0, state.visibleCount.margin);
-    colMargin.innerHTML = sliceMargin.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    colMargin.innerHTML = sliceMargin.map((item, i) => renderCardTile(item.card, i + 1, item.opp)).join('') || renderEmptyState();
     updateLoadMoreLabel('load-more-margin', state.visibleCount.margin, byMargin.length);
   }
 
-  // 2. Column: Meilleur ROI
   const colRoi = document.getElementById('col-roi');
   if (colRoi) {
     const sliceRoi = byROI.slice(0, state.visibleCount.roi);
-    colRoi.innerHTML = sliceRoi.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    colRoi.innerHTML = sliceRoi.map((item, i) => renderCardTile(item.card, i + 1, item.opp)).join('') || renderEmptyState();
     updateLoadMoreLabel('load-more-roi', state.visibleCount.roi, byROI.length);
   }
 
-  // 3. Column: Quick Turnover
   const colVel = document.getElementById('col-velocity');
   if (colVel) {
     const sliceVel = byVelocity.slice(0, state.visibleCount.velocity);
-    colVel.innerHTML = sliceVel.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+    colVel.innerHTML = sliceVel.map((item, i) => renderCardTile(item.card, i + 1, item.opp)).join('') || renderEmptyState();
     updateLoadMoreLabel('load-more-velocity', state.visibleCount.velocity, byVelocity.length);
   }
 
-  // 4. Mobile Tab Controller
   renderMobileColumn(byMargin, byROI, byVelocity);
 
   if (window.lucide) lucide.createIcons();
@@ -1093,7 +1081,7 @@ function renderMobileColumn(byMargin, byROI, byVelocity) {
   const count = state.visibleCount[state.activeMobileTab] || 25;
   const slice = activeList.slice(0, count);
 
-  mobileContainer.innerHTML = slice.map((c, i) => renderCardTile(c, i + 1)).join('') || renderEmptyState();
+  mobileContainer.innerHTML = slice.map((item, i) => renderCardTile(item.card, i + 1, item.opp)).join('') || renderEmptyState();
   updateLoadMoreLabel('mobile-load-more', count, activeList.length);
 }
 
@@ -1113,14 +1101,100 @@ function renderEmptyState() {
   return `
     <div class="col-span-full py-12 text-center text-slate-400">
       <i data-lucide="inbox" style="width:36px;height:36px;" class="mx-auto mb-2 text-slate-300"></i>
-      <p class="text-sm font-semibold text-slate-600">Aucune carte trouvée</p>
-      <p class="text-xs text-slate-400 mt-1">Essayez d'ajuster vos critères ou filtres de recherche.</p>
+      <p class="text-sm font-semibold text-slate-600">Aucune opportunité trouvée</p>
+      <p class="text-xs text-slate-400 mt-1">Vérifiez vos filtres ou basculez d'onglet (Raw / Gradées).</p>
     </div>
   `;
 }
 
-// ── 11. CARD DETAIL MODAL WITH SOURCES AUDIT TRAIL ────────────
-function openCardDetail(cardId) {
+// ── 11. CARD DETAIL MODAL WITH REAL SVG HISTORY & SOURCES ─────
+function renderSvgPriceChart(points, valueKey, colorHex, formatFn, emptyMsg) {
+  if (!Array.isArray(points) || points.length === 0) {
+    return `
+      <div class="py-5 text-center text-[11px] text-slate-400 bg-white rounded-lg border border-dashed border-slate-200">
+        ${emptyMsg || 'Aucune donnée historique disponible pour le moment.'}
+      </div>
+    `;
+  }
+
+  const valid = points
+    .filter(pt => pt && pt[valueKey] != null && Number(pt[valueKey]) > 0)
+    .map(pt => ({ date: pt.date || '', val: Number(pt[valueKey]) }));
+
+  if (valid.length === 0) {
+    return `
+      <div class="py-5 text-center text-[11px] text-slate-400 bg-white rounded-lg border border-dashed border-slate-200">
+        ${emptyMsg || 'Aucune donnée historique disponible pour le moment.'}
+      </div>
+    `;
+  }
+
+  const vals = valid.map(v => v.val);
+  const minVal = Math.min(...vals);
+  const maxVal = Math.max(...vals);
+  const latest = valid[valid.length - 1];
+  const first = valid[0];
+  const w = 280;
+  const h = 72;
+  const padX = 10;
+  const padY = 10;
+
+  if (valid.length === 1) {
+    const cx = w / 2;
+    const cy = h / 2;
+    return `
+      <svg viewBox="0 0 ${w} ${h}" class="price-chart-svg">
+        <line x1="${padX}" y1="${cy}" x2="${w - padX}" y2="${cy}" stroke="${colorHex}" stroke-opacity="0.25" stroke-dasharray="4 3" stroke-width="1.5" />
+        <circle cx="${cx}" cy="${cy}" r="5" fill="${colorHex}" stroke="#fff" stroke-width="2">
+          <title>${latest.date}: ${formatFn(latest.val)}</title>
+        </circle>
+      </svg>
+      <div class="price-chart-axis">
+        <span>${latest.date}</span>
+        <span class="font-bold text-slate-700">${formatFn(latest.val)}</span>
+      </div>
+      <div class="text-[10px] text-slate-400 mt-1 text-center">
+        1 point réel enregistré — Historique enrichi automatiquement toutes les 6h
+      </div>
+    `;
+  }
+
+  const span = maxVal - minVal || Math.max(maxVal * 0.1, 1);
+  const coords = valid.map((pt, idx) => {
+    const x = padX + (idx / (valid.length - 1)) * (w - padX * 2);
+    const y = h - padY - ((pt.val - minVal) / span) * (h - padY * 2);
+    return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)), ...pt };
+  });
+
+  const polyPoints = coords.map(c => `${c.x},${c.y}`).join(' ');
+  const areaPoints = `${coords[0].x},${h - padY} ${polyPoints} ${coords[coords.length - 1].x},${h - padY}`;
+  const gradId = `grad_${colorHex.replace('#', '')}_${Math.random().toString(36).slice(2, 7)}`;
+
+  return `
+    <svg viewBox="0 0 ${w} ${h}" class="price-chart-svg">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${colorHex}" stop-opacity="0.24"/>
+          <stop offset="100%" stop-color="${colorHex}" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPoints}" fill="url(#${gradId})" />
+      <polyline points="${polyPoints}" fill="none" stroke="${colorHex}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      ${coords.map(c => `
+        <circle cx="${c.x}" cy="${c.y}" r="3.2" fill="${colorHex}" stroke="#fff" stroke-width="1.4">
+          <title>${c.date}: ${formatFn(c.val)}</title>
+        </circle>
+      `).join('')}
+    </svg>
+    <div class="price-chart-axis">
+      <span>${first.date}</span>
+      <span>Min ${formatFn(minVal)} • Max ${formatFn(maxVal)}</span>
+      <span class="font-bold text-slate-700">${latest.date}: ${formatFn(latest.val)}</span>
+    </div>
+  `;
+}
+
+function openCardDetail(cardId, selectedGradeOverride = null) {
   const card = CatalogService.cards.find(c => c.id === cardId || c.raw_id === cardId);
   if (!card) return;
 
@@ -1129,45 +1203,97 @@ function openCardDetail(cardId) {
   if (!modal || !container) return;
 
   const p = card.pricedRecord || PriceService.getExactPrice(card);
-  const frPrice = getActiveFrPrice(card);
-  const jpPriceYen = getActiveJpPrice(card);
-  const jpPriceEur = jpPriceYen ? jpToEur(jpPriceYen) : null;
-  const margin = netMargin(card);
-  const roi = netROI(card);
+  const rawOpp = getRawOpportunity(card);
+  const tabOpp = selectedGradeOverride
+    ? getGradedOpportunity(card, selectedGradeOverride)
+    : getTabOpportunity(card);
+  const activeOpp = tabOpp || rawOpp;
+
+  const frPrice = activeOpp ? activeOpp.frSellEur : getActiveFrPrice(card);
+  const jpPriceYen = activeOpp ? activeOpp.jpPriceYen : getActiveJpPrice(card);
+  const jpPriceEur = activeOpp ? activeOpp.jpPriceEur : (jpPriceYen ? jpToEur(jpPriceYen) : null);
+  const margin = activeOpp ? activeOpp.netMarginEur : null;
+  const roi = activeOpp ? activeOpp.roiPct : null;
+  const liquidity = activeOpp ? activeOpp.liquidity : getCardLiquidity(card);
 
   const imgUrl = formatHighResCardImage(card.image);
   const cleanNum = card.local_id || '';
-  const searchName = encodeURIComponent(card.displayName || card.name);
-  const searchJa = encodeURIComponent(card.name_ja || card.displayName || card.name);
+  const gradingCost = state.costs?.gradingCostEur != null ? Number(state.costs.gradingCostEur) : 25;
 
-  // Verification URLs
-  const pricechartingUrl = p?.fr?.source_url || p?.jp?.source_url || `https://www.pricecharting.com/search-products?q=${encodeURIComponent('pokemon japanese ' + (card.displayName || card.name) + ' ' + cleanNum)}&type=prices`;
-  const cardmarketUrl = p?.fr?.source_url?.includes('cardmarket') ? p.fr.source_url : `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${searchName}`;
-  const ebayFrSoldUrl = `https://www.ebay.fr/sch/i.html?_nkw=${encodeURIComponent(card.set_id + ' ' + cleanNum)}&LH_Sold=1&LH_Complete=1&_sop=13`;
-  const mercariJpUrl = `https://jp.mercari.com/search?keyword=${searchJa}%20${cleanNum}&status=sold_out`;
-  const yahooJpUrl = `https://auctions.yahoo.co.jp/closedsearch/closedsearch?p=${searchJa}+${cleanNum}&va=${searchJa}+${cleanNum}&b=1&n=25&s1=bids&o1=d`;
+  const countryInfo = COUNTRIES.find(c => c.code === card.edition) || { flag: '🌐', name: card.edition || 'N/A' };
 
-  // Graded prices list
+  // Real History Series (Active variant: Raw or selected Grade)
+  const jpHist = activeOpp?.jpHistory?.length ? activeOpp.jpHistory : (p?.jp?.history || []);
+  const frHist = activeOpp?.frHistory?.length ? activeOpp.frHistory : (p?.fr?.history || []);
+
+  // Real Graded Breakdown Table (ZERO fabricated multipliers!)
   const frGraded = p?.fr?.graded || {};
   const jpGraded = p?.jp?.graded || {};
-  const allGradedKeys = Array.from(new Set([...Object.keys(frGraded), ...Object.keys(jpGraded), 'PSA 10', 'PSA 9', 'BGS 9.5', 'CGC 10']));
+  const realGrades = Array.from(new Set([...Object.keys(frGraded), ...Object.keys(jpGraded)]));
+  const rawJpBaseYen = extractJpSourcePrice(p?.jp, state.pricingRefJp);
+  const rawFrBaseEur = extractFrSourcePrice(p?.fr, state.pricingRefFr);
 
-  const gradedRowsHtml = allGradedKeys.map(gKey => {
-    const frVal = frGraded[gKey]?.price || (frPrice ? Number((frPrice * (GRADE_MULTIPLIERS[gKey]?.fr || 2.2)).toFixed(2)) : null);
-    const jpVal = jpGraded[gKey]?.price || (jpPriceYen ? Math.round(jpPriceYen * (GRADE_MULTIPLIERS[gKey]?.jp || 2.0)) : null);
-    const gMargin = (frVal && jpVal) ? Number((frVal - jpToEur(jpVal)).toFixed(2)) : null;
+  const rawRowMargin = (rawFrBaseEur && rawJpBaseYen)
+    ? computeNetFinancials(rawJpBaseYen, rawFrBaseEur, 0).netMarginEur
+    : null;
+
+  const gradedRowsHtml = realGrades.map(gKey => {
+    const frVal = frGraded[gKey]?.price ? Number(frGraded[gKey].price) : null;
+    const jpVal = jpGraded[gKey]?.price_jpy ? Number(jpGraded[gKey].price_jpy) : null;
+    const directMargin = (frVal && jpVal) ? computeNetFinancials(jpVal, frVal, 0).netMarginEur : null;
+    const levMargin = (frVal && rawJpBaseYen) ? computeNetFinancials(rawJpBaseYen, frVal, gradingCost).netMarginEur : null;
+    const isSelected = activeOpp?.grade === gKey;
 
     return `
-      <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-        <td class="py-2 px-3 font-bold text-slate-800 text-xs">${gKey}</td>
+      <tr class="border-b border-slate-100 hover:bg-blue-50/40 cursor-pointer transition-colors ${isSelected ? 'bg-purple-50/60' : ''}"
+          onclick="openCardDetail('${card.id}', '${gKey}')">
+        <td class="py-2 px-3 font-bold text-slate-800 text-xs">
+          💎 ${gKey}
+          ${isSelected ? '<span class="ml-1 text-[9px] text-purple-700 font-bold">(Actif)</span>' : ''}
+        </td>
         <td class="py-2 px-3 text-right font-medium text-slate-700 text-xs">${fmtJpy(jpVal)}</td>
         <td class="py-2 px-3 text-right font-bold text-slate-900 text-xs">${fmtEur(frVal)}</td>
-        <td class="py-2 px-3 text-right font-black ${gMargin && gMargin > 0 ? 'text-emerald-600' : 'text-slate-400'} text-xs">
-          ${gMargin != null ? fmtEur(gMargin) : '—'}
+        <td class="py-2 px-3 text-right font-black ${directMargin != null && directMargin > 0 ? 'text-emerald-600' : 'text-slate-400'} text-xs">
+          ${directMargin != null ? fmtEur(directMargin) : '—'}
+        </td>
+        <td class="py-2 px-3 text-right font-black ${levMargin != null && levMargin > 0 ? 'text-amber-700' : 'text-slate-400'} text-xs">
+          ${levMargin != null ? fmtEur(levMargin) : '—'}
         </td>
       </tr>
     `;
   }).join('');
+
+  // Detailed Sources Breakdown Table (JP Buy + FR Resale)
+  const jpSources = (activeOpp?.jpSources?.length ? activeOpp.jpSources : p?.jp?.sources) || [];
+  const frSources = (activeOpp?.frSources?.length ? activeOpp.frSources : p?.fr?.sources) || [];
+  const combinedSources = [
+    ...jpSources.map(s => ({ ...s, side: '🇯🇵 Achat JP', priceDisplay: `${fmtJpy(s.price_jpy)} (${fmtEur(s.price_eur)})` })),
+    ...frSources.map(s => ({ ...s, side: '🇫🇷 Revente FR', priceDisplay: fmtEur(s.price_eur) }))
+  ];
+
+  const sourcesRowsHtml = combinedSources.length > 0
+    ? combinedSources.map(s => `
+        <tr class="border-b border-slate-100 last:border-0">
+          <td class="py-2 px-2.5 text-[11px] font-semibold whitespace-nowrap">${s.side}</td>
+          <td class="py-2 px-2.5 text-[11px] font-bold text-slate-800">${s.name || 'Source vérifiée'}</td>
+          <td class="py-2 px-2.5 text-right text-[11px] font-bold text-slate-900 whitespace-nowrap">${s.priceDisplay}</td>
+          <td class="py-2 px-2.5 text-center text-[11px] text-slate-600">${s.sample_count || '—'}</td>
+          <td class="py-2 px-2.5 text-[10px] text-slate-500 max-w-[160px] truncate" title="${s.matched_title || ''}">${s.matched_title || '—'}</td>
+          <td class="py-2 px-2.5 text-right">
+            ${s.url ? `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="platform-link">Vérifier ↗</a>` : '—'}
+          </td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="6" class="py-4 text-center text-xs text-slate-400">Aucune source détaillée enregistrée pour cette carte.</td></tr>`;
+
+  // Direct verification search links
+  const searchName = encodeURIComponent(card.displayName || card.name);
+  const searchJa = encodeURIComponent(card.name_ja || card.displayName || card.name);
+  const snkrdunkUrl = p?.jp?.source_url || `https://snkrdunk.com/search?keywords=${encodeURIComponent(card.set_id + ' ' + cleanNum)}`;
+  const cardmarketUrl = (p?.fr?.sources || []).find(s => (s.name || '').toLowerCase().includes('cardmarket'))?.url || `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${searchName}`;
+  const pricechartingUrl = (p?.fr?.sources || []).find(s => (s.name || '').toLowerCase().includes('pricecharting'))?.url || `https://www.pricecharting.com/search-products?q=${encodeURIComponent('pokemon japanese ' + (p?.name_en || card.name) + ' ' + cleanNum)}&type=prices`;
+  const ebayFrSoldUrl = `https://www.ebay.fr/sch/i.html?_nkw=${encodeURIComponent(card.set_id + ' ' + cleanNum)}&LH_Sold=1&LH_Complete=1&_sop=13`;
+  const mercariJpUrl = `https://jp.mercari.com/search?keyword=${searchJa}%20${cleanNum}&status=sold_out`;
 
   container.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -1178,123 +1304,159 @@ function openCardDetail(cardId) {
                onerror="onCardImageError(this)"
                class="w-full h-auto object-cover">
         </div>
-        <div class="mt-3 text-center">
+        <div class="mt-3 text-center space-y-1.5">
           <span class="inline-block px-2.5 py-1 font-mono font-bold text-xs bg-slate-100 text-slate-700 rounded-lg border border-slate-200">
             ${card.ref}
           </span>
+          <div class="text-[11px] font-semibold text-slate-600">
+            ${activeOpp ? activeOpp.badge : '📦 Raw'}
+          </div>
         </div>
       </div>
 
-      <!-- Col 2 & 3: Detailed Financials & Audit Trail -->
+      <!-- Col 2 & 3: Detailed Financials, Curves & Sources -->
       <div class="md:col-span-2 space-y-4">
-        <!-- Card Titles -->
         <div>
           <h2 class="text-xl font-black text-slate-900">${card.displayName || card.name}</h2>
           ${card.subName ? `<p class="text-xs text-slate-500 font-medium">${card.subName}</p>` : ''}
           <div class="flex items-center gap-2 mt-1 flex-wrap">
-            <span class="text-xs font-semibold text-slate-600">Édition : ${card.edition === 'JP' ? '🇯🇵 Japon' : '🇫🇷 France'}</span>
+            <span class="text-xs font-semibold text-slate-600">Édition : ${countryInfo.flag} ${countryInfo.name}</span>
             <span class="text-slate-300">•</span>
             <span class="text-xs font-semibold text-slate-600">Set : ${card.set_id}</span>
             <span class="text-slate-300">•</span>
-            ${p?.jp?.data_type === 'shop' 
-              ? '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">🏪 Prix boutique JP (Yuyu-tei)</span>'
-              : '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">🏷️ Ventes conclues</span>'
-            }
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              🏷️ 100 % Ventes conclues (${liquidity} ventes)
+            </span>
           </div>
         </div>
 
-        <!-- Primary Arbitrage KPI Cards -->
+        <!-- Synthesis KPI Cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
           <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
-            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Achat JP (¥)</span>
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Moy. Achat JP</span>
             <span class="text-base font-black text-slate-800">${fmtJpy(jpPriceYen)}</span>
             <span class="text-[10px] text-slate-500 block">(${fmtEur(jpPriceEur)})</span>
           </div>
           <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl">
-            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Revente FR (€)</span>
+            <span class="text-[10px] text-slate-400 font-semibold uppercase block">Moy. Vente FR</span>
             <span class="text-base font-black text-slate-800">${fmtEur(frPrice)}</span>
-            <span class="text-[10px] text-slate-500 block">Prix lissé 30j</span>
+            <span class="text-[10px] text-slate-500 block">${frSources.length} source${frSources.length > 1 ? 's' : ''} EU</span>
           </div>
           <div class="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
             <span class="text-[10px] text-emerald-600 font-semibold uppercase block">Marge Nette</span>
-            <span class="text-base font-black text-emerald-700">${margin != null ? fmtEur(margin) : '—'}</span>
-            <span class="text-[10px] text-emerald-600 font-semibold block">Gain réel</span>
+            <span class="text-base font-black ${margin != null && margin > 0 ? 'text-emerald-700' : 'text-rose-600'}">${margin != null ? fmtEur(margin) : '—'}</span>
+            <span class="text-[10px] text-emerald-600 font-semibold block">Après frais</span>
           </div>
           <div class="bg-purple-50 border border-purple-200 p-2.5 rounded-xl">
             <span class="text-[10px] text-purple-600 font-semibold uppercase block">ROI Net</span>
-            <span class="text-base font-black text-purple-700">${roi != null ? fmtPct(roi) : '—'}</span>
-            <span class="text-[10px] text-purple-600 font-semibold block">Rendement</span>
+            <span class="text-base font-black ${roi != null && roi > 0 ? 'text-purple-700' : 'text-rose-600'}">${roi != null ? fmtPct(roi) : '—'}</span>
+            <span class="text-[10px] text-purple-600 font-semibold block">${liquidity} ventes</span>
           </div>
         </div>
 
-        <!-- Graded Slabs Breakdown Table -->
+        <!-- Real Historical Price Evolution Charts -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="price-chart-wrap mb-0">
+            <div class="price-chart-title flex items-center justify-between">
+              <span>🇯🇵 Historique Achat JP (¥)</span>
+              <span class="text-[10px] font-semibold text-blue-600">${activeOpp?.grade || 'Raw'}</span>
+            </div>
+            ${renderSvgPriceChart(jpHist, 'price_jpy', '#2563eb', fmtJpy, 'Pas encore d\'historique JP.')}
+          </div>
+          <div class="price-chart-wrap mb-0">
+            <div class="price-chart-title flex items-center justify-between">
+              <span>🇫🇷 Historique Revente FR (€)</span>
+              <span class="text-[10px] font-semibold text-emerald-600">${activeOpp?.grade || 'Raw'}</span>
+            </div>
+            ${renderSvgPriceChart(frHist, 'price_eur', '#10b981', fmtEur, 'Pas encore d\'historique FR.')}
+          </div>
+        </div>
+
+        <!-- Comparative Table: Raw + Real Graded Sales ONLY -->
         <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
               <i data-lucide="layers" style="width:14px;height:14px;" class="text-purple-600"></i>
-              Comparatif Slabs Gradés (PSA, BGS, CGC, PCA, ARS)
+              Comparatif Réel (Raw &amp; Grades Constatés)
             </span>
+            <span class="text-[10px] text-slate-400">Zéro multiplicateur fictif</span>
           </div>
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
-                <th class="py-1.5 px-3">Grade</th>
-                <th class="py-1.5 px-3 text-right">Achat JP</th>
-                <th class="py-1.5 px-3 text-right">Revente FR</th>
-                <th class="py-1.5 px-3 text-right">Marge</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${gradedRowsHtml}
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                  <th class="py-1.5 px-3">Produit / Grade</th>
+                  <th class="py-1.5 px-3 text-right">Achat JP</th>
+                  <th class="py-1.5 px-3 text-right">Revente FR</th>
+                  <th class="py-1.5 px-3 text-right">Marge Directe</th>
+                  <th class="py-1.5 px-3 text-right">Levier Grading (-${gradingCost}€)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${!activeOpp?.grade ? 'bg-blue-50/50' : ''}"
+                    onclick="openCardDetail('${card.id}')">
+                  <td class="py-2 px-3 font-bold text-slate-800 text-xs">📦 Raw (Non-gradé NM)</td>
+                  <td class="py-2 px-3 text-right font-medium text-slate-700 text-xs">${fmtJpy(rawJpBaseYen)}</td>
+                  <td class="py-2 px-3 text-right font-bold text-slate-900 text-xs">${fmtEur(rawFrBaseEur)}</td>
+                  <td class="py-2 px-3 text-right font-black ${rawRowMargin != null && rawRowMargin > 0 ? 'text-emerald-600' : 'text-slate-400'} text-xs">
+                    ${rawRowMargin != null ? fmtEur(rawRowMargin) : '—'}
+                  </td>
+                  <td class="py-2 px-3 text-right text-slate-300 text-xs">—</td>
+                </tr>
+                ${gradedRowsHtml || `<tr><td colspan="5" class="py-3 px-3 text-center text-[11px] text-slate-400">Aucune vente gradée conclue enregistrée pour cette carte.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- 🔍 TRANSPARENT AUDIT TRAIL & DIRECT VERIFICATION LINKS -->
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2.5">
+        <!-- Detailed Sources Audit Table -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
               <i data-lucide="search-check" style="width:14px;height:14px;" class="text-blue-600"></i>
-              🔍 Sources Officielles &amp; Audit des Ventes Réalisées
+              Détail par Source (Ventes Conclues)
             </h4>
-            <span class="text-[10px] text-slate-500 font-medium">100% Transactions Réalisées</span>
+            <span class="text-[10px] text-slate-500 font-medium">${p?.fetched_at ? new Date(p.fetched_at).toLocaleString('fr-FR') : '—'}</span>
           </div>
 
-          <div class="text-[11px] text-slate-600 space-y-1 bg-white p-2.5 rounded-lg border border-slate-200">
-            <div><strong class="text-slate-700">Titre Exact Matched :</strong> <span class="font-mono">${p?.matched_title || p?.fr?.matched_title || p?.jp?.matched_title || 'Correspondance officielle TCGdex'}</span></div>
-            <div><strong class="text-slate-700">Type de donnée JP :</strong> <span class="font-bold ${p?.jp?.data_type === 'shop' ? 'text-amber-700' : 'text-emerald-700'}">${p?.jp?.data_type === 'shop' ? '🏪 Prix boutique catalogue (Yuyu-tei)' : '🏷️ Ventes conclues réelles (PriceCharting / SNKRDUNK)'}</span></div>
-            <div><strong class="text-slate-700">Type de donnée FR :</strong> <span class="font-bold text-emerald-700">🏷️ Ventes conclues réelles (PriceCharting / eBay FR Sold)</span></div>
-            <div><strong class="text-slate-700">Plateforme Source :</strong> <span>${p?.fr?.source_name || p?.jp?.source_name || 'PriceCharting / Yuyu-tei / SNKRDUNK'}</span></div>
-            <div><strong class="text-slate-700">Échantillons Ventes :</strong> <span>${getCardLiquidity(card)} ventes vérifiées enregistrées</span></div>
-            <div><strong class="text-slate-700">Dernière Vérification :</strong> <span>${p?.fetched_at ? new Date(p.fetched_at).toLocaleString('fr-FR') : 'Actualisation continue'}</span></div>
+          <div class="bg-white rounded-lg border border-slate-200 overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200">
+                  <th class="py-1.5 px-2.5">Marché</th>
+                  <th class="py-1.5 px-2.5">Plateforme</th>
+                  <th class="py-1.5 px-2.5 text-right">Prix Moy.</th>
+                  <th class="py-1.5 px-2.5 text-center">Ventes</th>
+                  <th class="py-1.5 px-2.5">Titre Matché</th>
+                  <th class="py-1.5 px-2.5 text-right">Lien</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sourcesRowsHtml}
+              </tbody>
+            </table>
           </div>
 
-          <!-- Direct Clickable Verification Links Grid -->
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
-            <a href="${pricechartingUrl}" target="_blank" rel="noopener noreferrer"
+            <a href="${snkrdunkUrl}" target="_blank" rel="noopener noreferrer"
                class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
-              <i data-lucide="trending-up" style="width:12px;height:12px;" class="text-blue-600"></i>
-              <span>PriceCharting JP</span>
+              <span>🇯🇵 SNKRDUNK</span>
             </a>
             <a href="${cardmarketUrl}" target="_blank" rel="noopener noreferrer"
                class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
-              <i data-lucide="tag" style="width:12px;height:12px;" class="text-indigo-600"></i>
-              <span>Cardmarket FR</span>
+              <span>🇪🇺 Cardmarket</span>
+            </a>
+            <a href="${pricechartingUrl}" target="_blank" rel="noopener noreferrer"
+               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
+              <span>📊 PriceCharting</span>
             </a>
             <a href="${ebayFrSoldUrl}" target="_blank" rel="noopener noreferrer"
                class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
-              <i data-lucide="check-circle" style="width:12px;height:12px;" class="text-emerald-600"></i>
-              <span>eBay FR Sold</span>
+              <span>🏷️ eBay FR Sold</span>
             </a>
             <a href="${mercariJpUrl}" target="_blank" rel="noopener noreferrer"
                class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
-              <i data-lucide="shopping-bag" style="width:12px;height:12px;" class="text-rose-600"></i>
-              <span>Mercari JP Sold</span>
-            </a>
-            <a href="${yahooJpUrl}" target="_blank" rel="noopener noreferrer"
-               class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg text-slate-700 hover:text-blue-700 text-[11px] font-semibold transition-all shadow-sm">
-              <i data-lucide="gavel" style="width:12px;height:12px;" class="text-amber-600"></i>
-              <span>Yahoo! Closed</span>
+              <span>🛍️ Mercari Sold</span>
             </a>
             <button type="button" onclick="addToPurchasesFromModal('${card.id}')"
                class="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all shadow-sm cursor-pointer">
@@ -1633,16 +1795,19 @@ Return strictly valid JSON matching this exact schema:
 
     // Auto-select detected slab
     const slabKey = data.grade || (data.is_graded ? `${data.grading_company || 'PSA'} 10` : null);
-    if (slabKey && GRADE_MULTIPLIERS[slabKey]) {
+    if (slabKey) {
+      state.productTab = 'graded';
       state.condition.mode = 'graded';
       state.condition.grade = slabKey;
+      state.slabFilter = ['PSA 10', 'PSA 9'].includes(slabKey) ? slabKey : (slabKey.split(' ')[0] || 'ALL');
       state.filters.slabGrade = slabKey;
     }
 
-    const frSell = getActiveFrPrice(matchedCard, slabKey);
-    const jpBuyYen = getActiveJpPrice(matchedCard, slabKey);
-    const margin = netMargin(matchedCard, slabKey);
-    const roi = netROI(matchedCard, slabKey);
+    const opp = getTabOpportunity(matchedCard, slabKey ? 'graded' : 'raw', slabKey);
+    const frSell = opp ? opp.frSellEur : getActiveFrPrice(matchedCard, slabKey);
+    const jpBuyYen = opp ? opp.jpPriceYen : getActiveJpPrice(matchedCard, slabKey);
+    const margin = opp ? opp.netMarginEur : netMargin(matchedCard);
+    const roi = opp ? opp.roiPct : netROI(matchedCard);
 
     const imgUrl = formatHighResCardImage(matchedCard.image);
 
@@ -2253,19 +2418,121 @@ function renderConditionPopover(targetPopoverEl, onUpdateCallback = null) {
   });
 }
 
+function syncProductTabUI() {
+  const isGraded = state.productTab === 'graded';
+  const tabRaw = document.getElementById('tab-mode-raw');
+  const tabGraded = document.getElementById('tab-mode-graded');
+  const rawGroup = document.getElementById('raw-controls-group');
+  const gradedGroup = document.getElementById('graded-controls-group');
+
+  if (tabRaw) {
+    tabRaw.classList.toggle('active', !isGraded);
+    tabRaw.classList.toggle('bg-slate-900', !isGraded);
+    tabRaw.classList.toggle('text-white', !isGraded);
+    tabRaw.classList.toggle('border-slate-900', !isGraded);
+    tabRaw.classList.toggle('bg-white', isGraded);
+    tabRaw.classList.toggle('text-slate-700', isGraded);
+    tabRaw.classList.toggle('border-slate-200', isGraded);
+  }
+  if (tabGraded) {
+    tabGraded.classList.toggle('active', isGraded);
+    tabGraded.classList.toggle('bg-white', !isGraded);
+    tabGraded.classList.toggle('text-slate-700', !isGraded);
+    tabGraded.classList.toggle('border-slate-200', !isGraded);
+  }
+  if (rawGroup) rawGroup.classList.toggle('hidden', isGraded);
+  if (gradedGroup) gradedGroup.classList.toggle('hidden', !isGraded);
+
+  document.querySelectorAll('.raw-cond-pill').forEach(btn => {
+    const active = btn.getAttribute('data-raw-cond') === state.condition.rawCondition;
+    btn.classList.toggle('active', active);
+    btn.classList.toggle('bg-slate-900', active);
+    btn.classList.toggle('text-white', active);
+  });
+
+  document.querySelectorAll('.slab-mode-btn').forEach(btn => {
+    const active = btn.getAttribute('data-slab-mode') === state.slabMode;
+    btn.classList.toggle('active', active);
+    btn.classList.toggle('bg-purple-600', active);
+    btn.classList.toggle('text-white', active);
+    btn.classList.toggle('text-slate-600', !active);
+  });
+
+  const slabSel = document.getElementById('slab-grade-selector');
+  if (slabSel) slabSel.value = state.slabFilter || 'ALL';
+
+  const min20Btn = document.getElementById('btn-min20-pill');
+  const min20Lbl = document.getElementById('label-min20-pill');
+  if (min20Btn && min20Lbl) {
+    if (state.minValue20) {
+      min20Btn.className = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold shadow-sm cursor-pointer transition-all';
+      min20Lbl.textContent = 'Filtre actif : Valeur ≥ 20 €';
+    } else {
+      min20Btn.className = 'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-semibold shadow-sm cursor-pointer transition-all';
+      min20Lbl.textContent = 'Seuil ≥ 20 € désactivé';
+    }
+  }
+}
+
 function bindFilterEvents() {
-  // Ensure filter bar is always visible by default
   const filterBar = document.getElementById('focus-filter-bar');
   if (filterBar) {
     filterBar.classList.remove('hidden');
     filterBar.classList.add('flex');
   }
 
-  // Prevent clicks inside popovers from bubbling to document and closing them
-  ['popover-filter-country', 'popover-filter-price', 'popover-filter-condition', 'popover-lib-filter-condition'].forEach(id => {
+  ['popover-filter-country', 'popover-filter-price', 'popover-lib-filter-condition'].forEach(id => {
     const pop = document.getElementById(id);
     if (pop) pop.addEventListener('click', (e) => e.stopPropagation());
   });
+
+  // Primary Product Tabs: Non-Gradées (Raw) vs Gradées (Slabs)
+  document.querySelectorAll('.product-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-product-tab') || 'raw';
+      state.productTab = tab;
+      state.condition.mode = tab === 'graded' ? 'graded' : 'raw';
+      state.visibleCount = { margin: 25, roi: 25, velocity: 25 };
+      syncProductTabUI();
+      renderAllColumns();
+    });
+  });
+
+  // Raw Condition Pills (NM / EX / LP / PL)
+  document.querySelectorAll('.raw-cond-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.condition.rawCondition = btn.getAttribute('data-raw-cond') || 'NM';
+      syncProductTabUI();
+      renderAllColumns();
+    });
+  });
+
+  // Graded Company/Grade Selector & Mode Toggle
+  const slabSel = document.getElementById('slab-grade-selector');
+  if (slabSel) {
+    slabSel.addEventListener('change', () => {
+      state.slabFilter = slabSel.value || 'ALL';
+      renderAllColumns();
+    });
+  }
+
+  document.querySelectorAll('.slab-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.slabMode = btn.getAttribute('data-slab-mode') || 'slab';
+      syncProductTabUI();
+      renderAllColumns();
+    });
+  });
+
+  // Minimum 20€ Value Filter Pill
+  const min20Btn = document.getElementById('btn-min20-pill');
+  if (min20Btn) {
+    min20Btn.addEventListener('click', () => {
+      state.minValue20 = !state.minValue20;
+      syncProductTabUI();
+      renderAllColumns();
+    });
+  }
 
   // Wire Pricing reference dropdowns
   const selPricingFr = document.getElementById('pricing-ref-fr');
@@ -2405,7 +2672,7 @@ function bindFilterEvents() {
     if (!lbl) return;
     const sym = state.filters.priceUnit === 'JPY' ? '¥' : '€';
     if (state.filters.priceMin == null && state.filters.priceMax == null) {
-      lbl.textContent = `💰 Prix : Min — | Max — ${sym}`;
+      lbl.textContent = state.minValue20 ? `💰 Prix : ≥ 20 €` : `💰 Prix : Min — | Max — ${sym}`;
     } else {
       const minStr = state.filters.priceMin != null ? state.filters.priceMin : '0';
       const maxStr = state.filters.priceMax != null ? state.filters.priceMax : '∞';
@@ -2466,65 +2733,42 @@ function bindFilterEvents() {
     });
   });
 
-  // 3. Condition / Grading filter popover
-  const btnCondition = document.getElementById('btn-filter-condition');
-  const popoverCondition = document.getElementById('popover-filter-condition');
-
-  if (btnCondition && popoverCondition) {
-    btnCondition.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isHidden = popoverCondition.classList.contains('hidden');
-      closeAllPopovers();
-      if (isHidden) {
-        renderConditionPopover(popoverCondition);
-        popoverCondition.classList.remove('hidden');
-      }
-    });
-  }
-
-  // 4. Complete Opportunities quick toggle
-  const pricedOnlyToggle = document.getElementById('toggle-priced-only');
-  if (pricedOnlyToggle) {
-    pricedOnlyToggle.checked = state.filters.pricedOnly;
-    pricedOnlyToggle.addEventListener('change', () => {
-      state.filters.pricedOnly = pricedOnlyToggle.checked;
-      renderAllColumns();
-    });
-  }
-
-  // 5. Global Reset Button
+  // Global Reset Button
   const resetBtn = document.getElementById('filter-reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       state.filters.countries = [];
       state.filters.priceMin = null;
       state.filters.priceMax = null;
-      state.filters.pricedOnly = false;
       state.filters.slabGrade = null;
+      state.minValue20 = true;
       state.searchQuery = '';
-      state.condition.mode = 'raw';
       state.condition.rawCondition = 'NM';
+      state.slabFilter = 'ALL';
+      state.slabMode = 'slab';
 
       const sInput = document.getElementById('search-input');
       if (sInput) sInput.value = '';
-      if (pricedOnlyToggle) pricedOnlyToggle.checked = false;
+      if (inputMin) inputMin.value = '';
+      if (inputMax) inputMax.value = '';
 
       updateCountryTriggerLabel();
       updatePriceTriggerLabel();
       updateConditionTriggerLabel();
+      syncProductTabUI();
       renderAllColumns();
-      showToast('Filtres réinitialisés');
+      showToast('Filtres réinitialisés (Seuil ≥ 20 € actif)');
     });
   }
 
   // Close popovers on outer click
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', () => {
     closeAllPopovers();
   });
 }
 
 function closeAllPopovers() {
-  document.querySelectorAll('#popover-filter-country, #popover-filter-price, #popover-filter-condition, #popover-lib-filter-condition').forEach(el => {
+  document.querySelectorAll('#popover-filter-country, #popover-filter-price, #popover-lib-filter-condition').forEach(el => {
     el.classList.add('hidden');
   });
 }
@@ -2562,21 +2806,25 @@ function bindMainEvents() {
   // Search input
   const searchInput = document.getElementById('search-input');
   if (searchInput) {
+    const getSearchMatches = () => {
+      const list = CatalogService.cards.filter(cardMatchesCommonFilters);
+      list.sort((a, b) => (b.pricedRecord ? 1 : 0) - (a.pricedRecord ? 1 : 0));
+      return list;
+    };
+
     let debounceTimer = null;
     searchInput.addEventListener('input', () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         state.searchQuery = searchInput.value.trim();
-        const matches = CatalogService.cards.filter(cardMatchesFilters);
-        renderSearchDropdown(matches);
+        renderSearchDropdown(getSearchMatches());
         renderAllColumns();
       }, 150);
     });
 
     searchInput.addEventListener('focus', () => {
       if (searchInput.value.trim().length > 0) {
-        const matches = CatalogService.cards.filter(cardMatchesFilters);
-        renderSearchDropdown(matches);
+        renderSearchDropdown(getSearchMatches());
       }
     });
 
@@ -2747,6 +2995,7 @@ function bindCostSettings() {
   const feeInput = document.getElementById('input-resale-fee');
   const vatInput = document.getElementById('input-import-vat');
   const shipInput = document.getElementById('input-shipping-cost');
+  const gradingInput = document.getElementById('input-grading-cost');
   const saveBtn = document.getElementById('btn-save-costs');
   const resetBtn = document.getElementById('btn-reset-costs');
 
@@ -2760,12 +3009,14 @@ function bindCostSettings() {
   if (feeInput) feeInput.value = state.costs.resaleFeePct ?? 0;
   if (vatInput) vatInput.value = state.costs.importVatPct ?? 0;
   if (shipInput) shipInput.value = state.costs.shippingPerCardEur ?? 0;
+  if (gradingInput) gradingInput.value = state.costs.gradingCostEur ?? 25;
 
   if (saveBtn) {
     saveBtn.addEventListener('click', () => {
       state.costs.resaleFeePct = feeInput ? Number(feeInput.value) || 0 : 0;
       state.costs.importVatPct = vatInput ? Number(vatInput.value) || 0 : 0;
       state.costs.shippingPerCardEur = shipInput ? Number(shipInput.value) || 0 : 0;
+      state.costs.gradingCostEur = gradingInput && gradingInput.value !== '' ? Number(gradingInput.value) : 25;
       localStorage.setItem('pokespread_costs', JSON.stringify(state.costs));
       renderAllColumns();
       showToast('✅ Frais d\'arbitrage appliqués aux marges !');
@@ -2778,9 +3029,11 @@ function bindCostSettings() {
       state.costs.resaleFeePct = 0;
       state.costs.importVatPct = 0;
       state.costs.shippingPerCardEur = 0;
+      state.costs.gradingCostEur = 25;
       if (feeInput) feeInput.value = 0;
       if (vatInput) vatInput.value = 0;
       if (shipInput) shipInput.value = 0;
+      if (gradingInput) gradingInput.value = 25;
       localStorage.setItem('pokespread_costs', JSON.stringify(state.costs));
       renderAllColumns();
       showToast('Frais réinitialisés par défaut');
@@ -3001,7 +3254,7 @@ async function fetchLiveExchangeRate() {
 
 // ── 17. APPLICATION INITIALIZATION ────────────────────────────
 async function initApp() {
-  console.log('⚡ Initializing PokéSpread JP→FR v4.0...');
+  console.log('⚡ Initializing PokéSpread JP→FR v5.0...');
 
   // 1. Bind global events & popovers
   bindFilterEvents();
@@ -3013,20 +3266,24 @@ async function initApp() {
   // 2. Fetch live FX rate
   fetchLiveExchangeRate();
 
-  // 3. Load verified market prices from prices.json (Instant)
-  await PriceService.loadPrices();
+  // 3. Load PokéAPI multi-language species translations + verified prices.json in parallel
+  await Promise.all([
+    SpeciesService.load(),
+    PriceService.loadPrices()
+  ]);
 
   // 4. Load full catalog with IndexedDB caching (24h TTL)
   await CatalogService.loadCatalog();
 
   // 5. Initial Render
+  syncProductTabUI();
   renderAllColumns();
 
   if (window.lucide) {
     lucide.createIcons();
   }
 
-  console.log('✅ PokéSpread ready: 60fps responsive arbitrage board active.');
+  console.log('✅ PokéSpread v5.0 ready: dual Raw/Graded arbitrage board active.');
 }
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -178,7 +178,21 @@
     <!-- Section header -->
     <div class="text-center my-4">
       <h2 class="text-xl font-bold text-slate-800">Recommandations</h2>
-      <p class="text-sm text-slate-500 mt-0.5">Cartes du moment</p>
+      <p class="text-sm text-slate-500 mt-0.5">Arbitrage JP → FR basé à 100 % sur les ventes conclues</p>
+    </div>
+
+    <!-- PRIMARY PRODUCT TABS: Onglet 1 (Non-Gradées Raw) vs Onglet 2 (Gradées Slabs) -->
+    <div id="product-mode-tabs" class="grid grid-cols-2 gap-2.5 max-w-2xl mx-auto mb-4">
+      <button type="button" id="tab-mode-raw" data-product-tab="raw"
+              class="product-tab-btn active flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-slate-900 bg-slate-900 text-white text-xs sm:text-sm font-extrabold shadow-md transition-all cursor-pointer">
+        <span>🃏 Cartes Non-Gradées (Raw)</span>
+        <span id="tab-count-raw" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">0</span>
+      </button>
+      <button type="button" id="tab-mode-graded" data-product-tab="graded"
+              class="product-tab-btn flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-700 hover:border-purple-300 hover:bg-purple-50/40 text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer">
+        <span>💎 Cartes Gradées (Slabs)</span>
+        <span id="tab-count-graded" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">0</span>
+      </button>
     </div>
 
     <!-- FIX 3: Mobile tab switcher (visible < md) -->
@@ -198,34 +212,58 @@
     </div>
 
     <!-- FOCUS FILTER BAR (Always Visible by default) -->
-    <div id="focus-filter-bar" class="flex bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 flex-wrap items-center justify-between gap-3 shadow-sm relative z-40">
-      <!-- Left group: Popover Triggers -->
-      <div class="flex items-center gap-2.5 flex-wrap">
+    <div id="focus-filter-bar" class="flex bg-slate-50 border border-slate-200 rounded-2xl p-3 mb-4 flex-wrap items-center justify-between gap-2.5 shadow-sm relative z-40">
+      <!-- Left group: Popover Triggers & Tab-Specific Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+
+        <!-- Raw Condition Selector (Visible in Tab 1: Raw) -->
+        <div id="raw-controls-group" class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          <span class="text-[11px] font-bold text-slate-500 pl-1.5">État Raw :</span>
+          <button type="button" class="raw-cond-pill active px-2 py-1 rounded-lg text-xs font-bold bg-slate-900 text-white cursor-pointer transition-all" data-raw-cond="NM">NM</button>
+          <button type="button" class="raw-cond-pill px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all" data-raw-cond="EX">EX</button>
+          <button type="button" class="raw-cond-pill px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all" data-raw-cond="LP">LP</button>
+          <button type="button" class="raw-cond-pill px-2 py-1 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer transition-all" data-raw-cond="PL">PL</button>
+        </div>
+
+        <!-- Graded Controls (Visible in Tab 2: Slabs) -->
+        <div id="graded-controls-group" class="hidden flex items-center gap-2 flex-wrap">
+          <select id="slab-grade-selector" class="text-xs border border-purple-300 bg-purple-50 text-purple-900 font-bold rounded-xl px-2.5 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-400" title="Compagnie / Grade">
+            <option value="ALL">💎 Tous grades</option>
+            <option value="PSA 10">💎 PSA 10</option>
+            <option value="PSA 9">💎 PSA 9</option>
+            <option value="BGS">💎 BGS (9.5 / 10)</option>
+            <option value="CGC">💎 CGC (10)</option>
+            <option value="PCA">💎 PCA (10 / 9.5)</option>
+            <option value="ARS">💎 ARS (10 / 10+)</option>
+          </select>
+
+          <div id="slab-mode-toggle" class="inline-flex rounded-xl p-0.5 bg-white border border-purple-200 shadow-sm">
+            <button type="button" data-slab-mode="slab" class="slab-mode-btn active px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-600 text-white cursor-pointer transition-all">
+              Slab JP → Slab FR
+            </button>
+            <button type="button" data-slab-mode="grading" class="slab-mode-btn px-2.5 py-1 text-xs font-bold rounded-lg text-slate-600 hover:bg-purple-50 cursor-pointer transition-all">
+              ⚡ Levier Grading (Raw JP + frais → Slab FR)
+            </button>
+          </div>
+        </div>
 
         <!-- 1. Country / Edition Filter Popover Trigger & Dropdown -->
         <div class="relative" id="country-popover-wrapper">
           <button type="button" id="btn-filter-country"
                   class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-            <span id="label-filter-country">🌐 Édition pays : ————</span>
+            <span id="label-filter-country">🌐 Édition pays : Toutes</span>
             <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
           </button>
 
           <!-- Country Dropdown Popover -->
           <div id="popover-filter-country"
                class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-72 p-3 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
-            <!-- Popover header / mini search -->
             <div class="relative mb-2.5">
               <i data-lucide="search" style="width:13px;height:13px;" class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input type="text" id="input-search-country" placeholder="Rechercher un pays..."
                      class="w-full pl-7 pr-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none transition-colors" autocomplete="off">
             </div>
-
-            <!-- Country list (multi-select) -->
-            <div id="country-options-list" class="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-              <!-- Dynamically rendered via JS -->
-            </div>
-
-            <!-- Popover footer: clear button -->
+            <div id="country-options-list" class="max-h-56 overflow-y-auto space-y-1 pr-1 custom-scrollbar"></div>
             <div class="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between">
               <button type="button" id="btn-clear-country"
                       class="text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors">
@@ -239,14 +277,13 @@
         <div class="relative" id="price-popover-wrapper">
           <button type="button" id="btn-filter-price"
                   class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-            <span id="label-filter-price">💰 Prix : Min — | Max — €</span>
+            <span id="label-filter-price">💰 Prix : ≥ 20 €</span>
             <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
           </button>
 
           <!-- Price Dropdown Popover -->
           <div id="popover-filter-price"
                class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-80 p-3.5 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
-            <!-- Currency Switcher (€ vs ¥) -->
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
               <span class="text-xs font-semibold text-slate-700">Devise du filtre :</span>
               <div class="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200" id="price-currency-toggle">
@@ -254,13 +291,11 @@
                 <button type="button" class="price-curr-btn px-2.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600" data-curr="JPY">¥ (JPY)</button>
               </div>
             </div>
-
-            <!-- Manual Min / Max inputs -->
             <div class="mb-3">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Fourchette personnalisée</label>
               <div class="flex items-center gap-2">
                 <div class="relative flex-1">
-                  <input type="number" id="input-price-min" placeholder="Min" min="0" step="1"
+                  <input type="number" id="input-price-min" placeholder="Min (20)" min="0" step="1"
                          class="w-full px-2.5 py-1.5 text-xs text-center bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none">
                 </div>
                 <span class="text-xs text-slate-400">à</span>
@@ -271,68 +306,40 @@
                 <span id="price-unit-symbol" class="text-xs font-bold text-slate-700 min-w-[12px]">€</span>
               </div>
             </div>
-
-            <!-- Quick-select Presets -->
             <div class="mb-3">
               <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Paliers rapides</label>
-              <div id="price-presets-container" class="grid grid-cols-2 gap-1.5">
-                <!-- Dynamically rendered based on currency -->
-              </div>
+              <div id="price-presets-container" class="grid grid-cols-2 gap-1.5"></div>
             </div>
-
-            <!-- Popover footer: clear price -->
             <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
               <button type="button" id="btn-clear-price"
                       class="text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors">
-                Effacer le prix
+                Réinitialiser le prix (≥ 20 €)
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 3. Global Grading / Condition Filter Popover Trigger & Dropdown -->
-        <div class="relative" id="condition-popover-wrapper">
-          <button type="button" id="btn-filter-condition"
-                  class="filter-trigger-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-            <span id="label-filter-condition">💎 État : Non-gradé (NM)</span>
-            <i data-lucide="chevron-down" style="width:13px;height:13px;" class="chevron-icon text-slate-400 transition-transform"></i>
-          </button>
+        <!-- Active Minimum Value Pill (>= 20€) -->
+        <button type="button" id="btn-min20-pill"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold shadow-sm cursor-pointer transition-all"
+                title="Cliquer pour activer/désactiver le seuil de 20 € sur les recommandations">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="label-min20-pill">Filtre actif : Valeur ≥ 20 €</span>
+        </button>
 
-          <!-- Condition Dropdown Popover -->
-          <div id="popover-filter-condition"
-               class="hidden absolute left-0 top-full mt-2 w-[calc(100vw-2.5rem)] sm:w-80 md:w-96 p-3.5 bg-white rounded-2xl shadow-xl border border-slate-200 z-50">
-            <!-- Cascading popover content dynamically populated -->
-          </div>
-        </div>
-
-        <!-- Strategy Selector (Levier Grading & Multi-Stratégies) -->
-        <select id="strategy-selector" class="text-xs border border-amber-300 bg-amber-50 text-amber-900 font-bold rounded-xl px-2.5 py-1.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400" title="Stratégie d'arbitrage">
-          <option value="best">🔥 Meilleure opportunité (Auto : Raw, PSA 10 & Grading)</option>
-          <option value="raw">Raw JP → Raw FR</option>
-          <option value="slab">Slab JP → Slab FR (PSA 10)</option>
-          <option value="grading">⚡ Levier Grading (Raw JP → PSA 10 FR)</option>
-        </select>
-
-        <!-- Pricing Reference Selector -->
+        <!-- Pricing Reference Selector (Strictly Sold Sources) -->
         <div class="flex items-center gap-1.5 flex-wrap">
           <select id="pricing-ref-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base de revente FR">
-            <option value="avg">📊 Référentiel EU Global (Cardmarket + Slabs)</option>
+            <option value="avg">📊 Revente FR : Moyenne Sold EU</option>
             <option value="cardmarket">Cardmarket (Price Guide EU)</option>
-            <option value="pricecharting">PriceCharting (Ventes Sold)</option>
-            <option value="ebay">eBay FR Sold</option>
+            <option value="pricecharting">PriceCharting (Sold)</option>
+            <option value="ebay">eBay FR Browse</option>
           </select>
           <select id="pricing-ref-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400 shadow-sm" title="Base d'achat JP">
-            <option value="min">🏆 JP: SNKRDUNK (Ventes réelles JPY)</option>
+            <option value="avg">🇯🇵 Achat JP : Moyenne Sold (SNKRDUNK)</option>
             <option value="snkrdunk">SNKRDUNK (Sold JPY)</option>
-            <option value="yuyutei">Yuyu-tei (Boutique)</option>
           </select>
         </div>
-
-        <!-- Priced Only Quick Toggle -->
-        <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 transition-all shadow-sm select-none" id="label-toggle-priced-only">
-          <input type="checkbox" id="toggle-priced-only" class="rounded text-blue-600 focus:ring-blue-400 h-3.5 w-3.5 cursor-pointer">
-          <span>💰 Cartes avec prix uniquement</span>
-        </label>
 
       </div>
 
@@ -484,15 +491,14 @@
       <!-- Secondary filters row -->
       <div class="flex flex-wrap gap-2 mb-3">
         <select id="lib-filter-platform-fr" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-          <option value="avg">📊 Référentiel EU Global (Cardmarket + Slabs)</option>
+          <option value="avg">📊 Revente FR : Moyenne Sold EU</option>
           <option value="cardmarket">Cardmarket (Price Guide EU)</option>
-          <option value="pricecharting">PriceCharting (Ventes Sold)</option>
-          <option value="ebay">eBay FR Sold</option>
+          <option value="pricecharting">PriceCharting (Sold)</option>
+          <option value="ebay">eBay FR Browse</option>
         </select>
         <select id="lib-filter-platform-jp" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-          <option value="min">🏆 JP: SNKRDUNK (Ventes réelles JPY)</option>
+          <option value="avg">🇯🇵 Achat JP : Moyenne Sold (SNKRDUNK)</option>
           <option value="snkrdunk">SNKRDUNK (Sold JPY)</option>
-          <option value="yuyutei">Yuyu-tei (Boutique)</option>
         </select>
         <select id="lib-filter-year" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
           <option value="all">📅 Toutes années</option>

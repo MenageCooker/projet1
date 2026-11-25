@@ -1,6 +1,6 @@
-// PokéSpread Service Worker v13 — Network-First Production Strategy
-const CACHE_NAME = 'pokespread-cache-v13';
-const IMAGE_CACHE_NAME = 'pokespread-images-v13';
+// PokéSpread Service Worker v14 — Network-First Production Strategy
+const CACHE_NAME = 'pokespread-cache-v14';
+const IMAGE_CACHE_NAME = 'pokespread-images-v14';
 
 const PRECACHE_ASSETS = [
   './',
